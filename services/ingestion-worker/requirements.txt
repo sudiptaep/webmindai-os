@@ -1,0 +1,17 @@
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+bullmq==2.15.0
+redis==5.2.1
+boto3==1.35.68
+pymupdf==1.24.14
+pytesseract==0.3.13
+Pillow==11.0.0
+python-pptx==1.0.2
+python-docx==1.1.2
+langchain-text-splitters==0.3.2
+tiktoken==0.8.0
+openai==1.57.0
+pinecone==5.4.2
+httpx==0.28.0
+python-dotenv==1.0.1
+pydantic-settings==2.6.1

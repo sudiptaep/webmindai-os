@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path . -Force -Recurse)",
+      "Bash(Select-Object -Property FullName, PSIsContainer)",
+      "Bash(ConvertTo-Csv -NoTypeInformation)",
+      "Bash(Out-String)",
+      "Bash(Get-ChildItem -Path \"c:\\\\xampp\\\\mysql\\\\data\\\\custom_erp\" -Force)",
+      "Bash(Select-Object Name, Length, Mode)",
+      "PowerShell(ls -R c:\\\\webmindai\\\\.claude\\\\skills)",
+      "Bash(pnpm install *)",
+      "Bash(pnpm approve-builds *)",
+      "Bash(pnpm build *)",
+      "Bash(pnpm typecheck *)",
+      "Bash(pnpm --filter @college-chatbot/api typecheck)",
+      "Bash(New-Item -ItemType Directory -Force -Path \"c:/webmindai/services/ingestion-worker/jobs\")",
+      "Bash(Out-Null)",
+      "Bash(New-Item -ItemType Directory -Force -Path \"c:/webmindai/services/ingestion-worker/parsers\")",
+      "Bash(py -3 -c ' *)",
+      "Bash(Get-ChildItem -Path \"c:\\\\webmindai\\\\apps\" -Recurse -File)",
+      "Bash(Select-Object FullName)",
+      "Bash(Sort-Object FullName)",
+      "Bash(pnpm --filter api build)"
+    ]
+  }
+}
