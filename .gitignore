@@ -15,4 +15,4 @@ venv/
 *.egg-info/
 .pytest_cache/
 /tmp/
-/upload/colleges
+/uploads/colleges/*
