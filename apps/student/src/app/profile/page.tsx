@@ -1,10 +1,47 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { trpc } from '@/lib/trpc';
 import { useAuthStore } from '@/store/auth.store';
 import { logout } from '@/lib/auth';
+import { AppShell, formatAcademicLevel } from '@/components/AppSidebar';
+
+function InfoRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between py-3 border-b border-gray-800/60 last:border-0">
+      <span className="text-sm text-gray-500">{label}</span>
+      <span className="text-sm text-gray-200 text-right">{children}</span>
+    </div>
+  );
+}
+
+function Field({
+  label,
+  type = 'text',
+  value,
+  onChange,
+  minLength,
+}: {
+  label: string;
+  type?: string;
+  value: string;
+  onChange: (v: string) => void;
+  minLength?: number;
+}) {
+  return (
+    <div>
+      <label className="block text-xs font-medium text-gray-500 mb-1.5">{label}</label>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        minLength={minLength}
+        className="w-full bg-gray-900 border border-gray-700/60 rounded-xl px-4 py-2.5 text-sm text-gray-100 placeholder-gray-600 focus:outline-none focus:border-teal-600/50 transition-colors"
+      />
+    </div>
+  );
+}
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -24,10 +61,10 @@ export default function ProfilePage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  const sendVerificationMutation = { mutateAsync: async () => {} }; // placeholder
-
-  // Populate name from profile when loaded
-  const displayName = name || profile?.name || '';
+  useEffect(() => {
+    if (profile?.name && !name) setName(profile.name);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.name]);
 
   async function handleUpdate(e: FormEvent) {
     e.preventDefault();
@@ -53,7 +90,7 @@ export default function ProfilePage() {
 
     try {
       await updateMutation.mutateAsync(payload);
-      setSuccess('Profile updated successfully');
+      setSuccess('Profile updated');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
@@ -68,127 +105,112 @@ export default function ProfilePage() {
     router.replace('/login');
   }
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-gray-400">Loading…</div>
-      </div>
-    );
-  }
+  const initials = (profile?.name ?? user?.name ?? '?').charAt(0).toUpperCase();
+  const academicLabel = profile?.semester
+    ? formatAcademicLevel(profile.semester, user?.college_type)
+    : null;
 
   return (
-    <div className="min-h-screen bg-gray-950 p-4">
-      <div className="max-w-lg mx-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold">Profile</h1>
-          <button
-            onClick={() => router.back()}
-            className="text-gray-400 hover:text-white text-sm"
-          >
-            ← Back
-          </button>
+    <AppShell>
+      <div className="max-w-2xl mx-auto px-6 pt-10 pb-16">
+
+        {/* Avatar + name hero */}
+        <div className="flex flex-col items-center text-center mb-10">
+          <div className="w-20 h-20 rounded-full bg-teal-700 flex items-center justify-center text-3xl font-bold text-white mb-4 select-none">
+            {initials}
+          </div>
+          <h1 className="text-2xl font-semibold text-gray-100">
+            {profile?.name ?? user?.name ?? '—'}
+          </h1>
+          {academicLabel && (
+            <p className="text-sm text-gray-500 mt-1">{academicLabel}</p>
+          )}
         </div>
 
-        {/* Info card */}
-        <div className="bg-gray-900 rounded-lg p-4 mb-6 space-y-2">
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-400">Email</span>
+        {/* Account info card */}
+        <div className="bg-gray-900/60 border border-gray-800/60 rounded-2xl px-5 py-1 mb-6">
+          <InfoRow label="Email">
             <span className="flex items-center gap-2">
-              {profile?.email}
+              {profile?.email ?? '—'}
               {profile?.email_verified ? (
-                <span className="text-green-400 text-xs">✓ Verified</span>
+                <span className="text-xs text-teal-400 bg-teal-400/10 px-2 py-0.5 rounded-full">Verified</span>
               ) : (
-                <span className="text-yellow-400 text-xs">Unverified</span>
+                <span className="text-xs text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-full">Unverified</span>
               )}
             </span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-400">{isMedical ? 'Year' : 'Semester'}</span>
-            <span>{isMedical ? `Year ${profile?.semester}` : `Sem ${profile?.semester}`}</span>
-          </div>
+          </InfoRow>
+          <InfoRow label={isMedical ? 'Year' : 'Semester'}>
+            {academicLabel ?? '—'}
+          </InfoRow>
           {profile?.roll_number && (
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-400">Roll No.</span>
-              <span>{profile.roll_number}</span>
-            </div>
+            <InfoRow label="Roll No.">{profile.roll_number}</InfoRow>
           )}
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-400">Status</span>
-            <span className={profile?.status === 'active' ? 'text-green-400' : 'text-red-400'}>
-              {profile?.status}
+          <InfoRow label="Status">
+            <span className={profile?.status === 'active' ? 'text-teal-400' : 'text-red-400'}>
+              {profile?.status ?? '—'}
             </span>
-          </div>
+          </InfoRow>
         </div>
 
         {/* Edit form */}
-        <form onSubmit={handleUpdate} className="bg-gray-900 rounded-lg p-4 space-y-4">
-          <h2 className="font-semibold text-sm text-gray-300 uppercase tracking-wide">
-            Update Profile
-          </h2>
-          <div>
-            <label className="block text-sm mb-1 text-gray-400">Name</label>
-            <input
-              type="text"
-              value={name || profile?.name || ''}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+        <form onSubmit={handleUpdate} className="bg-gray-900/60 border border-gray-800/60 rounded-2xl p-5 space-y-5 mb-6">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Edit Profile</p>
+
+          <Field label="Display Name" value={name} onChange={setName} />
+
+          <div className="border-t border-gray-800/60 pt-5 space-y-4">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Change Password</p>
+            <Field
+              label="Current Password"
+              type="password"
+              value={currentPassword}
+              onChange={setCurrentPassword}
+            />
+            <Field
+              label="New Password"
+              type="password"
+              value={newPassword}
+              onChange={setNewPassword}
+              minLength={8}
+            />
+            <Field
+              label="Confirm New Password"
+              type="password"
+              value={confirmPassword}
+              onChange={setConfirmPassword}
+              minLength={8}
             />
           </div>
 
-          <div className="border-t border-gray-800 pt-4">
-            <h3 className="text-sm text-gray-400 mb-3">Change Password (optional)</h3>
-            <div className="space-y-3">
-              <div>
-                <label className="block text-sm mb-1 text-gray-400">Current Password</label>
-                <input
-                  type="password"
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm mb-1 text-gray-400">New Password</label>
-                <input
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  minLength={8}
-                  className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm mb-1 text-gray-400">Confirm New Password</label>
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  minLength={8}
-                  className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-                />
-              </div>
-            </div>
-          </div>
-
-          {error && <p className="text-red-400 text-sm">{error}</p>}
-          {success && <p className="text-green-400 text-sm">{success}</p>}
+          {error && (
+            <p className="text-sm text-red-400 bg-red-400/10 border border-red-400/20 rounded-xl px-4 py-2.5">
+              {error}
+            </p>
+          )}
+          {success && (
+            <p className="text-sm text-teal-400 bg-teal-400/10 border border-teal-400/20 rounded-xl px-4 py-2.5">
+              {success}
+            </p>
+          )}
 
           <button
             type="submit"
-            disabled={updateMutation.isPending}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded py-2 text-sm font-medium transition-colors"
+            disabled={updateMutation.isPending || isLoading}
+            className="w-full bg-teal-600 hover:bg-teal-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl py-2.5 text-sm font-medium text-white transition-colors cursor-pointer"
           >
             {updateMutation.isPending ? 'Saving…' : 'Save changes'}
           </button>
         </form>
 
+        {/* Sign out */}
         <button
           onClick={handleLogout}
-          className="mt-6 w-full border border-red-800 hover:bg-red-900/30 text-red-400 rounded py-2 text-sm font-medium transition-colors"
+          className="w-full border border-gray-800 hover:border-red-800/60 hover:bg-red-900/20 text-gray-500 hover:text-red-400 rounded-xl py-2.5 text-sm font-medium transition-colors cursor-pointer"
         >
           Sign out
         </button>
+
       </div>
-    </div>
+    </AppShell>
   );
 }

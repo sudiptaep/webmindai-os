@@ -37,7 +37,7 @@ export const studentRouter = router({
 
       const skip = (input.page - 1) * input.limit;
       const [sessions, total] = await Promise.all([
-        Session.find({ student_id: ctx.user.sub }, { messages: 0 })
+        Session.find({ student_id: ctx.user.sub }, { messages: { $slice: 1 } })
           .sort({ last_active: -1 })
           .skip(skip)
           .limit(input.limit)

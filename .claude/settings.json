@@ -20,7 +20,12 @@
       "Bash(Get-ChildItem -Path \"c:\\\\webmindai\\\\apps\" -Recurse -File)",
       "Bash(Select-Object FullName)",
       "Bash(Sort-Object FullName)",
-      "Bash(pnpm --filter api build)"
+      "Bash(pnpm --filter api build)",
+      "Bash(xargs -I {} find {} -maxdepth 2 -type d)",
+      "Read(//c/Users/sudip/.claude/skills/**)",
+      "Bash(npx tsc *)",
+      "PowerShell(cd \"c:\\\\webmindai\\\\apps\\\\student\"; npx tsc --noEmit 2>&1 | Where-Object { $_ -match \"ChatWindow|components/Chat\" })",
+      "PowerShell(cd \"c:\\\\webmindai\\\\apps\\\\student\"; npx tsc --noEmit 2>&1 | Where-Object { $_ -match \"AppSidebar|ChatWindow|history\" })"
     ]
   }
 }
