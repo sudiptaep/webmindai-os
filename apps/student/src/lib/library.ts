@@ -20,6 +20,31 @@ export interface DocCard {
   thumbnail_url: string | null;
   academic_year: string;
   uploaded_at: string;
+  has_chapter_map: boolean;
+  chapter_count: number | null;
+}
+
+export interface Chapter {
+  chapter_index: number;
+  title: string;
+  subtitle: string;
+  start_page: number;
+  end_page: number;
+  page_count: number;
+  chunk_count: number;
+  pyq_count: number;
+  pyq_years: string[];
+  pyq_coverage_score: number;
+}
+
+export interface ChapterMapResponse {
+  doc_id: string;
+  doc_name: string;
+  total_chapters: number;
+  total_pages: number;
+  extraction_method: string;
+  confidence: number;
+  chapters: Chapter[];
 }
 
 export interface SubjectGroup {
@@ -232,6 +257,293 @@ export async function fetchTranscript(
     `${API}/api/v1/college/${collegeId}/student/library/${docId}/transcript`,
     token,
   );
+}
+
+// ── F-13-C: Chapter Chat ──────────────────────────────────────────────────
+
+export type ChatMode = 'answer' | 'socratic';
+
+export interface SessionMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export interface ChapterChatSession {
+  session_id: string;
+  chapter_index: number;
+  chapter_title: string;
+  chat_mode: ChatMode;
+  messages: SessionMessage[];
+}
+
+export async function createChapterChatSession(
+  collegeId: string,
+  docId: string,
+  chapterIdx: number,
+  token: string,
+): Promise<ChapterChatSession> {
+  return apiFetch(
+    `${API}/api/v1/college/${collegeId}/student/library/${docId}/chapters/${chapterIdx}/chat/session`,
+    token,
+    { method: 'POST', body: '{}' },
+  );
+}
+
+export async function setChapterChatMode(
+  collegeId: string,
+  docId: string,
+  chapterIdx: number,
+  sessionId: string,
+  mode: ChatMode,
+  token: string,
+): Promise<{ session_id: string; chat_mode: ChatMode }> {
+  return apiFetch(
+    `${API}/api/v1/college/${collegeId}/student/library/${docId}/chapters/${chapterIdx}/chat/${sessionId}/mode`,
+    token,
+    { method: 'PATCH', body: JSON.stringify({ mode }) },
+  );
+}
+
+export function chapterChatMessageUrl(
+  collegeId: string,
+  docId: string,
+  chapterIdx: number,
+  sessionId: string,
+): string {
+  return `${API}/api/v1/college/${collegeId}/student/library/${docId}/chapters/${chapterIdx}/chat/${sessionId}/message`;
+}
+
+export async function fetchChapters(
+  collegeId: string,
+  docId: string,
+  token: string,
+): Promise<ChapterMapResponse> {
+  return apiFetch(
+    `${API}/api/v1/college/${collegeId}/student/library/${docId}/chapters`,
+    token,
+  );
+}
+
+// ── F-13-E: PYQ Intelligence ─────────────────────────────────────────────
+
+export interface PYQQuestion {
+  _id:             string;
+  pyq_paper_id:    string;
+  question_text:   string;
+  question_type:   'MCQ' | 'SAQ' | 'LAQ' | 'CASE' | 'FIB';
+  marks:           number;
+  section:         string;
+  year:            string;
+  exam_name:       string;
+  mapped_chapter_indices: number[];
+}
+
+export interface ChapterPyqResponse {
+  questions:     PYQQuestion[];
+  years_covered: string[];
+  total_count:   number;
+}
+
+export async function fetchChapterPyq(
+  collegeId: string,
+  docId: string,
+  chapterIdx: number,
+  token: string,
+): Promise<ChapterPyqResponse> {
+  return apiFetch(
+    `${API}/api/v1/college/${collegeId}/student/library/${docId}/chapters/${chapterIdx}/pyq`,
+    token,
+  );
+}
+
+// ── F-13-D: Quiz Engine ───────────────────────────────────────────────────
+
+export type QuizQuestionType = 'MCQ' | 'TF' | 'SAQ' | 'CASE' | 'MIXED';
+export type QuizDifficulty   = 'recall' | 'application' | 'analysis' | 'adaptive';
+export type QuizMode         = 'practice' | 'test' | 'timed';
+
+export interface QuizQuestion {
+  question_id:     string;
+  question_text:   string;
+  question_type:   QuizQuestionType;
+  options:         string[];
+  correct_answer:  string;
+  explanation:     string;
+  source_page?:    number;
+  bloom_level:     string;
+  difficulty:      QuizDifficulty;
+  is_pyq:          boolean;
+  pyq_year?:       string;
+  student_answer?: string;
+  is_correct?:     boolean;
+}
+
+export interface QuizGenerateResult {
+  quiz_session_id:     string;
+  questions:           QuizQuestion[];
+  total_count:         number;
+  time_limit_seconds:  number | null;
+}
+
+export interface QuizResults {
+  score_pct:            number;
+  correct_count:        number;
+  total_count:          number;
+  weak_topics:          string[];
+  strong_topics:        string[];
+  pyq_coverage_pct:     number;
+  pyq_would_pass_count: number;
+  recommendation:       string;
+}
+
+export interface QuizHistoryItem {
+  _id:                string;
+  doc_id:             string;
+  chapter_index:      number;
+  quiz_mode:          QuizMode;
+  question_type:      QuizQuestionType;
+  difficulty:         QuizDifficulty;
+  status:             'in_progress' | 'completed' | 'abandoned';
+  total_count:        number;
+  score_pct:          number | null;
+  started_at:         string;
+  completed_at:       string | null;
+  time_limit_seconds: number | null;
+}
+
+export interface GenerateQuizBody {
+  question_type?:           QuizQuestionType;
+  difficulty?:              QuizDifficulty;
+  count?:                   number;
+  include_pyq?:             boolean;
+  timed?:                   boolean;
+  time_limit_per_question?: number;
+}
+
+export async function generateQuiz(
+  collegeId: string,
+  docId: string,
+  chapterIdx: number,
+  body: GenerateQuizBody,
+  token: string,
+): Promise<QuizGenerateResult> {
+  return apiFetch(
+    `${API}/api/v1/college/${collegeId}/student/library/${docId}/chapters/${chapterIdx}/quiz`,
+    token,
+    { method: 'POST', body: JSON.stringify(body) },
+  );
+}
+
+export async function submitAnswer(
+  collegeId: string,
+  sessionId: string,
+  questionId: string,
+  studentAnswer: string,
+  token: string,
+): Promise<{ is_correct: boolean; correct_answer: string; explanation: string }> {
+  return apiFetch(
+    `${API}/api/v1/college/${collegeId}/student/quiz-sessions/${sessionId}/answer`,
+    token,
+    { method: 'POST', body: JSON.stringify({ question_id: questionId, student_answer: studentAnswer }) },
+  );
+}
+
+export async function submitQuiz(
+  collegeId: string,
+  sessionId: string,
+  answers: Array<{ question_id: string; student_answer: string }>,
+  token: string,
+): Promise<QuizResults> {
+  return apiFetch(
+    `${API}/api/v1/college/${collegeId}/student/quiz-sessions/${sessionId}/submit`,
+    token,
+    { method: 'POST', body: JSON.stringify({ answers }) },
+  );
+}
+
+export async function fetchQuizResults(
+  collegeId: string,
+  sessionId: string,
+  token: string,
+): Promise<QuizResults> {
+  return apiFetch(
+    `${API}/api/v1/college/${collegeId}/student/quiz-sessions/${sessionId}/results`,
+    token,
+  );
+}
+
+export async function fetchQuizHistory(
+  collegeId: string,
+  token: string,
+  params: { docId?: string; chapterIdx?: number; limit?: number } = {},
+): Promise<{ sessions: QuizHistoryItem[] }> {
+  const qs = new URLSearchParams();
+  if (params.docId)      qs.set('docId', params.docId);
+  if (params.chapterIdx !== undefined) qs.set('chapterIdx', String(params.chapterIdx));
+  if (params.limit)      qs.set('limit', String(params.limit));
+  return apiFetch(
+    `${API}/api/v1/college/${collegeId}/student/quiz-history?${qs}`,
+    token,
+  );
+}
+
+// ── F-13-H: Study Notes ───────────────────────────────────────────────────
+
+export interface StudyNote {
+  note_id:             string;
+  content:             string;
+  source_page?:        number;
+  pinned_ai_response?: string;
+  created_at:          string;
+  updated_at:          string;
+}
+
+export async function fetchNotes(
+  collegeId: string,
+  docId: string,
+  chapterIdx: number,
+  token: string,
+): Promise<{ notes: StudyNote[] }> {
+  return apiFetch(
+    `${API}/api/v1/college/${collegeId}/student/library/${docId}/chapters/${chapterIdx}/notes`,
+    token,
+  );
+}
+
+export async function createNote(
+  collegeId: string,
+  docId: string,
+  chapterIdx: number,
+  body: { content?: string; source_page?: number; pinned_ai_response?: string },
+  token: string,
+): Promise<{ note: StudyNote }> {
+  return apiFetch(
+    `${API}/api/v1/college/${collegeId}/student/library/${docId}/chapters/${chapterIdx}/notes`,
+    token,
+    { method: 'POST', body: JSON.stringify(body) },
+  );
+}
+
+export async function deleteNote(
+  collegeId: string,
+  docId: string,
+  chapterIdx: number,
+  noteId: string,
+  token: string,
+): Promise<void> {
+  await apiFetch(
+    `${API}/api/v1/college/${collegeId}/student/library/${docId}/chapters/${chapterIdx}/notes/${noteId}`,
+    token,
+    { method: 'DELETE' },
+  );
+}
+
+export function notesExportUrl(
+  collegeId: string,
+  docId: string,
+  chapterIdx: number,
+): string {
+  return `${API}/api/v1/college/${collegeId}/student/library/${docId}/chapters/${chapterIdx}/notes/export`;
 }
 
 export function formatDuration(seconds: number): string {

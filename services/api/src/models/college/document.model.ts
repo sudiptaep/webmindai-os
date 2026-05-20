@@ -37,6 +37,8 @@ const DocumentSchema = new Schema<ChatDocument>(
     uploaded_by: { type: String, required: true },
     academic_year: { type: String, required: true },
     version: { type: Number, default: 1 },
+    has_chapter_map: { type: Boolean, default: false },
+    chapter_count: { type: Number },
   },
   { _id: false, timestamps: { createdAt: "created_at", updatedAt: "updated_at" }, versionKey: false },
 );

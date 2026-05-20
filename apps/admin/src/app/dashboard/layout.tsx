@@ -8,8 +8,9 @@ import { logout } from '@/lib/auth';
 
 const NAV = [
   { href: '/dashboard/documents', label: 'Documents' },
-  { href: '/dashboard/subjects', label: 'Subjects' },
-  { href: '/dashboard/students', label: 'Students' },
+  { href: '/dashboard/pyq',       label: 'PYQ Papers' },
+  { href: '/dashboard/subjects',  label: 'Subjects' },
+  { href: '/dashboard/students',  label: 'Students' },
   { href: '/dashboard/analytics', label: 'Analytics' },
 ];
 

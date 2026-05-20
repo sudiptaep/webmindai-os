@@ -87,6 +87,92 @@ export async function queryMultiNamespace(
   return results.flat().sort((a, b) => b.score - a.score).slice(0, topK);
 }
 
+export async function fetchChapterChunks(
+  collegeId: string,
+  deptId: string,
+  docId: string,
+  startPage: number,
+  endPage: number,
+  topK = 500,
+): Promise<Array<{ chunk_index: number; text: string; page_num: number }>> {
+  const namespace = buildPineconeNamespace(collegeId, deptId);
+  const zero = new Array<number>(EMBEDDING_DIMS).fill(0);
+  const result = await getIndex().namespace(namespace).query({
+    vector: zero,
+    topK,
+    filter: {
+      doc_id:   { $eq: docId },
+      page_num: { $gte: startPage, $lte: endPage },
+    },
+    includeMetadata: true,
+    includeValues: false,
+  });
+  return (result.matches ?? [])
+    .map((m) => ({
+      chunk_index: (m.metadata?.chunk_index as number) ?? 0,
+      text:        (m.metadata?.text as string) ?? "",
+      page_num:    (m.metadata?.page_num as number) ?? startPage,
+    }))
+    .sort((a, b) => a.chunk_index - b.chunk_index)
+    .filter((c) => c.text.length > 0);
+}
+
+export async function queryChapterScoped(
+  collegeId: string,
+  deptId: string,
+  docId: string,
+  startPage: number,
+  endPage: number,
+  vector: number[],
+  topK = 10,
+): Promise<PineconeChunk[]> {
+  const namespace = buildPineconeNamespace(collegeId, deptId);
+  // Existing vectors store section_index (0-based). New vectors also have page_num (1-based).
+  // Query section_index (always present) — convert 1-based chapter pages to 0-based.
+  const result = await getIndex().namespace(namespace).query({
+    vector,
+    topK,
+    filter: {
+      doc_id:        { $eq: docId },
+      section_index: { $gte: startPage - 1, $lte: endPage - 1 },
+    },
+    includeMetadata: true,
+    includeValues: false,
+  });
+
+  return (result.matches ?? []).map((m) => ({
+    id: m.id,
+    score: m.score ?? 0,
+    text: (m.metadata?.text as string) ?? "",
+    metadata: (m.metadata as Record<string, unknown>) ?? {},
+  }));
+}
+
+/** Returns the best matching page_num across ALL pages of a doc (no page filter). */
+export async function queryDocUnscoped(
+  collegeId: string,
+  deptId: string,
+  docId: string,
+  vector: number[],
+  topK = 3,
+): Promise<PineconeChunk[]> {
+  const namespace = buildPineconeNamespace(collegeId, deptId);
+  const result = await getIndex().namespace(namespace).query({
+    vector,
+    topK,
+    filter: { doc_id: { $eq: docId } },
+    includeMetadata: true,
+    includeValues: false,
+  });
+
+  return (result.matches ?? []).map((m) => ({
+    id: m.id,
+    score: m.score ?? 0,
+    text: (m.metadata?.text as string) ?? "",
+    metadata: (m.metadata as Record<string, unknown>) ?? {},
+  }));
+}
+
 export async function deleteDocVectors(
   collegeId: string,
   deptId: string,

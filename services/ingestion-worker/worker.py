@@ -5,6 +5,12 @@ Calls ingest_document.run_pipeline and POSTs callback to Fastify.
 import asyncio
 import logging
 import os
+import sys
+
+# bullmq/redis-py use selector-based I/O which is incompatible with Windows
+# ProactorEventLoop (default on Python 3.8+ / Windows). Force SelectorEventLoop.
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 from dotenv import load_dotenv
 from bullmq import Worker
@@ -13,6 +19,8 @@ load_dotenv()
 
 from jobs.ingest_document import run_pipeline, post_callback
 from jobs.extract_pages import run_extract_pages, post_extraction_callback
+from jobs.extract_chapters import run_extract_chapters, post_chapter_failure
+from jobs.ingest_pyq import run_ingest_pyq, post_pyq_failure
 
 logger = logging.getLogger(__name__)
 
@@ -79,12 +87,46 @@ async def _handle_extract_pages(job_data: dict) -> dict:
         raise
 
 
+async def _handle_ingest_pyq(job_data: dict) -> dict:
+    callback_url: str = job_data["callback_url"]
+    college_id:   str = job_data["college_id"]
+    pyq_paper_id: str = job_data["pyq_paper_id"]
+
+    try:
+        await run_ingest_pyq(job_data)
+        return {"status": "completed", "pyq_paper_id": pyq_paper_id}
+
+    except Exception as exc:
+        logger.exception("PYQ ingestion failed: pyq_paper_id=%s", pyq_paper_id)
+        await post_pyq_failure(callback_url, college_id, str(exc))
+        raise
+
+
+async def _handle_extract_chapters(job_data: dict) -> dict:
+    callback_url: str = job_data["callback_url"]
+    college_id:   str = job_data["college_id"]
+    doc_id:       str = job_data["doc_id"]
+
+    try:
+        await run_extract_chapters(job_data)
+        return {"status": "completed", "doc_id": doc_id}
+
+    except Exception as exc:
+        logger.exception("Chapter extraction failed: doc_id=%s", doc_id)
+        await post_chapter_failure(callback_url, college_id, str(exc))
+        raise
+
+
 async def process_job(job, job_token: str) -> dict:
     job_data: dict = job.data
     job_type: str  = job_data.get("job_type", "ingest")
 
     if job_type == "extract_pages":
         return await _handle_extract_pages(job_data)
+    elif job_type == "extract_chapters":
+        return await _handle_extract_chapters(job_data)
+    elif job_type == "ingest_pyq":
+        return await _handle_ingest_pyq(job_data)
     else:
         return await _handle_ingest(job_data, job)
 

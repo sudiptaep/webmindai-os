@@ -9,9 +9,10 @@ interface Props {
   collegeId: string;
   onPreview: (docId: string) => void;
   onAiSummary: (docId: string, pageCount?: number, fileType?: string) => void;
+  onStudy: (docId: string) => void;
 }
 
-export function DocumentGrid({ subjects, collegeId, onPreview, onAiSummary }: Props) {
+export function DocumentGrid({ subjects, collegeId, onPreview, onAiSummary, onStudy }: Props) {
   const isMedical = useAuthStore((s) => selectCollegeType(s) === 'medical');
   const semLabel = isMedical ? 'Year' : 'Sem';
 
@@ -81,6 +82,7 @@ export function DocumentGrid({ subjects, collegeId, onPreview, onAiSummary }: Pr
                         collegeId={collegeId}
                         onPreview={onPreview}
                         onAiSummary={onAiSummary}
+                        onStudy={onStudy}
                       />
                     ))}
                   </div>

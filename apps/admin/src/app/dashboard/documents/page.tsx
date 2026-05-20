@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, ChangeEvent } from 'react';
+import Link from 'next/link';
 import { useAuthStore } from '@/store/auth.store';
 import { trpc } from '@/lib/trpc';
 
@@ -218,7 +219,12 @@ export default function DocumentsPage() {
             >
               <div className="flex items-center gap-4">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{doc.original_filename}</p>
+                  <Link
+                    href={`/dashboard/documents/${doc._id}`}
+                    className="text-sm font-medium truncate hover:text-blue-400 transition-colors block"
+                  >
+                    {doc.original_filename}
+                  </Link>
                   <p className="text-xs text-gray-400 mt-0.5">
                     {doc.file_type?.toUpperCase()} ·{' '}
                     <span className={STATUS_COLORS[doc.ingestion_status] ?? 'text-gray-400'}>

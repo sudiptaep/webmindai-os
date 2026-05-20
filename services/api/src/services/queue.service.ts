@@ -1,6 +1,6 @@
 import { Queue } from "bullmq";
 import IORedis from "ioredis";
-import type { IngestionJobPayload, ExtractionJobPayload } from "@college-chatbot/shared";
+import type { IngestionJobPayload, ExtractionJobPayload, ChapterExtractionJobPayload, PYQIngestionJobPayload } from "@college-chatbot/shared";
 
 const QUEUE_NAME = "ingestion_jobs";
 
@@ -53,6 +53,28 @@ export async function enqueueExtractionJob(payload: ExtractionJobPayload): Promi
     backoff: { type: "exponential", delay: 3000 },
     removeOnComplete: { count: 200 },
     removeOnFail: { count: 100 },
+  });
+}
+
+export async function enqueueChapterExtractionJob(payload: ChapterExtractionJobPayload): Promise<void> {
+  const queue = getIngestionQueue();
+  await queue.add(QUEUE_NAME, payload, {
+    jobId: `chapter_${payload.doc_id}_${Date.now()}`,
+    attempts: 2,
+    backoff: { type: "exponential", delay: 5000 },
+    removeOnComplete: { count: 100 },
+    removeOnFail: { count: 50 },
+  });
+}
+
+export async function enqueuePYQIngestionJob(payload: PYQIngestionJobPayload): Promise<void> {
+  const queue = getIngestionQueue();
+  await queue.add(QUEUE_NAME, payload, {
+    jobId: `pyq_${payload.pyq_paper_id}`,
+    attempts: 3,
+    backoff: { type: "exponential", delay: 5000 },
+    removeOnComplete: { count: 100 },
+    removeOnFail: { count: 50 },
   });
 }
 

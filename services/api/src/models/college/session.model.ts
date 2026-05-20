@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
 import { Schema, type Connection, type Model } from "mongoose";
-import type { Session, Message, SourceCitation } from "@college-chatbot/shared";
+import type { Session, Message, SourceCitation, ChatMode } from "@college-chatbot/shared";
 
 const SourceCitationSchema = new Schema<SourceCitation>(
   {
@@ -36,11 +36,15 @@ const SessionSchema = new Schema<Session>(
     messages: { type: [MessageSchema], default: [] },
     started_at: { type: Date, default: () => new Date() },
     last_active: { type: Date, default: () => new Date() },
+    doc_id:        { type: String },
+    chapter_index: { type: Number },
+    chat_mode:     { type: String, enum: ["answer", "socratic"] as ChatMode[], default: "answer" },
   },
   { _id: false, versionKey: false },
 );
 
 SessionSchema.index({ student_id: 1, last_active: -1 });
+SessionSchema.index({ student_id: 1, doc_id: 1, chapter_index: 1, last_active: -1 });
 
 export function getSessionModel(conn: Connection): Model<Session> {
   return (conn.models["Session"] as Model<Session>) ?? conn.model<Session>("Session", SessionSchema);

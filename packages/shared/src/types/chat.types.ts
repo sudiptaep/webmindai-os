@@ -19,6 +19,8 @@ export interface Message {
   timestamp: Date;
 }
 
+export type ChatMode = "answer" | "socratic";
+
 export interface Session {
   _id: string;
   student_id: string;
@@ -27,6 +29,10 @@ export interface Session {
   messages: Message[];
   started_at: Date;
   last_active: Date;
+  // F-13: populated for chapter-scoped chat sessions
+  doc_id?: string;
+  chapter_index?: number;
+  chat_mode?: ChatMode;
 }
 
 export interface QueryLog {

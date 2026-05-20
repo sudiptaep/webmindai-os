@@ -5,7 +5,7 @@ import { getCollegeDb } from "../../db/college.db";
 import { getDocumentModel } from "../../models/college/document.model";
 import { getDownloadLogModel } from "../../models/college/download-log.model";
 import { deleteFile, resolveLocalPath } from "../../services/storage.service";
-import { enqueueIngestionJob } from "../../services/queue.service";
+import { enqueueIngestionJob, enqueueChapterExtractionJob } from "../../services/queue.service";
 import { deleteDocVectors } from "../../services/pinecone.service";
 import { isDeptAdmin, isSuperAdmin, type DeptAdminJWTPayload } from "@college-chatbot/shared";
 import type { AnyJWTPayload } from "@college-chatbot/shared";
@@ -204,6 +204,38 @@ export const documentRouter = router({
         { new: true },
       );
       return { ok: true };
+    }),
+
+  extractChapters: protectedProcedure
+    .input(z.object({ college_id: z.string(), doc_id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      requireAdminRole(ctx.user);
+      const conn = await resolveCollegeConn(ctx.user, input.college_id);
+      const Document = getDocumentModel(conn);
+
+      const doc = await Document.findById(input.doc_id).lean();
+      if (!doc) throw new TRPCError({ code: "NOT_FOUND", message: "Document not found" });
+      if (isDeptAdmin(ctx.user)) checkDeptScope(ctx.user, doc.dept_id);
+      if (doc.file_type !== "pdf") throw new TRPCError({ code: "BAD_REQUEST", message: "Chapter extraction only supported for PDF" });
+      if (!doc.file_path) throw new TRPCError({ code: "BAD_REQUEST", message: "No local file path — re-ingest first" });
+
+      const apiBase = process.env.API_BASE_URL ?? `http://localhost:${process.env.PORT ?? 3000}`;
+      await enqueueChapterExtractionJob({
+        job_id:       `chapter_${input.doc_id}`,
+        doc_id:       input.doc_id,
+        college_id:   input.college_id,
+        dept_id:      doc.dept_id,
+        file_path:    doc.file_path,
+        job_type:     "extract_chapters",
+        callback_url: `${apiBase}/api/v1/internal/ingest/${input.doc_id}/chapter-map/webhook`,
+      });
+
+      // Reset chapter map flag so UI shows "pending"
+      await Document.findByIdAndUpdate(input.doc_id, {
+        $set: { has_chapter_map: false, chapter_count: 0 },
+      });
+
+      return { doc_id: input.doc_id, status: "queued" };
     }),
 
   reingest: protectedProcedure

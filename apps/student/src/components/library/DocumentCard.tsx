@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useRef, useEffect } from 'react';
 import { type DocCard, formatDuration } from '@/lib/library';
 
 interface Props {
@@ -7,6 +8,7 @@ interface Props {
   collegeId: string;
   onPreview: (docId: string) => void;
   onAiSummary: (docId: string, pageCount?: number, fileType?: string) => void;
+  onStudy: (docId: string) => void;
 }
 
 const FILE_CONFIG: Record<string, { icon: string; color: string; bg: string }> = {
@@ -19,9 +21,23 @@ const FILE_CONFIG: Record<string, { icon: string; color: string; bg: string }> =
   docx: { icon: '📝', color: 'text-teal-400',   bg: 'bg-teal-950/40'   },
 };
 
-export function DocumentCard({ doc, collegeId, onPreview, onAiSummary }: Props) {
-  const cfg = FILE_CONFIG[doc.file_type] ?? { icon: '📎', color: 'text-gray-400', bg: 'bg-gray-800' };
+export function DocumentCard({ doc, collegeId, onPreview, onAiSummary, onStudy }: Props) {
+  const cfg    = FILE_CONFIG[doc.file_type] ?? { icon: '📎', color: 'text-gray-400', bg: 'bg-gray-800' };
   const isReady = doc.ingestion_status === 'completed';
+  const [studyOpen, setStudyOpen] = useState(false);
+  const dropRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    if (!studyOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (dropRef.current && !dropRef.current.contains(e.target as Node)) {
+        setStudyOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [studyOpen]);
 
   return (
     <div className={`group relative bg-gray-900 border rounded-xl p-4 transition-all ${isReady ? 'border-gray-700 hover:border-gray-500 hover:shadow-lg' : 'border-gray-800 opacity-70'}`}>
@@ -29,6 +45,13 @@ export function DocumentCard({ doc, collegeId, onPreview, onAiSummary }: Props) 
       {!isReady && (
         <div className="absolute top-2 right-2 text-xs px-2 py-0.5 rounded-full bg-yellow-900/60 text-yellow-400 border border-yellow-700">
           {doc.ingestion_status === 'processing' ? 'Processing…' : 'In queue'}
+        </div>
+      )}
+
+      {/* Chapter count badge — top-right when ready */}
+      {isReady && doc.has_chapter_map && doc.chapter_count && (
+        <div className="absolute top-2 right-2 text-xs px-2 py-0.5 rounded-full bg-teal-900/60 text-teal-300 border border-teal-800">
+          {doc.chapter_count} ch.
         </div>
       )}
 
@@ -79,6 +102,28 @@ export function DocumentCard({ doc, collegeId, onPreview, onAiSummary }: Props) 
         >
           Preview
         </button>
+
+        {/* Study dropdown — PDF only, when chapter map exists */}
+        {isReady && doc.file_type === 'pdf' && doc.has_chapter_map && (
+          <div className="relative" ref={dropRef}>
+            <button
+              onClick={() => setStudyOpen(o => !o)}
+              className="text-xs px-2.5 py-1.5 bg-violet-700 hover:bg-violet-600 text-white rounded-lg transition-colors flex items-center gap-1"
+            >
+              Study <span className="text-[10px]">▾</span>
+            </button>
+            {studyOpen && (
+              <div className="absolute right-0 bottom-full mb-1 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-20 overflow-hidden">
+                <button
+                  onClick={() => { setStudyOpen(false); onStudy(doc.doc_id); }}
+                  className="w-full text-left text-xs px-3 py-2.5 text-gray-200 hover:bg-gray-700 transition-colors"
+                >
+                  Open Chapter Navigator
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         <button
           onClick={() => onAiSummary(doc.doc_id, doc.page_count ?? doc.slide_count ?? undefined, doc.file_type)}

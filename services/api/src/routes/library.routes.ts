@@ -17,12 +17,17 @@ import { getDocumentModel } from "../models/college/document.model";
 import { getSubjectModel } from "../models/college/subject.model";
 import { getDownloadLogModel } from "../models/college/download-log.model";
 import { getExtractionJobModel } from "../models/college/extraction-job.model";
+import { getChapterMapModel } from "../models/college/chapter-map.model";
+import { getSessionModel } from "../models/college/session.model";
 import { getCollegeModel } from "../models/platform/college.model";
+import { embedQuery } from "../services/embedding.service";
+import { runChapterRAG } from "../services/rag.service";
 import { generateFileToken, getMimeType, TOKEN_TTL } from "../services/file-token.service";
 import { enqueueExtractionJob, getRedisConnection } from "../services/queue.service";
 import { resolveLocalPath } from "../services/storage.service";
 import { streamChatResponse } from "../services/llm.service";
 import { fetchDocChunks } from "../services/pinecone.service";
+import { getStudentNotesModel } from "../models/college/student-notes.model";
 
 // ── Rate limit config (env-overridable) ─────────────────────────────────────
 
@@ -69,21 +74,23 @@ async function checkRateLimit(key: string, max: number, windowSec: number): Prom
 
 function buildDocCard(doc: ChatDocument, thumbnailUrl: string | null) {
   return {
-    doc_id:            doc._id,
-    filename:          doc.original_filename,
-    file_type:         doc.file_type,
-    ingestion_status:  doc.ingestion_status,
-    file_size_bytes:   doc.file_size_bytes,
+    doc_id:           doc._id,
+    filename:         doc.original_filename,
+    file_type:        doc.file_type,
+    ingestion_status: doc.ingestion_status,
+    file_size_bytes:  doc.file_size_bytes,
     file_size_display: formatFileSize(doc.file_size_bytes),
-    page_count:        doc.page_count        ?? null,
-    slide_count:       doc.slide_count       ?? null,
-    duration_seconds:  doc.duration_seconds  ?? null,
-    quality_score:     doc.quality_score,
-    ocr_used:          doc.ocr_used,
-    download_enabled:  doc.download_enabled !== false,
-    thumbnail_url:     thumbnailUrl,
-    academic_year:     doc.academic_year,
-    uploaded_at:       doc.created_at,
+    page_count:       doc.page_count        ?? null,
+    slide_count:      doc.slide_count       ?? null,
+    duration_seconds: doc.duration_seconds  ?? null,
+    quality_score:    doc.quality_score,
+    ocr_used:         doc.ocr_used,
+    download_enabled: doc.download_enabled !== false,
+    thumbnail_url:    thumbnailUrl,
+    academic_year:    doc.academic_year,
+    uploaded_at:      doc.created_at,
+    has_chapter_map:  doc.has_chapter_map   ?? false,
+    chapter_count:    doc.chapter_count     ?? null,
   };
 }
 
@@ -720,6 +727,382 @@ const libraryRoutesPlugin: FastifyPluginAsync = async (fastify: FastifyInstance)
       }
 
       reply.raw.end();
+    },
+  );
+  // ── F-13-C: Chapter chat — create/get session ───────────────────────────────
+  fastify.post(
+    "/college/:collegeId/student/library/:docId/chapters/:chapterIdx/chat/session",
+    { preHandler: PRE },
+    async (req: FastifyRequest, reply: FastifyReply) => {
+      const { collegeId, docId, chapterIdx } = req.params as { collegeId: string; docId: string; chapterIdx: string };
+      const student = getStudent(req);
+      const chapterIndex = Number(chapterIdx);
+
+      const conn     = await getCollegeDb(collegeId);
+      const Document = getDocumentModel(conn);
+      const doc      = await Document.findById(docId).lean();
+
+      if (!doc || doc.is_visible_to_students === false) {
+        return reply.status(404).send({ statusCode: 404, error: "Not Found", message: "Document not found" });
+      }
+
+      // Project only the matching chapter — avoids loading all chunk_ids
+      const ChapterMap = getChapterMapModel(conn);
+      const [chapterSlice] = await ChapterMap.aggregate<{ title: string }>([
+        { $match: { doc_id: docId } },
+        { $project: { chapters: { $filter: { input: "$chapters", as: "ch", cond: { $eq: ["$$ch.chapter_index", chapterIndex] } } } } },
+        { $unwind: "$chapters" },
+        { $replaceRoot: { newRoot: "$chapters" } },
+        { $limit: 1 },
+      ]);
+      if (!chapterSlice) {
+        return reply.status(404).send({ statusCode: 404, error: "Not Found", message: "Chapter not found" });
+      }
+
+      const Session = getSessionModel(conn);
+
+      // Find most recent session for this student+doc+chapter
+      const existing = await Session.findOne(
+        { student_id: student.sub, doc_id: docId, chapter_index: chapterIndex },
+      ).sort({ last_active: -1 }).lean();
+
+      if (existing) {
+        return reply.status(200).send({
+          session_id:    existing._id,
+          chapter_index: chapterIndex,
+          chapter_title: chapterSlice.title,
+          chat_mode:     existing.chat_mode ?? "answer",
+          messages:      existing.messages ?? [],
+        });
+      }
+
+      const session = await Session.create({
+        _id:           randomUUID(),
+        student_id:    student.sub,
+        college_id:    collegeId,
+        dept_id:       doc.dept_id,
+        doc_id:        docId,
+        chapter_index: chapterIndex,
+        chat_mode:     "answer",
+        messages:      [],
+      });
+
+      return reply.status(201).send({
+        session_id:    session._id,
+        chapter_index: chapterIndex,
+        chapter_title: chapterSlice.title,
+        chat_mode:     "answer",
+        messages:      [],
+      });
+    },
+  );
+
+  // ── F-13-C: Chapter chat — send message (SSE) ────────────────────────────
+  fastify.post(
+    "/college/:collegeId/student/library/:docId/chapters/:chapterIdx/chat/:sessionId/message",
+    { preHandler: PRE },
+    async (req: FastifyRequest, reply: FastifyReply) => {
+      const { collegeId, docId, chapterIdx, sessionId } = req.params as {
+        collegeId: string; docId: string; chapterIdx: string; sessionId: string;
+      };
+      const student = getStudent(req);
+      const chapterIndex = Number(chapterIdx);
+
+      const bodyParsed = z.object({ message: z.string().min(1).max(2000) }).safeParse(req.body);
+      if (!bodyParsed.success) {
+        return reply.status(400).send({ statusCode: 400, error: "Bad Request", message: "message required (max 2000 chars)" });
+      }
+      const { message } = bodyParsed.data;
+
+      const reqOrigin = req.headers.origin;
+      reply.raw.writeHead(200, {
+        "Content-Type":  "text/event-stream",
+        "Cache-Control": "no-cache",
+        "Connection":    "keep-alive",
+        "X-Accel-Buffering": "no",
+        ...(reqOrigin && { "Access-Control-Allow-Origin": reqOrigin }),
+        "Access-Control-Allow-Credentials": "true",
+      });
+
+      const sendSSE = (data: unknown) => reply.raw.write(`data: ${JSON.stringify(data)}\n\n`);
+
+      try {
+        const conn       = await getCollegeDb(collegeId);
+        const Session    = getSessionModel(conn);
+        const Document   = getDocumentModel(conn);
+        const ChapterMap = getChapterMapModel(conn);
+
+        const [session, doc, chapterMap] = await Promise.all([
+          Session.findOne({ _id: sessionId, student_id: student.sub }).lean(),
+          Document.findById(docId).lean(),
+          ChapterMap.findOne({ doc_id: docId }).lean(),
+        ]);
+
+        if (!session || !doc || !chapterMap) {
+          sendSSE({ type: "error", message: "Session, document, or chapter map not found" });
+          reply.raw.end();
+          return;
+        }
+
+        const chapter = chapterMap.chapters.find(c => c.chapter_index === chapterIndex);
+        if (!chapter) {
+          sendSSE({ type: "error", message: "Chapter not found" });
+          reply.raw.end();
+          return;
+        }
+
+        const sessionMessages = session.messages.map(m => ({ role: m.role as "user" | "assistant", content: m.content }));
+        let fullResponse = "";
+        let ragDone: { sources: unknown[]; confidence_score: number; answered: boolean; tokens_used: number } | null = null;
+
+        for await (const event of runChapterRAG({
+          query: message,
+          collegeId,
+          deptId: doc.dept_id,
+          docId,
+          chapter: chapter as Parameters<typeof runChapterRAG>[0]["chapter"],
+          sessionMessages,
+          mode: (session.chat_mode ?? "answer") as "answer" | "socratic",
+          allChapters: chapterMap.chapters as Parameters<typeof runChapterRAG>[0]["allChapters"],
+        })) {
+          sendSSE(event);
+          if (event.type === "token") fullResponse += event.content;
+          else if (event.type === "fallback") fullResponse = event.message;
+          else if (event.type === "done") ragDone = event;
+        }
+
+        const { sources = [], confidence_score = 0, answered = false, tokens_used = 0 } = ragDone ?? {};
+
+        // Persist messages to session
+        await Session.findByIdAndUpdate(sessionId, {
+          $push: {
+            messages: {
+              $each: [
+                { role: "user",      content: message,       sources: [], answered: true },
+                { role: "assistant", content: fullResponse,  sources, confidence_score, answered },
+              ],
+            },
+          },
+          $set: { last_active: new Date() },
+        });
+
+        // Fire-and-forget token counter
+        if (tokens_used > 0) {
+          getCollegeModel().findByIdAndUpdate(collegeId, {
+            $inc: { tokens_used_this_month: tokens_used },
+          }).catch(() => {});
+        }
+      } catch (err) {
+        fastify.log.error({ err }, "Chapter chat error");
+        sendSSE({ type: "error", message: err instanceof Error ? err.message : "Internal server error" });
+      }
+
+      reply.raw.end();
+    },
+  );
+
+  // ── F-13-G: Switch chat mode (answer ↔ socratic) ────────────────────────
+  fastify.patch(
+    "/college/:collegeId/student/library/:docId/chapters/:chapterIdx/chat/:sessionId/mode",
+    { preHandler: PRE },
+    async (req: FastifyRequest, reply: FastifyReply) => {
+      const { collegeId, sessionId } = req.params as { collegeId: string; docId: string; chapterIdx: string; sessionId: string };
+      const student = getStudent(req);
+
+      const bodyParsed = z.object({ mode: z.enum(["answer", "socratic"]) }).safeParse(req.body);
+      if (!bodyParsed.success) {
+        return reply.status(400).send({ statusCode: 400, error: "Bad Request", message: "mode must be 'answer' or 'socratic'" });
+      }
+
+      const conn    = await getCollegeDb(collegeId);
+      const Session = getSessionModel(conn);
+      const session = await Session.findOneAndUpdate(
+        { _id: sessionId, student_id: student.sub },
+        { $set: { chat_mode: bodyParsed.data.mode } },
+        { new: true },
+      ).lean();
+
+      if (!session) {
+        return reply.status(404).send({ statusCode: 404, error: "Not Found", message: "Session not found" });
+      }
+
+      return reply.send({ session_id: sessionId, chat_mode: session.chat_mode });
+    },
+  );
+
+  // ── F-13-B: Chapter map for a document ─────────────────────────────────────
+  fastify.get(
+    "/college/:collegeId/student/library/:docId/chapters",
+    { preHandler: PRE },
+    async (req: FastifyRequest, reply: FastifyReply) => {
+      const { collegeId, docId } = req.params as { collegeId: string; docId: string };
+
+      const conn = await getCollegeDb(collegeId);
+      const doc  = await getDocumentModel(conn).findById(docId).lean();
+
+      if (!doc)                                 return reply.status(404).send({ statusCode: 404, error: "Not Found",  message: "Document not found" });
+      if (doc.is_visible_to_students === false) return reply.status(403).send({ statusCode: 403, error: "Forbidden", message: "Document not available" });
+
+      if (!doc.has_chapter_map) {
+        return reply.status(404).send({ statusCode: 404, error: "Not Found", message: "Chapter map not yet available for this document" });
+      }
+
+      const ChapterMap = getChapterMapModel(conn);
+      const chapterMap = await ChapterMap.findOne({ doc_id: docId }).lean();
+
+      if (!chapterMap) {
+        return reply.status(404).send({ statusCode: 404, error: "Not Found", message: "Chapter map not found" });
+      }
+
+      return reply.send({
+        doc_id:            docId,
+        doc_name:          doc.original_filename,
+        total_chapters:    chapterMap.total_chapters,
+        total_pages:       chapterMap.total_pages,
+        extraction_method: chapterMap.extraction_method,
+        confidence:        chapterMap.confidence_score,
+        chapters:          chapterMap.chapters.map(ch => ({
+          chapter_index:      ch.chapter_index,
+          title:              ch.title,
+          subtitle:           ch.subtitle ?? "",
+          start_page:         ch.start_page,
+          end_page:           ch.end_page,
+          page_count:         ch.page_count,
+          chunk_count:        ch.chunk_count,
+          pyq_count:          ch.pyq_count,
+          pyq_years:          ch.pyq_years,
+          pyq_coverage_score: ch.pyq_coverage_score,
+        })),
+      });
+    },
+  );
+
+  // ── F-13-H: Study Notes ──────────────────────────────────────────────────
+
+  // GET notes for a chapter
+  fastify.get(
+    "/college/:collegeId/student/library/:docId/chapters/:chapterIdx/notes",
+    { preHandler: PRE },
+    async (req: FastifyRequest, reply: FastifyReply) => {
+      const { collegeId, docId, chapterIdx } = req.params as {
+        collegeId: string; docId: string; chapterIdx: string;
+      };
+      const student = getStudent(req);
+      const conn    = await getCollegeDb(collegeId);
+
+      const StudentNotes = getStudentNotesModel(conn);
+      const doc = await StudentNotes.findOne({
+        student_id: student.sub,
+        doc_id:     docId,
+        chapter_index: Number(chapterIdx),
+      }).lean();
+
+      return reply.send({ notes: doc?.notes ?? [] });
+    },
+  );
+
+  // POST create / append note
+  fastify.post(
+    "/college/:collegeId/student/library/:docId/chapters/:chapterIdx/notes",
+    { preHandler: PRE },
+    async (req: FastifyRequest, reply: FastifyReply) => {
+      const { collegeId, docId, chapterIdx } = req.params as {
+        collegeId: string; docId: string; chapterIdx: string;
+      };
+      const student = getStudent(req);
+      const body    = req.body as {
+        content?: string;
+        source_page?: number;
+        pinned_ai_response?: string;
+      };
+
+      if (!body?.content && !body?.pinned_ai_response) {
+        return reply.code(400).send({ error: "content or pinned_ai_response required" });
+      }
+
+      const conn  = await getCollegeDb(collegeId);
+      const StudentNotes = getStudentNotesModel(conn);
+
+      const note = {
+        note_id:            randomUUID(),
+        content:            body.content ?? "",
+        source_page:        body.source_page,
+        pinned_ai_response: body.pinned_ai_response,
+        created_at:         new Date(),
+        updated_at:         new Date(),
+      };
+
+      await StudentNotes.findOneAndUpdate(
+        { student_id: student.sub, doc_id: docId, chapter_index: Number(chapterIdx) },
+        {
+          $setOnInsert: {
+            _id:        randomUUID(),
+            college_id: collegeId,
+          },
+          $push: { notes: note },
+        },
+        { upsert: true, new: true },
+      );
+
+      return reply.code(201).send({ note });
+    },
+  );
+
+  // DELETE a specific note
+  fastify.delete(
+    "/college/:collegeId/student/library/:docId/chapters/:chapterIdx/notes/:noteId",
+    { preHandler: PRE },
+    async (req: FastifyRequest, reply: FastifyReply) => {
+      const { collegeId, docId, chapterIdx, noteId } = req.params as {
+        collegeId: string; docId: string; chapterIdx: string; noteId: string;
+      };
+      const student = getStudent(req);
+      const conn    = await getCollegeDb(collegeId);
+
+      const StudentNotes = getStudentNotesModel(conn);
+      await StudentNotes.updateOne(
+        { student_id: student.sub, doc_id: docId, chapter_index: Number(chapterIdx) },
+        { $pull: { notes: { note_id: noteId } } },
+      );
+
+      return reply.send({ ok: true });
+    },
+  );
+
+  // GET export notes as plain text
+  fastify.get(
+    "/college/:collegeId/student/library/:docId/chapters/:chapterIdx/notes/export",
+    { preHandler: PRE },
+    async (req: FastifyRequest, reply: FastifyReply) => {
+      const { collegeId, docId, chapterIdx } = req.params as {
+        collegeId: string; docId: string; chapterIdx: string;
+      };
+      const student = getStudent(req);
+      const conn    = await getCollegeDb(collegeId);
+
+      const StudentNotes = getStudentNotesModel(conn);
+      const doc = await StudentNotes.findOne({
+        student_id:    student.sub,
+        doc_id:        docId,
+        chapter_index: Number(chapterIdx),
+      }).lean();
+
+      const notes = doc?.notes ?? [];
+      const lines = notes.map((n, i) => {
+        const parts: string[] = [`${i + 1}. ${n.content}`];
+        if (n.source_page)        parts.push(`   Page: ${n.source_page}`);
+        if (n.pinned_ai_response) parts.push(`   AI Answer: ${n.pinned_ai_response}`);
+        return parts.join("\n");
+      });
+
+      const text = lines.length > 0
+        ? `Chapter ${chapterIdx} Notes\n${"=".repeat(40)}\n\n${lines.join("\n\n")}`
+        : "No notes for this chapter.";
+
+      return reply
+        .header("Content-Type", "text/plain; charset=utf-8")
+        .header("Content-Disposition", `attachment; filename="chapter_${chapterIdx}_notes.txt"`)
+        .send(text);
     },
   );
 };

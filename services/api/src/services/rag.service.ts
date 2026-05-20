@@ -5,9 +5,10 @@ import {
   RAG_CONVERSATION_TURNS,
   LLM_MODEL_EXAM,
   type SourceCitation,
+  type Chapter,
 } from "@college-chatbot/shared";
 import { embedQuery } from "./embedding.service";
-import { queryMultiNamespace, type PineconeChunk } from "./pinecone.service";
+import { queryMultiNamespace, queryChapterScoped, queryDocUnscoped, type PineconeChunk } from "./pinecone.service";
 import { streamChatResponse, generateExamQuestions } from "./llm.service";
 import { getCachedResponse, setCachedResponse } from "./cache.service";
 
@@ -281,4 +282,118 @@ export async function* runRAG(params: RAGParams): AsyncGenerator<RAGEvent> {
     answered: true,
     tokens_used: tokensUsed,
   };
+}
+
+// ─── Chapter-scoped RAG (F-13-C) ─────────────────────────────────────────────
+
+const CHAPTER_TOP_K = 10;
+const CHAPTER_TOP_K_RERANK = 5;
+const CHAPTER_CONFIDENCE = 0.55;
+const SOCRATIC_HINT_AFTER  = Number(process.env.SOCRATIC_HINT_AFTER_EXCHANGES  ?? 3);
+const SOCRATIC_REVEAL_AFTER = Number(process.env.SOCRATIC_REVEAL_AFTER_EXCHANGES ?? 5);
+
+export type ChapterRAGEvent =
+  | { type: "token"; content: string }
+  | { type: "done"; sources: SourceCitation[]; confidence_score: number; answered: boolean; tokens_used: number }
+  | { type: "fallback"; message: string; suggestion_chapter_index?: number; suggestion_chapter_title?: string };
+
+export interface ChapterRAGParams {
+  query: string;
+  collegeId: string;
+  deptId: string;
+  docId: string;
+  chapter: Chapter;
+  sessionMessages: Array<{ role: "user" | "assistant"; content: string }>;
+  mode: "answer" | "socratic";
+  /** All chapters of this doc — used for cross-reference fallback */
+  allChapters: Chapter[];
+}
+
+function buildChapterSystemPrompt(chapter: Chapter, mode: "answer" | "socratic"): string {
+  const base = `You are a study assistant helping a student understand Chapter ${chapter.chapter_index}: "${chapter.title}".
+Answer ONLY from the provided context chunks, which are excerpts from pages ${chapter.start_page}–${chapter.end_page}.
+Always cite the page number at the end of each relevant point: "— Page X".
+If the student asks about a topic not covered in these pages, say: "That topic isn't in this chapter."`;
+
+  if (mode === "socratic") {
+    return `${base}
+
+IMPORTANT: Do NOT give direct answers. Instead:
+1. Ask what the student already knows about the topic.
+2. Guide them with leading questions toward the answer.
+3. Confirm understanding when they get it right.
+4. After ${SOCRATIC_HINT_AFTER} exchanges without progress, give a hint (not the full answer).
+This is Socratic tutoring — the goal is that THEY reason their way to the answer.`;
+  }
+
+  return base;
+}
+
+function buildChapterContextPrompt(query: string, chunks: PineconeChunk[], history: Array<{ role: "user" | "assistant"; content: string }>): Array<{ role: "user" | "assistant"; content: string }> {
+  const context = chunks
+    .map((c, i) => `[${i + 1}] Page ${c.metadata.page_num ?? "?"}: ${c.text}`)
+    .join("\n\n");
+
+  const contextMsg = `CONTEXT:\n${context}\n\nQuestion: ${query}`;
+  const historyWindow = history.slice(-RAG_CONVERSATION_TURNS);
+  return [...historyWindow, { role: "user", content: contextMsg }];
+}
+
+function findChapterForPage(allChapters: Chapter[], pageNum: number): Chapter | null {
+  return allChapters.find(ch => ch.start_page <= pageNum && ch.end_page >= pageNum) ?? null;
+}
+
+export async function* runChapterRAG(params: ChapterRAGParams): AsyncGenerator<ChapterRAGEvent> {
+  const { query, collegeId, deptId, docId, chapter, sessionMessages, mode, allChapters } = params;
+
+  // 1. Embed query
+  const queryVector = await embedQuery(query);
+
+  // 2. Retrieve — scoped to chapter page range
+  const retrieved = await queryChapterScoped(
+    collegeId, deptId, docId,
+    chapter.start_page, chapter.end_page,
+    queryVector, CHAPTER_TOP_K,
+  );
+
+  // 3. BM25 hybrid re-rank
+  const reranked = bm25Merge(query, retrieved).slice(0, CHAPTER_TOP_K_RERANK);
+
+  const maxScore = reranked[0]?.score ?? 0;
+
+  // 4. Low confidence → try cross-reference
+  if (reranked.length === 0 || maxScore < CHAPTER_CONFIDENCE) {
+    const unscoped = await queryDocUnscoped(collegeId, deptId, docId, queryVector, 3);
+    const topPage = unscoped[0]?.metadata?.page_num as number | undefined;
+
+    const suggestion = topPage != null ? findChapterForPage(allChapters, topPage) : null;
+
+    const fallbackMsg = suggestion && suggestion.chapter_index !== chapter.chapter_index
+      ? `This topic isn't covered in Chapter ${chapter.chapter_index}. It appears to be in Chapter ${suggestion.chapter_index}: "${suggestion.title}".`
+      : `This topic doesn't appear to be covered in Chapter ${chapter.chapter_index}.`;
+
+    yield {
+      type: "fallback",
+      message: fallbackMsg,
+      suggestion_chapter_index: suggestion?.chapter_index,
+      suggestion_chapter_title: suggestion?.title,
+    };
+    yield { type: "done", sources: [], confidence_score: maxScore, answered: false, tokens_used: 0 };
+    return;
+  }
+
+  // 5. Build messages + stream
+  const systemPrompt = buildChapterSystemPrompt(chapter, mode);
+  const messages = buildChapterContextPrompt(query, reranked, sessionMessages);
+
+  const { tokenStream, getUsage } = await streamChatResponse(systemPrompt, messages);
+
+  for await (const token of tokenStream) {
+    yield { type: "token", content: token };
+  }
+
+  const tokensUsed = await getUsage();
+  const sources = extractSources(reranked);
+
+  yield { type: "done", sources, confidence_score: maxScore, answered: true, tokens_used: tokensUsed };
 }

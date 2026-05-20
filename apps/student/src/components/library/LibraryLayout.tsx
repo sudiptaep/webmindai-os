@@ -9,6 +9,7 @@ import { SubjectSidebar } from './SubjectSidebar';
 import { DocumentGrid } from './DocumentGrid';
 import { DocumentViewer } from './DocumentViewer';
 import { AiSummaryPanel } from './actions/AiSummaryPanel';
+import { BookStudyWorkspace } from './study/BookStudyWorkspace';
 
 interface Props {
   initialDocId?: string;
@@ -24,6 +25,7 @@ export function LibraryLayout({ initialDocId, initialPage }: Props) {
   const [params, setParams] = useState<LibraryParams>({});
   const [viewerDocId, setViewerDocId] = useState<string | null>(initialDocId ?? null);
   const [viewerPage, setViewerPage] = useState<number | undefined>(initialPage);
+  const [studyDocId, setStudyDocId] = useState<string | null>(null);
   const [modal, setModal] = useState<ActiveModal>(null);
 
   const { data, loading, error } = useLibraryDocs(params);
@@ -82,6 +84,7 @@ export function LibraryLayout({ initialDocId, initialPage }: Props) {
               collegeId={collegeId}
               onPreview={(docId) => openViewer(docId)}
               onAiSummary={(docId, pageCount, fileType) => setModal({ type: 'ai-summary', docId, pageCount, fileType })}
+              onStudy={(docId) => setStudyDocId(docId)}
             />
           )}
         </div>
@@ -94,6 +97,15 @@ export function LibraryLayout({ initialDocId, initialPage }: Props) {
           docId={viewerDocId}
           initialPage={viewerPage}
           onClose={closeViewer}
+        />
+      )}
+
+      {/* Book Study Workspace — full-screen overlay */}
+      {studyDocId && (
+        <BookStudyWorkspace
+          collegeId={collegeId}
+          docId={studyDocId}
+          onClose={() => setStudyDocId(null)}
         />
       )}
 

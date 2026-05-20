@@ -29,6 +29,9 @@ export interface Document {
   uploaded_by: string;
   academic_year: string;
   version: number;
+  // F-13: populated after chapter extraction completes
+  has_chapter_map?: boolean;
+  chapter_count?: number;
   created_at: Date;
   updated_at: Date;
 }
@@ -114,4 +117,187 @@ export interface IngestionCallbackPayload {
   slide_count?: number;
   duration_seconds?: number;
   transcript_path?: string;
+}
+
+// ── F-13: Book Intelligence System ────────────────────────────────────────────
+
+export type ExtractionMethod = "pdf_bookmarks" | "heuristic" | "manual";
+export type QuizMode = "practice" | "test" | "timed" | "pyq_sim" | "weak_spots" | "socratic";
+export type QuizQuestionType = "MCQ" | "TF" | "SAQ" | "CASE" | "MIXED" | "PYQ";
+export type QuizDifficulty = "recall" | "application" | "analysis" | "adaptive";
+export type PYQQuestionType = "MCQ" | "SAQ" | "LAQ" | "CASE" | "FIB";
+
+export interface Chapter {
+  chapter_index: number;
+  title: string;
+  subtitle?: string;
+  start_page: number;
+  end_page: number;
+  page_count: number;
+  chunk_ids: string[];
+  chunk_count: number;
+  pyq_count: number;
+  pyq_years: string[];
+  pyq_question_ids: string[];
+  pyq_coverage_score: number;
+  avg_class_score?: number;
+  study_session_count: number;
+}
+
+export interface ChapterMap {
+  _id: string;
+  doc_id: string;
+  college_id: string;
+  dept_id: string;
+  extraction_method: ExtractionMethod;
+  confidence_score: number;
+  total_chapters: number;
+  total_pages: number;
+  chapters: Chapter[];
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface PYQPaper {
+  _id: string;
+  college_id: string;
+  dept_id: string;
+  subject_id: string;
+  year: string;
+  month?: string;
+  exam_name: string;
+  university?: string;
+  doc_id: string;
+  file_path: string;
+  ingestion_status: "pending" | "processing" | "completed" | "failed";
+  question_count: number;
+  pinecone_namespace: string;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface PYQQuestion {
+  _id: string;
+  pyq_paper_id: string;
+  college_id: string;
+  dept_id: string;
+  subject_id: string;
+  question_text: string;
+  question_type: PYQQuestionType;
+  marks: number;
+  unit_number?: string;
+  section?: string;
+  year: string;
+  exam_name: string;
+  mapped_chapter_indices: number[];
+  mapping_confidence: number;
+  pinecone_vector_id: string;
+  created_at: Date;
+}
+
+export interface QuizQuestion {
+  question_id: string;
+  question_text: string;
+  question_type: QuizQuestionType;
+  options: string[];
+  correct_answer: string;
+  explanation: string;
+  source_page?: number;
+  bloom_level: string;
+  difficulty: QuizDifficulty;
+  is_pyq: boolean;
+  pyq_question_id?: string;
+  pyq_year?: string;
+  student_answer?: string;
+  is_correct?: boolean;
+  time_taken_seconds?: number;
+  answered_at?: Date;
+}
+
+export interface QuizSession {
+  _id: string;
+  student_id: string;
+  doc_id: string;
+  chapter_index?: number;
+  subject_id: string;
+  college_id: string;
+  dept_id: string;
+  quiz_mode: QuizMode;
+  question_type: QuizQuestionType;
+  difficulty: QuizDifficulty;
+  time_limit_seconds?: number;
+  questions: QuizQuestion[];
+  status: "in_progress" | "completed" | "abandoned";
+  score_pct?: number;
+  correct_count?: number;
+  total_count: number;
+  time_taken_seconds?: number;
+  weak_topics: string[];
+  strong_topics: string[];
+  pyq_coverage_pct?: number;
+  pyq_would_pass_count?: number;
+  recommendation?: string;
+  started_at: Date;
+  completed_at?: Date;
+}
+
+export interface StudentNote {
+  note_id: string;
+  content: string;
+  source_page?: number;
+  pinned_ai_response?: string;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface StudentNotes {
+  _id: string;
+  student_id: string;
+  doc_id: string;
+  chapter_index: number;
+  college_id: string;
+  notes: StudentNote[];
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface ChapterExtractionJobPayload {
+  job_id: string;
+  doc_id: string;
+  college_id: string;
+  dept_id: string;
+  file_path: string;
+  job_type: "extract_chapters";
+  callback_url: string;
+}
+
+export interface ChapterMapCallbackPayload {
+  status: "completed" | "failed";
+  chapter_count?: number;
+  extraction_method?: ExtractionMethod;
+  confidence_score?: number;
+  chapters?: Chapter[];
+  error?: string;
+}
+
+export interface PYQIngestionJobPayload {
+  job_id:       string;
+  pyq_paper_id: string;
+  doc_id:       string;
+  college_id:   string;
+  dept_id:      string;
+  subject_id:   string | undefined;
+  file_path:    string;
+  year:         string;
+  month?:       string;
+  exam_name:    string;
+  university?:  string;
+  callback_url: string;
+  job_type:     "ingest_pyq";
+}
+
+export interface PYQIngestionCallbackPayload {
+  status:         "completed" | "failed";
+  question_count?: number;
+  error?:          string;
 }

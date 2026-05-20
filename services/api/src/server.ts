@@ -11,6 +11,8 @@ import { internalRoutes } from "./routes/internal.routes";
 import { chatRoutes } from "./routes/chat.routes";
 import { filesRoutes } from "./routes/files.routes";
 import { libraryRoutes } from "./routes/library.routes";
+import { quizRoutes } from "./routes/quiz.routes";
+import { pyqRoutes } from "./routes/pyq.routes";
 import { connectPlatformDb } from "./db/platform.db";
 import { appRouter } from "./trpc/router";
 import { createContext } from "./trpc/context";
@@ -49,6 +51,12 @@ async function bootstrap() {
 
   // Student document library (browse, download, extract, AI summary)
   await server.register(libraryRoutes, { prefix: "/api/v1" });
+
+  // Student quiz engine (generate, answer, results)
+  await server.register(quizRoutes, { prefix: "/api/v1" });
+
+  // PYQ intelligence — admin upload + student list
+  await server.register(pyqRoutes, { prefix: "/api/v1" });
 
   // tRPC — all admin CRUD
   await server.register(fastifyTRPCPlugin, {

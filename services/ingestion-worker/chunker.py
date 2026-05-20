@@ -37,7 +37,8 @@ def chunk_texts(texts: list[str], base_metadata: dict) -> list[dict]:
                 "metadata": {
                     **base_metadata,
                     "section_index": section_idx,
-                    "chunk_index": chunk_idx,
+                    "page_num":      section_idx + 1,  # 1-based, matches chapter start/end_page
+                    "chunk_index":   chunk_idx,
                 },
             })
     return chunks
