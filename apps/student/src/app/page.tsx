@@ -9,7 +9,7 @@ export default function Home() {
   const token = useAuthStore((s) => s.token);
 
   useEffect(() => {
-    router.replace(token ? '/chat' : '/login');
+    router.replace(token ? '/dashboard' : '/login');
   }, [token, router]);
 
   return null;

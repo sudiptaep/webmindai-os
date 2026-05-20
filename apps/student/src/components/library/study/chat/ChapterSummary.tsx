@@ -24,7 +24,7 @@ function summaryKey(userId: string, collegeId: string, docId: string, chapterInd
 }
 
 export function ChapterSummary({ chapter, docId, collegeId }: Props) {
-  const userId = useAuthStore(s => s.user?.sub ?? '');
+  const userId = useAuthStore(s => s.user?._id ?? '');
   const [mode, setMode] = useState<Mode>('brief');
   const { content, status, error, start, stop, reset } = useAiSummary(collegeId, docId);
 
@@ -90,8 +90,7 @@ export function ChapterSummary({ chapter, docId, collegeId }: Props) {
         ) : (
           <button
             onClick={handleGenerate}
-            disabled={status === 'streaming'}
-            className="text-xs px-3 py-1 bg-teal-700 hover:bg-teal-600 disabled:opacity-50 text-white rounded-full transition-colors"
+            className="text-xs px-3 py-1 bg-teal-700 hover:bg-teal-600 text-white rounded-full transition-colors"
           >
             {content ? 'Regenerate' : 'Generate'}
           </button>

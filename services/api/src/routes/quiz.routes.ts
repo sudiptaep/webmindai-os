@@ -12,6 +12,7 @@ import {
   submitSingleAnswer,
   computeExamReadiness,
 } from "../services/quiz.service";
+import { addCorrectAnswersToSRS } from "../services/srs.service";
 import type { StudentJWTPayload } from "@college-chatbot/shared";
 
 function getStudent(req: FastifyRequest): StudentJWTPayload {
@@ -139,6 +140,10 @@ const quizRoutesPlugin: FastifyPluginAsync = async (fastify: FastifyInstance) =>
       }
 
       const result = await computeExamReadiness(sessionId, conn);
+
+      // Fire-and-forget — add correct answers to SRS deck (non-blocking)
+      addCorrectAnswersToSRS(sessionId, student.sub, collegeId, conn);
+
       return reply.send(result);
     },
   );

@@ -13,6 +13,10 @@ import { filesRoutes } from "./routes/files.routes";
 import { libraryRoutes } from "./routes/library.routes";
 import { quizRoutes } from "./routes/quiz.routes";
 import { pyqRoutes } from "./routes/pyq.routes";
+import { srsRoutes } from "./routes/srs.routes";
+import { casesRoutes } from "./routes/cases.routes";
+import { diseaseRoutes } from "./routes/disease.routes";
+import { yearNavRoutes } from "./routes/year-nav.routes";
 import { connectPlatformDb } from "./db/platform.db";
 import { appRouter } from "./trpc/router";
 import { createContext } from "./trpc/context";
@@ -57,6 +61,18 @@ async function bootstrap() {
 
   // PYQ intelligence — admin upload + student list
   await server.register(pyqRoutes, { prefix: "/api/v1" });
+
+  // F-14-A: Spaced Repetition System
+  await server.register(srsRoutes, { prefix: "/api/v1" });
+
+  // F-14-B: Clinical Case Engine
+  await server.register(casesRoutes, { prefix: "/api/v1" });
+
+  // F-14-C: Disease-Based Cross-Subject Query
+  await server.register(diseaseRoutes, { prefix: "/api/v1" });
+
+  // F-14-D: Year-Wise Student Navigation
+  await server.register(yearNavRoutes, { prefix: "/api/v1" });
 
   // tRPC — all admin CRUD
   await server.register(fastifyTRPCPlugin, {

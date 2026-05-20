@@ -12,6 +12,7 @@ const SubjectSchema = new Schema<Subject>(
     semester: { type: Number, required: true },
     year: { type: Number, required: true },
     doc_count: { type: Number, default: 0 },
+    disease_tags: { type: [String], default: [] },  // F-14-C: normalised disease names
   },
   { _id: false, timestamps: { createdAt: "created_at" }, versionKey: false },
 );

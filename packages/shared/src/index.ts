@@ -3,6 +3,7 @@ export * from "./types/department.types";
 export * from "./types/user.types";
 export * from "./types/document.types";
 export * from "./types/chat.types";
+export * from "./types/learning.types";
 export * from "./utils/namespace.util";
 export * from "./utils/jwt.util";
 export * from "./utils/constants";

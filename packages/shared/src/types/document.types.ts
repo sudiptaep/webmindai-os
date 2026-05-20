@@ -45,6 +45,7 @@ export interface Subject {
   semester: number;
   year: number;
   doc_count: number;
+  disease_tags?: string[];         // F-14-C: normalised disease names for cross-subject search
   created_at: Date;
 }
 

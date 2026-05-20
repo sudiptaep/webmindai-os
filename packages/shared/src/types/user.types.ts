@@ -40,4 +40,16 @@ export interface Student {
   email_verified: boolean;
   last_login?: Date;
   created_at: Date;
+
+  // F-14-A: Spaced Repetition
+  srs_cards_due_today: number;
+  srs_streak_days: number;
+  srs_last_review_date?: string;   // "YYYY-MM-DD"
+  srs_total_cards: number;
+  daily_srs_target: number;
+  preferred_question_type?: string;
+
+  // F-14-D: Year Navigation
+  current_year: number;            // 1–4 (MBBS) or 1–4 (engineering)
+  current_semester: number;        // 1–8
 }

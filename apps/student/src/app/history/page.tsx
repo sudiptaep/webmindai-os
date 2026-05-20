@@ -39,11 +39,14 @@ export default function HistoryPage() {
   }, [mounted, token, router]);
 
   const sessions = useMemo(() => {
-    const all = data?.sessions ?? [];
+    const all = (data?.sessions ?? []).filter(
+      (s: { messages?: { role: string; content: string }[] }) =>
+        s.messages?.find((m) => m.role === 'user')?.content?.trim()
+    );
     if (!search.trim()) return all;
     const q = search.toLowerCase();
     return all.filter((s: { messages?: { role: string; content: string }[] }) =>
-      (s.messages?.find((m) => m.role === 'user')?.content ?? '').toLowerCase().includes(q)
+      s.messages!.find((m) => m.role === 'user')!.content.toLowerCase().includes(q)
     );
   }, [data, search]);
 
@@ -117,7 +120,7 @@ export default function HistoryPage() {
               last_active?: string;
               createdAt?: string;
             }) => {
-              const title = session.messages?.find((m) => m.role === 'user')?.content ?? 'Untitled';
+              const title = session.messages!.find((m) => m.role === 'user')!.content.trim();
               const date = session.last_active ?? session.createdAt ?? '';
               return (
                 <div

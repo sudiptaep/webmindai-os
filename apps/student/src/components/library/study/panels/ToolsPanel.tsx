@@ -6,8 +6,9 @@ import { generateQuiz, type Chapter, type GenerateQuizBody, type QuizQuestion, t
 import { QuizConfigForm }    from '../quiz/QuizConfigForm';
 import { QuizRunner }        from '../quiz/QuizRunner';
 import { QuizResults }       from '../quiz/QuizResults';
-import { PyqQuestionList }   from '../pyq/PyqQuestionList';
-import { StudyNotes }        from '../notes/StudyNotes';
+import { PyqQuestionList }      from '../pyq/PyqQuestionList';
+import { StudyNotes }           from '../notes/StudyNotes';
+import { CaseSelectorPanel }    from '../cases/CaseSelectorPanel';
 
 interface Props {
   chapter:   Chapter | null;
@@ -179,6 +180,16 @@ export function ToolsPanel({ chapter, docId, collegeId }: Props) {
               collegeId={collegeId}
               docId={docId}
               chapterIndex={chapter.chapter_index}
+            />
+          </section>
+
+          {/* ── Clinical Cases ────────────────────────────────────── */}
+          <section className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+            <p className="text-xs font-semibold text-gray-300 mb-3">Clinical Cases</p>
+            <CaseSelectorPanel
+              collegeId={collegeId}
+              docId={docId}
+              chapterIdx={chapter.chapter_index}
             />
           </section>
 

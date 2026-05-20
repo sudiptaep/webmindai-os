@@ -17,6 +17,18 @@ const StudentSchema = new Schema<Student>(
     status: { type: String, enum: ["active", "disabled", "pending_approval"] as StudentStatus[], default: "pending_approval" },
     email_verified: { type: Boolean, default: false },
     last_login: { type: Date },
+
+    // F-14-A: Spaced Repetition
+    srs_cards_due_today:    { type: Number, default: 0 },
+    srs_streak_days:        { type: Number, default: 0 },
+    srs_last_review_date:   { type: String },            // "YYYY-MM-DD"
+    srs_total_cards:        { type: Number, default: 0 },
+    daily_srs_target:       { type: Number, default: 20 },
+    preferred_question_type:{ type: String },
+
+    // F-14-D: Year Navigation
+    current_year:           { type: Number, default: 1 },
+    current_semester:       { type: Number, default: 1 },
   },
   { _id: false, timestamps: { createdAt: "created_at" }, versionKey: false },
 );

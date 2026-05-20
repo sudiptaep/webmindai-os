@@ -4,6 +4,7 @@ import { runGenericFallbackEvaluator } from "./genericFallbackEvaluator";
 import { runUnansweredQueryFlagger } from "./unansweredQueryFlagger";
 import { runTokenUsageResetter } from "./tokenUsageResetter";
 import { runTempFileCleanup } from "./tempFileCleanup";
+import { runSRSMaintenance } from "./srsMaintenance";
 
 const PLATFORM_JOBS_QUEUE = "platform_jobs";
 
@@ -40,6 +41,13 @@ export async function startScheduler(): Promise<void> {
     { repeat: { pattern: "0 2 * * *" }, removeOnComplete: { count: 10 }, removeOnFail: { count: 5 } }
   );
 
+  // F-14-A: SRS maintenance — midnight IST (18:30 UTC)
+  await queue.add(
+    "srs-maintenance",
+    {},
+    { repeat: { pattern: "30 18 * * *" }, removeOnComplete: { count: 10 }, removeOnFail: { count: 5 } }
+  );
+
   const worker = new Worker(
     PLATFORM_JOBS_QUEUE,
     async (job) => {
@@ -55,6 +63,9 @@ export async function startScheduler(): Promise<void> {
           break;
         case "cleanup-temp-files":
           await runTempFileCleanup();
+          break;
+        case "srs-maintenance":
+          await runSRSMaintenance();
           break;
         default:
           throw new Error(`Unknown job: ${job.name}`);

@@ -82,6 +82,31 @@ export function IconGradCap() {
   );
 }
 
+export function IconSearch() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+      <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+    </svg>
+  );
+}
+
+export function IconRepeat() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+      <polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 0 1 4-4h14" />
+      <polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 0 1-4 4H3" />
+    </svg>
+  );
+}
+
+export function IconHome() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" />
+    </svg>
+  );
+}
+
 export function IconPanelLeft() {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
@@ -215,8 +240,11 @@ interface AppSidebarProps {
 }
 
 const NAV_ITEMS = [
-  { label: 'Chats', icon: <IconClock />, href: '/history' },
-  { label: 'Library', icon: <IconBook />, href: '/library' },
+  { label: 'Dashboard', icon: <IconHome />,   href: '/dashboard' },
+  { label: 'Review',    icon: <IconRepeat />, href: '/srs' },
+  { label: 'Disease',   icon: <IconSearch />, href: '/disease' },
+  { label: 'Chats',     icon: <IconClock />,  href: '/history' },
+  { label: 'Library',   icon: <IconBook />,   href: '/library' },
 ];
 
 export function AppSidebar({ currentSessionId, onClose, onCollapse }: AppSidebarProps) {
@@ -309,50 +337,55 @@ export function AppSidebar({ currentSessionId, onClose, onCollapse }: AppSidebar
         })}
       </nav>
 
-      {/* Recent sessions */}
-      {data?.sessions && data.sessions.length > 0 && (
-        <div className="flex-1 overflow-y-auto mt-4 px-3 min-h-0">
-          <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider px-3 mb-2">Recent</p>
-          <div className="space-y-0.5">
-            {data.sessions.map((session: {
-              _id: string;
-              messages?: { role: string; content: string }[];
-              last_active?: string;
-              createdAt?: string;
-            }) => {
-              const isActive = session._id === currentSessionId;
-              const label = session.messages?.find((m) => m.role === 'user')?.content ?? 'Untitled';
-              return (
-                <div
-                  key={session._id}
-                  className={`group flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs transition-colors ${
-                    isActive
-                      ? 'bg-teal-600/15 text-teal-300 border border-teal-700/40'
-                      : 'text-gray-500 hover:text-gray-300 hover:bg-gray-800/50'
-                  }`}
-                >
-                  <Link
-                    href={`/chat/${session._id}`}
-                    onClick={() => onClose?.()}
-                    className="flex-1 truncate leading-relaxed min-w-0"
+      {/* Recent sessions — only show entries that have actual user message content */}
+      {(() => {
+        type SessionItem = {
+          _id: string;
+          messages?: { role: string; content: string }[];
+          last_active?: string;
+          createdAt?: string;
+        };
+        const validSessions = (data?.sessions ?? []).filter((s: SessionItem) =>
+          s.messages?.find((m) => m.role === 'user')?.content?.trim()
+        );
+        if (validSessions.length === 0) return <div className="flex-1" />;
+        return (
+          <div className="flex-1 overflow-y-auto mt-4 px-3 min-h-0">
+            <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider px-3 mb-2">Recent</p>
+            <div className="space-y-0.5">
+              {validSessions.map((session: SessionItem) => {
+                const isActive = session._id === currentSessionId;
+                const label = session.messages!.find((m) => m.role === 'user')!.content.trim();
+                return (
+                  <div
+                    key={session._id}
+                    className={`group flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs transition-colors ${
+                      isActive
+                        ? 'bg-teal-600/15 text-teal-300 border border-teal-700/40'
+                        : 'text-gray-500 hover:text-gray-300 hover:bg-gray-800/50'
+                    }`}
                   >
-                    {label}
-                  </Link>
-                  <span className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <SessionContextMenu
-                      sessionId={session._id}
-                      isActiveSession={isActive}
-                      variant="compact"
-                    />
-                  </span>
-                </div>
-              );
-            })}
+                    <Link
+                      href={`/chat/${session._id}`}
+                      onClick={() => onClose?.()}
+                      className="flex-1 truncate leading-relaxed min-w-0"
+                    >
+                      {label}
+                    </Link>
+                    <span className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <SessionContextMenu
+                        sessionId={session._id}
+                        isActiveSession={isActive}
+                        variant="compact"
+                      />
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      )}
-
-      {(!data?.sessions || data.sessions.length === 0) && <div className="flex-1" />}
+        );
+      })()}
 
       {/* Profile card + logout */}
       <div className="px-2 py-2 border-t border-gray-800/60">
