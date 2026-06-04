@@ -28,6 +28,7 @@ import { resolveLocalPath } from "../services/storage.service";
 import { streamChatResponse } from "../services/llm.service";
 import { fetchDocChunks } from "../services/pinecone.service";
 import { getStudentNotesModel } from "../models/college/student-notes.model";
+import { getChapterSummaryModel } from "../models/college/chapter-summary.model";
 
 // ── Rate limit config (env-overridable) ─────────────────────────────────────
 
@@ -627,8 +628,8 @@ const libraryRoutesPlugin: FastifyPluginAsync = async (fastify: FastifyInstance)
     { preHandler: PRE },
     async (req: FastifyRequest, reply: FastifyReply) => {
       const { collegeId, docId } = req.params as { collegeId: string; docId: string };
-      const { mode = "brief", page_from, page_to } = req.query as {
-        mode?: string; page_from?: string; page_to?: string;
+      const { mode = "brief", page_from, page_to, chapter_index } = req.query as {
+        mode?: string; page_from?: string; page_to?: string; chapter_index?: string;
       };
       const student = getStudent(req);
 
@@ -704,8 +705,10 @@ const libraryRoutesPlugin: FastifyPluginAsync = async (fastify: FastifyInstance)
           AI_SUMMARY_MODEL,
         );
 
+        let fullContent = "";
         for await (const token of tokenStream) {
           emit({ type: "token", content: token });
+          fullContent += token;
         }
 
         const tokensUsed = await getUsage();
@@ -722,6 +725,17 @@ const libraryRoutesPlugin: FastifyPluginAsync = async (fastify: FastifyInstance)
           { $inc: { tokens_used_this_month: tokensUsed } },
         ).catch(() => {});
 
+        // Persist summary to MongoDB when chapter_index provided
+        const chapterIdx = chapter_index !== undefined ? Number(chapter_index) : NaN;
+        if (!isNaN(chapterIdx) && fullContent) {
+          const ChapterSummary = getChapterSummaryModel(conn);
+          ChapterSummary.findOneAndUpdate(
+            { student_id: student.sub, doc_id: docId, chapter_index: chapterIdx, mode },
+            { $set: { content: fullContent, tokens_used: tokensUsed, college_id: collegeId, generated_at: new Date() } },
+            { upsert: true, new: true },
+          ).catch(() => {});
+        }
+
       } catch {
         emit({ type: "error", message: "Failed to generate summary" });
       }
@@ -729,6 +743,41 @@ const libraryRoutesPlugin: FastifyPluginAsync = async (fastify: FastifyInstance)
       reply.raw.end();
     },
   );
+  // ── Saved summary — fetch from MongoDB ──────────────────────────────────────
+  fastify.get(
+    "/college/:collegeId/student/library/:docId/chapters/:chapterIdx/summary",
+    { preHandler: PRE },
+    async (req: FastifyRequest, reply: FastifyReply) => {
+      const { collegeId, docId, chapterIdx } = req.params as { collegeId: string; docId: string; chapterIdx: string };
+      const { mode = "brief" } = req.query as { mode?: string };
+      const student = getStudent(req);
+
+      if (!["brief", "detailed", "key-terms"].includes(mode)) {
+        return reply.status(400).send({ statusCode: 400, error: "Bad Request", message: "mode must be brief|detailed|key-terms" });
+      }
+
+      const conn = await getCollegeDb(collegeId);
+      const ChapterSummary = getChapterSummaryModel(conn);
+      const saved = await ChapterSummary.findOne({
+        student_id: student.sub,
+        doc_id: docId,
+        chapter_index: Number(chapterIdx),
+        mode,
+      }).lean();
+
+      if (!saved) {
+        return reply.status(404).send({ statusCode: 404, error: "Not Found", message: "No saved summary" });
+      }
+
+      return reply.send({
+        content:      saved.content,
+        mode:         saved.mode,
+        tokens_used:  saved.tokens_used,
+        generated_at: saved.generated_at,
+      });
+    },
+  );
+
   // ── F-13-C: Chapter chat — create/get session ───────────────────────────────
   fastify.post(
     "/college/:collegeId/student/library/:docId/chapters/:chapterIdx/chat/session",

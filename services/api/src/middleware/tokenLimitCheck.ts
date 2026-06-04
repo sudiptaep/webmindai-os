@@ -1,40 +1,41 @@
 import type { FastifyRequest, FastifyReply } from "fastify";
-import { getCollegeModel } from "../models/platform/college.model";
-
-const WARN_THRESHOLD = 0.8; // 80% — log warning but still allow
+import { enforceCostPolicy, CostLimitError, RateLimitError } from "../services/cost-policy.service";
 
 export async function checkTokenLimit(
   request: FastifyRequest,
-  reply: FastifyReply
+  reply: FastifyReply,
 ): Promise<void> {
-  const { collegeId } = request.params as { collegeId?: string };
-  if (!collegeId) return;
+  const params = request.params as { collegeId?: string; deptId?: string };
+  const user = (request as unknown as { user?: { college_id?: string; dept_id?: string; sub?: string } }).user;
 
-  const College = getCollegeModel();
-  const college = await College.findById(collegeId)
-    .select("token_limit_per_month tokens_used_this_month")
-    .lean();
+  const collegeId = params.collegeId ?? user?.college_id;
+  const deptId    = params.deptId    ?? user?.dept_id;
 
-  if (!college) return;
+  if (!collegeId || !deptId) return;
 
-  const { token_limit_per_month, tokens_used_this_month } = college;
-  if (!token_limit_per_month || token_limit_per_month <= 0) return;
+  const body = request.body as { model?: string } | undefined;
+  const model = body?.model ?? "claude-haiku-4-5-20251001";
+  const studentId = user?.sub ?? null;
 
-  const ratio = tokens_used_this_month / token_limit_per_month;
-
-  if (ratio >= 1) {
-    return reply.status(429).send({
-      statusCode: 429,
-      error: "Token Limit Exceeded",
-      message:
-        "Monthly token quota exhausted. Contact your administrator to increase the limit.",
-    });
-  }
-
-  if (ratio >= WARN_THRESHOLD) {
-    request.log.warn(
-      { collegeId, tokens_used_this_month, token_limit_per_month },
-      "College approaching monthly token limit"
-    );
+  try {
+    await enforceCostPolicy(collegeId, deptId, studentId, model, "chat");
+  } catch (err) {
+    if (err instanceof CostLimitError) {
+      return reply.status(429).send({
+        statusCode: 429,
+        error: "Cost Limit Exceeded",
+        message: err.code,
+        meta: err.meta,
+      });
+    }
+    if (err instanceof RateLimitError) {
+      return reply.status(429).send({
+        statusCode: 429,
+        error: "Rate Limit Exceeded",
+        message: err.code,
+        meta: err.meta,
+      });
+    }
+    throw err;
   }
 }

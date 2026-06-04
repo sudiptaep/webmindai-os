@@ -30,7 +30,12 @@ export function BookStudyWorkspace({ collegeId, docId, onClose }: Props) {
       .then(data => {
         if (cancelled) return;
         setChapterMap(data);
-        if (data.chapters.length > 0) setActiveChapter(data.chapters[0]);
+        if (data.chapters.length === 0) return;
+
+        // Restore last viewed chapter; fallback to first chapter
+        const lastIdx = Number(localStorage.getItem(`study:lastChapter:${docId}`));
+        const restored = !isNaN(lastIdx) && data.chapters.find(c => c.chapter_index === lastIdx);
+        setActiveChapter(restored || data.chapters[0]);
       })
       .catch(err => {
         if (!cancelled) setError((err as Error).message ?? 'Failed to load chapters');
@@ -96,7 +101,10 @@ export function BookStudyWorkspace({ collegeId, docId, onClose }: Props) {
           <ChapterListPanel
             chapters={chapterMap.chapters}
             activeIndex={activeChapter?.chapter_index ?? null}
-            onSelect={setActiveChapter}
+            onSelect={(ch) => {
+              setActiveChapter(ch);
+              localStorage.setItem(`study:lastChapter:${docId}`, String(ch.chapter_index));
+            }}
           />
           <ContentPanel
             chapter={activeChapter}
@@ -104,7 +112,10 @@ export function BookStudyWorkspace({ collegeId, docId, onClose }: Props) {
             collegeId={collegeId}
             onSwitchChapter={(idx) => {
               const ch = chapterMap.chapters.find(c => c.chapter_index === idx);
-              if (ch) setActiveChapter(ch);
+              if (ch) {
+                setActiveChapter(ch);
+                localStorage.setItem(`study:lastChapter:${docId}`, String(ch.chapter_index));
+              }
             }}
           />
           <ToolsPanel

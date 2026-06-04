@@ -2,12 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '@/store/auth.store';
-import { type Chapter } from '@/lib/library';
+import { type Chapter, type SummaryMode, fetchSavedSummary } from '@/lib/library';
 import { useAiSummary } from '@/hooks/useAiSummary';
 
-type Mode = 'brief' | 'detailed' | 'key-terms';
-
-const MODES: { id: Mode; label: string }[] = [
+const MODES: { id: SummaryMode; label: string }[] = [
   { id: 'brief',     label: 'Brief'     },
   { id: 'detailed',  label: 'Detailed'  },
   { id: 'key-terms', label: 'Key Terms' },
@@ -19,46 +17,80 @@ interface Props {
   collegeId: string;
 }
 
-function summaryKey(userId: string, collegeId: string, docId: string, chapterIndex: number, mode: Mode) {
+function lsKey(userId: string, collegeId: string, docId: string, chapterIndex: number, mode: SummaryMode) {
   return `summary:${userId}:${collegeId}:${docId}:${chapterIndex}:${mode}`;
+}
+
+function formatDate(iso: string) {
+  const d = new Date(iso);
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
 export function ChapterSummary({ chapter, docId, collegeId }: Props) {
   const userId = useAuthStore(s => s.user?._id ?? '');
-  const [mode, setMode] = useState<Mode>('brief');
+  const token  = useAuthStore(s => s.token ?? '');
+
+  const [mode, setMode] = useState<SummaryMode>('brief');
+  const [savedContent, setSavedContent]   = useState<string | null>(null);
+  const [savedDate, setSavedDate]         = useState<string | null>(null);
+  const [loadingCache, setLoadingCache]   = useState(false);
+
   const { content, status, error, start, stop, reset } = useAiSummary(collegeId, docId);
 
-  // Load cached summary from localStorage when chapter or mode changes
+  // Load saved summary: localStorage first (sync, instant), then MongoDB (async fallback)
   useEffect(() => {
     reset();
-    if (!userId) return;
-    const cached = localStorage.getItem(summaryKey(userId, collegeId, docId, chapter.chapter_index, mode));
-    if (cached) {
-      // Inject cached content — re-use start() would re-call API; instead patch via a hidden init
-      // Use a short-circuit: set content via the hook's reset+inject pattern
-      // Since useAiSummary doesn't expose setContent, store in local state overlay
-      setCachedContent(cached);
-    } else {
-      setCachedContent(null);
+    setSavedContent(null);
+    setSavedDate(null);
+
+    if (!userId || !token) {
+      console.debug('[Summary] no auth yet, skipping load');
+      return;
     }
-  }, [chapter.chapter_index, mode]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const [cachedContent, setCachedContent] = useState<string | null>(null);
+    // Synchronous localStorage hit — renders immediately, no spinner
+    const key = lsKey(userId, collegeId, docId, chapter.chapter_index, mode);
+    console.debug('[Summary] checking localStorage key:', key);
+    const lsCached = localStorage.getItem(key);
+    if (lsCached) {
+      console.debug('[Summary] localStorage HIT, length:', lsCached.length);
+      setSavedContent(lsCached);
+      return;
+    }
 
-  // Persist to localStorage when streaming completes
+    // localStorage miss — fetch from MongoDB asynchronously
+    console.debug('[Summary] localStorage MISS, fetching from MongoDB…');
+    let cancelled = false;
+    setLoadingCache(true);
+    fetchSavedSummary(collegeId, docId, chapter.chapter_index, mode, token)
+      .then(remote => {
+        console.debug('[Summary] MongoDB result:', remote ? 'FOUND' : 'NOT FOUND');
+        if (cancelled || !remote) return;
+        setSavedContent(remote.content);
+        setSavedDate(remote.generated_at);
+        localStorage.setItem(key, remote.content);
+      })
+      .finally(() => { if (!cancelled) setLoadingCache(false); });
+
+    return () => { cancelled = true; };
+  }, [chapter.chapter_index, mode, userId, token, collegeId, docId]);
+
+  // After generation completes: warm localStorage (server already persisted to MongoDB)
   useEffect(() => {
     if (status === 'done' && content && userId) {
-      localStorage.setItem(summaryKey(userId, collegeId, docId, chapter.chapter_index, mode), content);
-      setCachedContent(null); // live content takes over
+      localStorage.setItem(lsKey(userId, collegeId, docId, chapter.chapter_index, mode), content);
+      setSavedContent(null);
+      setSavedDate(null);
     }
   }, [status, content, userId, collegeId, docId, chapter.chapter_index, mode]);
 
-  const displayContent = content || cachedContent;
+  const displayContent = content || savedContent;
 
   function handleGenerate() {
-    setCachedContent(null);
+    setSavedContent(null);
+    setSavedDate(null);
     reset();
-    setTimeout(() => start(mode, chapter.start_page, chapter.end_page), 0);
+    setTimeout(() => start(mode, chapter.start_page, chapter.end_page, chapter.chapter_index), 0);
   }
 
   return (
@@ -90,23 +122,35 @@ export function ChapterSummary({ chapter, docId, collegeId }: Props) {
         ) : (
           <button
             onClick={handleGenerate}
-            className="text-xs px-3 py-1 bg-teal-700 hover:bg-teal-600 text-white rounded-full transition-colors"
+            disabled={loadingCache}
+            className="text-xs px-3 py-1 bg-teal-700 hover:bg-teal-600 disabled:bg-gray-700 disabled:cursor-not-allowed text-white rounded-full transition-colors"
           >
-            {content ? 'Regenerate' : 'Generate'}
+            {displayContent ? 'Regenerate' : 'Generate'}
           </button>
         )}
       </div>
 
-      {/* Scope label */}
-      <div className="px-4 py-1.5 border-b border-gray-800 shrink-0">
+      {/* Scope label + saved-date badge */}
+      <div className="px-4 py-1.5 border-b border-gray-800 shrink-0 flex items-center gap-3">
         <span className="text-xs text-gray-600">
           Chapter {chapter.chapter_index}: {chapter.title} · Pages {chapter.start_page}–{chapter.end_page}
         </span>
+        {savedDate && status !== 'streaming' && (
+          <span className="text-xs text-gray-600 ml-auto">
+            Saved {formatDate(savedDate)}
+          </span>
+        )}
       </div>
 
       {/* Content area */}
       <div className="flex-1 overflow-y-auto px-5 py-4">
-        {status === 'idle' && !displayContent && (
+        {loadingCache && (
+          <div className="flex items-center justify-center h-full">
+            <div className="w-5 h-5 border-2 border-teal-500 border-t-transparent rounded-full animate-spin" />
+          </div>
+        )}
+
+        {!loadingCache && status === 'idle' && !displayContent && (
           <div className="flex flex-col items-center justify-center h-full text-center text-gray-600 gap-3">
             <span className="text-3xl">✨</span>
             <p className="text-sm">Select a mode and generate a summary for this chapter.</p>
@@ -117,7 +161,7 @@ export function ChapterSummary({ chapter, docId, collegeId }: Props) {
           <p className="text-sm text-red-400">{error}</p>
         )}
 
-        {displayContent && (
+        {displayContent && !loadingCache && (
           <div className="prose prose-invert prose-sm max-w-none text-gray-200 leading-relaxed whitespace-pre-wrap">
             {displayContent}
             {status === 'streaming' && (

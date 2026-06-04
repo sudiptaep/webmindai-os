@@ -6,6 +6,8 @@ import { subjectRouter } from "./routers/subject.router";
 import { analyticsRouter } from "./routers/analytics.router";
 import { studentRouter } from "./routers/student.router";
 import { settingsRouter } from "./routers/settings.router";
+import { costPolicyRouter } from "./routers/costPolicy.router";
+import { superAdminDashboardRouter } from "./routers/superAdminDashboard.router";
 
 export const appRouter = router({
   college: collegeRouter,
@@ -15,6 +17,8 @@ export const appRouter = router({
   analytics: analyticsRouter,
   student: studentRouter,
   settings: settingsRouter,
+  costPolicy: costPolicyRouter,
+  superAdminDashboard: superAdminDashboardRouter,
 });
 
 export type AppRouter = typeof appRouter;

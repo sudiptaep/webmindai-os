@@ -17,6 +17,7 @@ import { srsRoutes } from "./routes/srs.routes";
 import { casesRoutes } from "./routes/cases.routes";
 import { diseaseRoutes } from "./routes/disease.routes";
 import { yearNavRoutes } from "./routes/year-nav.routes";
+import { superAdminCostRoutes } from "./routes/super-admin-cost.routes";
 import { connectPlatformDb } from "./db/platform.db";
 import { appRouter } from "./trpc/router";
 import { createContext } from "./trpc/context";
@@ -73,6 +74,9 @@ async function bootstrap() {
 
   // F-14-D: Year-Wise Student Navigation
   await server.register(yearNavRoutes, { prefix: "/api/v1" });
+
+  // F-12: Super Admin cost CSV export (REST — tRPC can't stream file downloads)
+  await server.register(superAdminCostRoutes, { prefix: "/api/v1/super-admin" });
 
   // tRPC — all admin CRUD
   await server.register(fastifyTRPCPlugin, {

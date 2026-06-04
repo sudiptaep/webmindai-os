@@ -6,8 +6,12 @@ import Link from 'next/link';
 import { useAuthStore } from '@/store/auth.store';
 import { logout } from '@/lib/auth';
 
-const NAV = [
+const NAV: { href: string; label: string; exact?: boolean }[] = [
+  { href: '/dashboard', label: 'Overview', exact: true },
   { href: '/dashboard/colleges', label: 'Colleges' },
+  { href: '/dashboard/alerts', label: 'Alerts' },
+  { href: '/dashboard/cost-planner', label: 'Cost Planner' },
+  { href: '/dashboard/policies/global', label: 'Global Policy' },
   { href: '/dashboard/analytics', label: 'Analytics' },
   { href: '/dashboard/settings', label: 'Settings' },
 ];
@@ -40,19 +44,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <p className="text-xs text-gray-400 mt-0.5 truncate">{user?.email}</p>
         </div>
         <nav className="flex-1 p-3 space-y-1">
-          {NAV.map(({ href, label }) => (
-            <Link
-              key={href}
-              href={href}
-              className={`block px-3 py-2 rounded text-sm transition-colors ${
-                pathname.startsWith(href)
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-300 hover:bg-gray-800'
-              }`}
-            >
-              {label}
-            </Link>
-          ))}
+          {NAV.map(({ href, label, exact }) => {
+            const active = exact ? pathname === href : pathname.startsWith(href);
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={`block px-3 py-2 rounded text-sm transition-colors ${active ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800'}`}
+              >
+                {label}
+              </Link>
+            );
+          })}
         </nav>
         <div className="p-3 border-t border-gray-800">
           <button

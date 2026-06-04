@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
+import speakeasy from "speakeasy";
 import { z } from "zod";
 import type { FastifyInstance, FastifyRequest, FastifyReply, FastifyPluginAsync } from "fastify";
 import {
@@ -30,8 +31,11 @@ import {
 
 const RESET_TOKEN_TTL = 3600;      // 1 hour
 const VERIFY_TOKEN_TTL = 86400;    // 24 hours
+const MFA_SESSION_TTL = 300;       // 5 minutes
 const STUDENT_APP_URL = process.env.STUDENT_APP_URL ?? "http://localhost:3001";
 const ADMIN_APP_URL = process.env.ADMIN_APP_URL ?? "http://localhost:3002";
+const SA_MAX_ATTEMPTS = Number(process.env.SUPER_ADMIN_LOGIN_MAX_ATTEMPTS ?? 5);
+const SA_LOCKOUT_MINUTES = Number(process.env.SUPER_ADMIN_LOCKOUT_MINUTES ?? 30);
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
@@ -39,6 +43,12 @@ const COOKIE_MAX_AGE = 7 * 24 * 60 * 60; // seconds
 
 function signAccess(payload: Omit<AnyJWTPayload, "iat" | "exp">): string {
   return jwt.sign(payload, process.env.JWT_SECRET!, { expiresIn: ACCESS_TOKEN_TTL } as jwt.SignOptions);
+}
+
+function signSuperAdminAccess(payload: Omit<SuperAdminJWTPayload, "iat" | "exp">): string {
+  const secret = process.env.SUPER_ADMIN_JWT_SECRET ?? process.env.JWT_SECRET!;
+  const expiry = (process.env.SUPER_ADMIN_JWT_EXPIRY ?? "8h") as jwt.SignOptions["expiresIn"];
+  return jwt.sign(payload, secret, { expiresIn: expiry } as jwt.SignOptions);
 }
 
 function signRefresh(payload: Omit<AnyJWTPayload, "iat" | "exp">): string {
@@ -93,22 +103,112 @@ export const authRoutes: FastifyPluginAsync = async (fastify: FastifyInstance) =
     const { email, password } = parsed.data;
 
     const PlatformAdmin = getPlatformAdminModel();
-    const admin = await PlatformAdmin.findOne({ email }).lean();
-    if (!admin || !(await bcrypt.compare(password, admin.password_hash))) {
+    const admin = await PlatformAdmin.findOne({ email: email.toLowerCase() });
+    if (!admin) {
       return reply.status(401).send({ statusCode: 401, error: "Unauthorized", message: "Invalid credentials" });
     }
+
+    // Lockout check
+    if (admin.locked_until && admin.locked_until > new Date()) {
+      const minutesLeft = Math.ceil((admin.locked_until.getTime() - Date.now()) / 60000);
+      return reply.status(429).send({
+        statusCode: 429,
+        error: "Account Locked",
+        message: `Account locked. Try again in ${minutesLeft} minute(s).`,
+      });
+    }
+
+    const passwordOk = await bcrypt.compare(password, admin.password_hash);
+    if (!passwordOk) {
+      const attempts = (admin.failed_login_attempts ?? 0) + 1;
+      const update: Record<string, unknown> = { failed_login_attempts: attempts };
+      if (attempts >= SA_MAX_ATTEMPTS) {
+        update.locked_until = new Date(Date.now() + SA_LOCKOUT_MINUTES * 60 * 1000);
+      }
+      await PlatformAdmin.updateOne({ _id: admin._id }, { $set: update });
+      return reply.status(401).send({ statusCode: 401, error: "Unauthorized", message: "Invalid credentials" });
+    }
+
+    // Reset failed attempts + update last_login
+    await PlatformAdmin.updateOne(
+      { _id: admin._id },
+      { $set: { failed_login_attempts: 0, locked_until: null, last_login: new Date() } },
+    );
 
     const jwtPayload: Omit<SuperAdminJWTPayload, "iat" | "exp"> = {
       sub: String(admin._id),
       role: "super_admin",
     };
-    const accessToken = signAccess(jwtPayload);
+
+    // MFA step
+    if (admin.mfa_enabled && admin.mfa_secret) {
+      const mfaSessionToken = crypto.randomUUID();
+      const redis = getRedisConnection();
+      await redis.setex(`mfa_session:${mfaSessionToken}`, MFA_SESSION_TTL, String(admin._id));
+      return reply.send({ requires_mfa: true, mfa_session_token: mfaSessionToken });
+    }
+
+    const accessToken = signSuperAdminAccess(jwtPayload);
     const refreshToken = signRefresh(jwtPayload);
     setRefreshCookie(reply, refreshToken);
 
     return reply.send({
-      accessToken,
-      user: { id: String(admin._id), name: admin.name, email: admin.email, role: "super_admin" },
+      access_token: accessToken,
+      user: {
+        id: String(admin._id),
+        name: admin.name,
+        email: admin.email,
+        role: "super_admin",
+        avatar_initials: admin.avatar_initials,
+        last_login: admin.last_login,
+      },
+    });
+  });
+
+  // POST /api/v1/auth/super-admin/mfa-verify
+  fastify.post("/super-admin/mfa-verify", async (request: FastifyRequest, reply: FastifyReply) => {
+    const MfaSchema = z.object({
+      mfa_session_token: z.string().uuid(),
+      totp_code: z.string().length(6),
+    });
+    const parsed = MfaSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.status(422).send({ statusCode: 422, error: "Unprocessable Entity", message: parsed.error.message });
+    }
+    const { mfa_session_token, totp_code } = parsed.data;
+
+    const redis = getRedisConnection();
+    const adminId = await redis.get(`mfa_session:${mfa_session_token}`);
+    if (!adminId) {
+      return reply.status(401).send({ statusCode: 401, error: "Unauthorized", message: "MFA session expired or invalid" });
+    }
+
+    const PlatformAdmin = getPlatformAdminModel();
+    const admin = await PlatformAdmin.findById(adminId).lean();
+    if (!admin || !admin.mfa_secret) {
+      return reply.status(401).send({ statusCode: 401, error: "Unauthorized", message: "Admin not found" });
+    }
+
+    const valid = speakeasy.totp.verify({
+      secret: admin.mfa_secret,
+      encoding: "base32",
+      token: totp_code,
+      window: Number(process.env.MFA_TOTP_WINDOW ?? 1),
+    });
+    if (!valid) {
+      return reply.status(401).send({ statusCode: 401, error: "Unauthorized", message: "Invalid authenticator code" });
+    }
+
+    await redis.del(`mfa_session:${mfa_session_token}`);
+
+    const jwtPayload: Omit<SuperAdminJWTPayload, "iat" | "exp"> = { sub: adminId, role: "super_admin" };
+    const accessToken = signSuperAdminAccess(jwtPayload);
+    const refreshToken = signRefresh(jwtPayload);
+    setRefreshCookie(reply, refreshToken);
+
+    return reply.send({
+      access_token: accessToken,
+      user: { id: adminId, name: admin.name, email: admin.email, role: "super_admin" },
     });
   });
 

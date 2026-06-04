@@ -5,6 +5,9 @@ import { runUnansweredQueryFlagger } from "./unansweredQueryFlagger";
 import { runTokenUsageResetter } from "./tokenUsageResetter";
 import { runTempFileCleanup } from "./tempFileCleanup";
 import { runSRSMaintenance } from "./srsMaintenance";
+import { runRebuildCostSummaries } from "./rebuildCostSummaries";
+import { runEvaluateAlerts } from "./evaluateAlerts";
+import { runRebuildPlatformAverages } from "./rebuildPlatformAverages";
 
 const PLATFORM_JOBS_QUEUE = "platform_jobs";
 
@@ -48,6 +51,27 @@ export async function startScheduler(): Promise<void> {
     { repeat: { pattern: "30 18 * * *" }, removeOnComplete: { count: 10 }, removeOnFail: { count: 5 } }
   );
 
+  // F-12: Cost summary rebuild — 1 AM UTC daily
+  await queue.add(
+    "rebuild-cost-summaries",
+    {},
+    { repeat: { pattern: "0 1 * * *" }, removeOnComplete: { count: 7 }, removeOnFail: { count: 5 } }
+  );
+
+  // F-12: Alert evaluation — every 15 minutes
+  await queue.add(
+    "evaluate-alerts",
+    {},
+    { repeat: { pattern: "*/15 * * * *" }, removeOnComplete: { count: 20 }, removeOnFail: { count: 10 } }
+  );
+
+  // F-12: Platform averages rebuild — 3 AM UTC daily
+  await queue.add(
+    "rebuild-platform-averages",
+    {},
+    { repeat: { pattern: "0 3 * * *" }, removeOnComplete: { count: 7 }, removeOnFail: { count: 5 } }
+  );
+
   const worker = new Worker(
     PLATFORM_JOBS_QUEUE,
     async (job) => {
@@ -66,6 +90,15 @@ export async function startScheduler(): Promise<void> {
           break;
         case "srs-maintenance":
           await runSRSMaintenance();
+          break;
+        case "rebuild-cost-summaries":
+          await runRebuildCostSummaries();
+          break;
+        case "evaluate-alerts":
+          await runEvaluateAlerts();
+          break;
+        case "rebuild-platform-averages":
+          await runRebuildPlatformAverages();
           break;
         default:
           throw new Error(`Unknown job: ${job.name}`);

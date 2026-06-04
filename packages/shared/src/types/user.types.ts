@@ -8,7 +8,14 @@ export interface PlatformAdmin {
   email: string;
   password_hash: string;
   role: "super_admin";
+  avatar_initials?: string;
+  last_login?: Date;
+  mfa_enabled: boolean;
+  mfa_secret?: string;
+  failed_login_attempts: number;
+  locked_until?: Date;
   created_at: Date;
+  updated_at?: Date;
 }
 
 export interface DeptAdmin {

@@ -24,14 +24,15 @@ export function useAiSummary(collegeId: string, docId: string) {
     setState(s => ({ ...s, status: 'done' }));
   }, []);
 
-  const start = useCallback(async (mode: SummaryMode = 'brief', pageFrom?: number, pageTo?: number) => {
+  const start = useCallback(async (mode: SummaryMode = 'brief', pageFrom?: number, pageTo?: number, chapterIndex?: number) => {
     if (!token) return;
     setState({ content: '', status: 'streaming', tokensUsed: 0, error: null });
 
     try {
       const qs = new URLSearchParams({ mode });
-      if (pageFrom) qs.set('page_from', String(pageFrom));
-      if (pageTo)   qs.set('page_to',   String(pageTo));
+      if (pageFrom !== undefined)     qs.set('page_from',     String(pageFrom));
+      if (pageTo !== undefined)       qs.set('page_to',       String(pageTo));
+      if (chapterIndex !== undefined) qs.set('chapter_index', String(chapterIndex));
       const res = await fetch(
         `${API}/api/v1/college/${collegeId}/student/library/${docId}/ai-summary?${qs}`,
         { headers: { Authorization: `Bearer ${token}` } },

@@ -1,10 +1,19 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { LLM_MODEL_CHAT, LLM_MODEL_EXAM, LLM_MAX_TOKENS } from "@college-chatbot/shared";
+import { recordCostEvent, getRateTable, getBillingMonth, getBillingDay } from "./metering.service";
 
 export interface LLMStreamResult {
   tokenStream: AsyncGenerator<string, void, unknown>;
   /** Resolves after stream ends with total tokens consumed */
   getUsage: () => Promise<number>;
+}
+
+export interface LLMMeteringContext {
+  collegeId: string;
+  deptId: string;
+  studentId?: string | null;
+  sessionId?: string | null;
+  actionType: "chat_message" | "ai_summary" | "exam_generation";
 }
 
 let _client: Anthropic | null = null;
@@ -18,6 +27,7 @@ export async function streamChatResponse(
   systemPrompt: string,
   messages: Array<{ role: "user" | "assistant"; content: string }>,
   model: string = LLM_MODEL_CHAT,
+  metering?: LLMMeteringContext,
 ): Promise<LLMStreamResult> {
   const client = getClient();
 
@@ -29,8 +39,30 @@ export async function streamChatResponse(
   });
 
   let tokensUsed = 0;
-  const usagePromise = stream.finalMessage().then((msg) => {
+  const usagePromise = stream.finalMessage().then(async (msg) => {
     tokensUsed = msg.usage.input_tokens + msg.usage.output_tokens;
+    if (metering) {
+      const rate = await getRateTable("anthropic", model);
+      const costUsd =
+        (msg.usage.input_tokens  / 1000) * rate.input_token_cost_per_1k +
+        (msg.usage.output_tokens / 1000) * rate.output_token_cost_per_1k;
+      recordCostEvent({
+        college_id:    metering.collegeId,
+        dept_id:       metering.deptId,
+        student_id:    metering.studentId ?? undefined,
+        session_id:    metering.sessionId ?? undefined,
+        action_type:   metering.actionType,
+        service:       "anthropic",
+        model,
+        input_tokens:  msg.usage.input_tokens,
+        output_tokens: msg.usage.output_tokens,
+        total_tokens:  tokensUsed,
+        cost_usd:      costUsd,
+        billing_month: getBillingMonth(),
+        billing_day:   getBillingDay(),
+        created_at:    new Date(),
+      });
+    }
     return tokensUsed;
   });
 
@@ -54,6 +86,7 @@ export async function streamChatResponse(
 export async function generateExamQuestions(
   systemPrompt: string,
   userMessage: string,
+  metering?: LLMMeteringContext,
 ): Promise<string> {
   const client = getClient();
   const msg = await client.messages.create({
@@ -62,6 +95,29 @@ export async function generateExamQuestions(
     system: systemPrompt,
     messages: [{ role: "user", content: userMessage }],
   });
+
+  if (metering) {
+    const rate = await getRateTable("anthropic", LLM_MODEL_EXAM);
+    const costUsd =
+      (msg.usage.input_tokens  / 1000) * rate.input_token_cost_per_1k +
+      (msg.usage.output_tokens / 1000) * rate.output_token_cost_per_1k;
+    recordCostEvent({
+      college_id:    metering.collegeId,
+      dept_id:       metering.deptId,
+      student_id:    metering.studentId ?? undefined,
+      session_id:    metering.sessionId ?? undefined,
+      action_type:   "exam_generation",
+      service:       "anthropic",
+      model:         LLM_MODEL_EXAM,
+      input_tokens:  msg.usage.input_tokens,
+      output_tokens: msg.usage.output_tokens,
+      total_tokens:  msg.usage.input_tokens + msg.usage.output_tokens,
+      cost_usd:      costUsd,
+      billing_month: getBillingMonth(),
+      billing_day:   getBillingDay(),
+      created_at:    new Date(),
+    });
+  }
 
   const block = msg.content[0];
   return block.type === "text" ? block.text : "";

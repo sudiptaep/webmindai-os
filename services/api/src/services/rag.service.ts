@@ -11,12 +11,19 @@ import { embedQuery } from "./embedding.service";
 import { queryMultiNamespace, queryChapterScoped, queryDocUnscoped, type PineconeChunk } from "./pinecone.service";
 import { streamChatResponse, generateExamQuestions } from "./llm.service";
 import { getCachedResponse, setCachedResponse } from "./cache.service";
+import { recordCostEvent, getRateTable, getBillingMonth, getBillingDay } from "./metering.service";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export type RAGEvent =
   | { type: "token"; content: string }
   | { type: "done"; sources: SourceCitation[]; confidence_score: number; answered: boolean; tokens_used: number };
+
+export interface RAGMeteringContext {
+  deptId: string;
+  studentId?: string | null;
+  sessionId?: string | null;
+}
 
 export interface RAGParams {
   query: string;
@@ -26,6 +33,7 @@ export interface RAGParams {
   /** Docs grouped by their actual dept_id for correct Pinecone namespace routing */
   namespacedDocs: Array<{ deptId: string; docIds: string[] }>;
   sessionMessages: Array<{ role: "user" | "assistant"; content: string }>;
+  metering?: RAGMeteringContext;
 }
 
 // ─── BM25 in-memory re-ranker ─────────────────────────────────────────────────
@@ -181,7 +189,7 @@ function extractSources(chunks: PineconeChunk[]): SourceCitation[] {
 // ─── RAG pipeline ────────────────────────────────────────────────────────────
 
 export async function* runRAG(params: RAGParams): AsyncGenerator<RAGEvent> {
-  const { query, collegeId, cacheScope, namespacedDocs, sessionMessages } = params;
+  const { query, collegeId, cacheScope, namespacedDocs, sessionMessages, metering } = params;
 
   // Semantic cache check (skip for exam requests — always fresh)
   if (!isExamRequest(query)) {
@@ -199,8 +207,12 @@ export async function* runRAG(params: RAGParams): AsyncGenerator<RAGEvent> {
     }
   }
 
+  const embeddingMetering = metering
+    ? { collegeId, deptId: metering.deptId, actionType: "query_embedding" as const, studentId: metering.studentId }
+    : undefined;
+
   // Step 1-2: Embed query
-  const queryVector = await embedQuery(query);
+  const queryVector = await embedQuery(query, embeddingMetering);
 
   // Step 3: Dense retrieval across all dept namespaces that hold the allowed docs
   const retrieved = await queryMultiNamespace(
@@ -209,6 +221,27 @@ export async function* runRAG(params: RAGParams): AsyncGenerator<RAGEvent> {
     queryVector,
     RAG_TOP_K_RETRIEVE,
   );
+
+  // Meter Pinecone reads (one read unit per namespace queried)
+  if (metering && namespacedDocs.length > 0) {
+    const namespacesQueried = namespacedDocs.filter((n) => n.docIds.length > 0).length;
+    const pineconeRate = await getRateTable("pinecone", "serverless");
+    const costUsd = (namespacesQueried / 1_000_000) * pineconeRate.per_unit_cost;
+    recordCostEvent({
+      college_id:        collegeId,
+      dept_id:           metering.deptId,
+      student_id:        metering.studentId ?? undefined,
+      session_id:        metering.sessionId ?? undefined,
+      action_type:       "pinecone_read",
+      service:           "pinecone",
+      model:             "serverless",
+      vector_read_units: namespacesQueried,
+      cost_usd:          costUsd,
+      billing_month:     getBillingMonth(),
+      billing_day:       getBillingDay(),
+      created_at:        new Date(),
+    });
+  }
 
   // Step 3b: BM25 hybrid re-rank (in-memory, no extra API call)
   const hybridRanked = bm25Merge(query, retrieved);
@@ -229,11 +262,21 @@ export async function* runRAG(params: RAGParams): AsyncGenerator<RAGEvent> {
     return;
   }
 
+  const llmMetering = metering
+    ? {
+        collegeId,
+        deptId:    metering.deptId,
+        studentId: metering.studentId,
+        sessionId: metering.sessionId,
+        actionType: (isExamRequest(query) ? "exam_generation" : "chat_message") as "chat_message" | "exam_generation",
+      }
+    : undefined;
+
   // Exam mode — non-streaming structured JSON response
   if (isExamRequest(query)) {
     const systemPrompt = buildExamSystemPrompt(reranked);
     const userMsg = buildExamUserMessage(query);
-    const json = await generateExamQuestions(systemPrompt, userMsg);
+    const json = await generateExamQuestions(systemPrompt, userMsg, llmMetering);
 
     yield { type: "token", content: json };
     yield {
@@ -255,7 +298,7 @@ export async function* runRAG(params: RAGParams): AsyncGenerator<RAGEvent> {
 
   // Step 7: Stream response
   const systemPrompt = buildChatSystemPrompt(reranked);
-  const { tokenStream, getUsage } = await streamChatResponse(systemPrompt, messages);
+  const { tokenStream, getUsage } = await streamChatResponse(systemPrompt, messages, undefined, llmMetering);
 
   let fullResponse = "";
   for await (const token of tokenStream) {
@@ -307,6 +350,7 @@ export interface ChapterRAGParams {
   mode: "answer" | "socratic";
   /** All chapters of this doc — used for cross-reference fallback */
   allChapters: Chapter[];
+  metering?: RAGMeteringContext;
 }
 
 function buildChapterSystemPrompt(chapter: Chapter, mode: "answer" | "socratic"): string {
@@ -344,10 +388,14 @@ function findChapterForPage(allChapters: Chapter[], pageNum: number): Chapter | 
 }
 
 export async function* runChapterRAG(params: ChapterRAGParams): AsyncGenerator<ChapterRAGEvent> {
-  const { query, collegeId, deptId, docId, chapter, sessionMessages, mode, allChapters } = params;
+  const { query, collegeId, deptId, docId, chapter, sessionMessages, mode, allChapters, metering } = params;
+
+  const embeddingMetering = metering
+    ? { collegeId, deptId, actionType: "query_embedding" as const, studentId: metering.studentId }
+    : undefined;
 
   // 1. Embed query
-  const queryVector = await embedQuery(query);
+  const queryVector = await embedQuery(query, embeddingMetering);
 
   // 2. Retrieve — scoped to chapter page range
   const retrieved = await queryChapterScoped(
@@ -355,6 +403,25 @@ export async function* runChapterRAG(params: ChapterRAGParams): AsyncGenerator<C
     chapter.start_page, chapter.end_page,
     queryVector, CHAPTER_TOP_K,
   );
+
+  // Meter Pinecone reads
+  if (metering) {
+    const pineconeRate = await getRateTable("pinecone", "serverless");
+    recordCostEvent({
+      college_id:        collegeId,
+      dept_id:           deptId,
+      student_id:        metering.studentId ?? undefined,
+      session_id:        metering.sessionId ?? undefined,
+      action_type:       "pinecone_read",
+      service:           "pinecone",
+      model:             "serverless",
+      vector_read_units: 1,
+      cost_usd:          1 / 1_000_000 * pineconeRate.per_unit_cost,
+      billing_month:     getBillingMonth(),
+      billing_day:       getBillingDay(),
+      created_at:        new Date(),
+    });
+  }
 
   // 3. BM25 hybrid re-rank
   const reranked = bm25Merge(query, retrieved).slice(0, CHAPTER_TOP_K_RERANK);
@@ -382,11 +449,15 @@ export async function* runChapterRAG(params: ChapterRAGParams): AsyncGenerator<C
     return;
   }
 
+  const llmMetering = metering
+    ? { collegeId, deptId, studentId: metering.studentId, sessionId: metering.sessionId, actionType: "chat_message" as const }
+    : undefined;
+
   // 5. Build messages + stream
   const systemPrompt = buildChapterSystemPrompt(chapter, mode);
   const messages = buildChapterContextPrompt(query, reranked, sessionMessages);
 
-  const { tokenStream, getUsage } = await streamChatResponse(systemPrompt, messages);
+  const { tokenStream, getUsage } = await streamChatResponse(systemPrompt, messages, undefined, llmMetering);
 
   for await (const token of tokenStream) {
     yield { type: "token", content: token };

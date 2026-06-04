@@ -9,10 +9,15 @@ export function createContext({ req }: { req: FastifyRequest; res: FastifyReply 
   let user: AnyJWTPayload | null = null;
 
   if (authHeader?.startsWith("Bearer ")) {
-    try {
-      user = jwt.verify(authHeader.slice(7), process.env.JWT_SECRET!) as AnyJWTPayload;
-    } catch {
-      // expired or invalid — user stays null, procedures enforce auth
+    const token = authHeader.slice(7);
+    // Try regular JWT_SECRET first, then SUPER_ADMIN_JWT_SECRET
+    for (const secret of [process.env.JWT_SECRET!, process.env.SUPER_ADMIN_JWT_SECRET].filter(Boolean) as string[]) {
+      try {
+        user = jwt.verify(token, secret) as AnyJWTPayload;
+        break;
+      } catch {
+        // try next secret
+      }
     }
   }
 

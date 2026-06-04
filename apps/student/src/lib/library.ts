@@ -324,6 +324,34 @@ export async function fetchChapters(
   );
 }
 
+// ── Chapter Summary — saved state ────────────────────────────────────────
+
+export type SummaryMode = 'brief' | 'detailed' | 'key-terms';
+
+export interface SavedSummary {
+  content: string;
+  mode: SummaryMode;
+  tokens_used: number;
+  generated_at: string;
+}
+
+export async function fetchSavedSummary(
+  collegeId: string,
+  docId: string,
+  chapterIdx: number,
+  mode: SummaryMode,
+  token: string,
+): Promise<SavedSummary | null> {
+  try {
+    return await apiFetch<SavedSummary>(
+      `${API}/api/v1/college/${collegeId}/student/library/${docId}/chapters/${chapterIdx}/summary?mode=${mode}`,
+      token,
+    );
+  } catch {
+    return null;
+  }
+}
+
 // ── F-13-E: PYQ Intelligence ─────────────────────────────────────────────
 
 export interface PYQQuestion {
