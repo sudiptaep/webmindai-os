@@ -5,7 +5,7 @@ import { router, deptAdminProcedure, superAdminProcedure, protectedProcedure } f
 import { getCollegeDb } from "../../db/college.db";
 import { getSubjectModel } from "../../models/college/subject.model";
 import { getDocumentModel } from "../../models/college/document.model";
-import { isDeptAdmin, isSuperAdmin } from "@college-chatbot/shared";
+import { isDeptAdmin, isCollegeAdmin, isSuperAdmin } from "@college-chatbot/shared";
 
 export const subjectRouter = router({
   create: deptAdminProcedure
@@ -22,7 +22,7 @@ export const subjectRouter = router({
       const collegeId = ctx.user.college_id;
       const code = input.code.toUpperCase();
 
-      if (!ctx.user.is_college_owner && !ctx.user.dept_ids.includes(input.dept_id)) {
+      if (ctx.user.dept_id !== input.dept_id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Dept scope not permitted" });
       }
 
@@ -46,31 +46,28 @@ export const subjectRouter = router({
     }),
 
   list: protectedProcedure
-    .input(
-      z.object({
-        college_id: z.string(),
-        dept_id: z.string(),
-      }),
-    )
+    .input(z.object({ college_id: z.string(), dept_id: z.string() }))
     .query(async ({ ctx, input }) => {
-      if (!isSuperAdmin(ctx.user) && !isDeptAdmin(ctx.user)) {
+      if (!isSuperAdmin(ctx.user) && !isCollegeAdmin(ctx.user) && !isDeptAdmin(ctx.user)) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Insufficient role" });
       }
 
-      if (isDeptAdmin(ctx.user!)) {
-        const user = ctx.user as { dept_ids: string[]; is_college_owner: boolean; college_id: string };
-        if (user.college_id !== input.college_id) {
+      if (isDeptAdmin(ctx.user)) {
+        if (ctx.user.college_id !== input.college_id) {
           throw new TRPCError({ code: "FORBIDDEN", message: "College mismatch" });
         }
-        if (!user.is_college_owner && !user.dept_ids.includes(input.dept_id)) {
+        if (ctx.user.dept_id !== input.dept_id) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Dept scope not permitted" });
         }
       }
 
+      if (isCollegeAdmin(ctx.user) && ctx.user.college_id !== input.college_id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "College mismatch" });
+      }
+
       const conn = await getCollegeDb(input.college_id);
       const Subject = getSubjectModel(conn);
-      const subjects = await Subject.find({ dept_id: input.dept_id }).sort({ year: 1, semester: 1 }).lean();
-      return subjects;
+      return Subject.find({ dept_id: input.dept_id }).sort({ year: 1, semester: 1 }).lean();
     }),
 
   update: deptAdminProcedure
@@ -86,7 +83,7 @@ export const subjectRouter = router({
     .mutation(async ({ ctx, input }) => {
       const collegeId = ctx.user.college_id;
 
-      if (!ctx.user.is_college_owner && !ctx.user.dept_ids.includes(input.dept_id)) {
+      if (ctx.user.dept_id !== input.dept_id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Dept scope not permitted" });
       }
 
@@ -104,13 +101,7 @@ export const subjectRouter = router({
       if (input.semester) updates.semester = input.semester;
       if (input.year) updates.year = input.year;
 
-      const updated = await Subject.findByIdAndUpdate(
-        input.subject_id,
-        { $set: updates },
-        { new: true, lean: true },
-      );
-
-      return updated;
+      return Subject.findByIdAndUpdate(input.subject_id, { $set: updates }, { new: true, lean: true });
     }),
 
   delete: deptAdminProcedure
@@ -118,7 +109,7 @@ export const subjectRouter = router({
     .mutation(async ({ ctx, input }) => {
       const collegeId = ctx.user.college_id;
 
-      if (!ctx.user.is_college_owner && !ctx.user.dept_ids.includes(input.dept_id)) {
+      if (ctx.user.dept_id !== input.dept_id) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Dept scope not permitted" });
       }
 
@@ -132,15 +123,12 @@ export const subjectRouter = router({
         throw new TRPCError({ code: "FORBIDDEN", message: "Subject does not belong to this dept" });
       }
 
-      // Unlink documents from this subject (don't delete them — just clear subject_id)
       await Document.updateMany({ subject_id: input.subject_id }, { $unset: { subject_id: "" } });
-
       await Subject.findByIdAndDelete(input.subject_id);
 
       return { ok: true };
     }),
 
-  // Super admin: list all subjects in a college (for analytics/overview)
   listAll: superAdminProcedure
     .input(z.object({ college_id: z.string() }))
     .query(async ({ input }) => {

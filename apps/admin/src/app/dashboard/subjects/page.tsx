@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, ChangeEvent, FormEvent } from 'react';
+import { useState, useRef, useEffect, ChangeEvent, FormEvent } from 'react';
 import { useAuthStore } from '@/store/auth.store';
 import { trpc } from '@/lib/trpc';
 
@@ -248,6 +248,15 @@ export default function SubjectsPage() {
     enabled: !!collegeId && !!token,
   });
 
+  // Auto-select the single dept on load
+  useEffect(() => {
+    if (depts?.[0] && !selectedDeptId) {
+      const id = String(depts[0]._id);
+      setSelectedDeptId(id);
+      setFormDeptId(id);
+    }
+  }, [depts, selectedDeptId]);
+
   const isMedical = !!college && college.type === 'medical';
   const allMode = selectedDeptId === '';
   const activeDeptId = selectedDeptId;
@@ -289,16 +298,22 @@ export default function SubjectsPage() {
           )}
         </div>
         <div className="flex items-center gap-3">
-          <select
-            value={selectedDeptId}
-            onChange={(e) => setSelectedDeptId(e.target.value)}
-            className="bg-gray-800 border border-gray-600 rounded px-2 py-1.5 text-sm"
-          >
-            <option value="">All Departments</option>
-            {deptList.map((d) => (
-              <option key={d._id} value={d._id}>{d.name}</option>
-            ))}
-          </select>
+          {deptList.length > 1 ? (
+            <select
+              value={selectedDeptId}
+              onChange={(e) => setSelectedDeptId(e.target.value)}
+              className="bg-gray-800 border border-gray-600 rounded px-2 py-1.5 text-sm"
+            >
+              <option value="">All Departments</option>
+              {deptList.map((d) => (
+                <option key={d._id} value={d._id}>{d.name}</option>
+              ))}
+            </select>
+          ) : deptList[0] ? (
+            <span className="text-sm text-gray-400 px-2 py-1.5 bg-gray-800 rounded border border-gray-600">
+              {deptList[0].name}
+            </span>
+          ) : null}
           <select
             value={uploadingAcadYear}
             onChange={(e) => setUploadingAcadYear(e.target.value)}

@@ -13,6 +13,9 @@ export interface College {
   mongo_db_name: string;
   token_limit_per_month: number;
   tokens_used_this_month: number;
+  college_admin_count: number;
+  dept_admin_count: number;
+  primary_contact_email?: string;
   created_at: Date;
   updated_at: Date;
 }

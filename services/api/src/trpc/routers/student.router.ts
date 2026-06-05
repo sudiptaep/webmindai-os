@@ -167,14 +167,7 @@ export const studentRouter = router({
 
       const filter: Record<string, unknown> = {};
       if (input.status) filter.status = input.status;
-      if (input.dept_id) {
-        if (!ctx.user.is_college_owner && !ctx.user.dept_ids.includes(input.dept_id)) {
-          throw new TRPCError({ code: "FORBIDDEN", message: "Dept scope not permitted" });
-        }
-        filter.dept_id = input.dept_id;
-      } else if (!ctx.user.is_college_owner) {
-        filter.dept_id = { $in: ctx.user.dept_ids };
-      }
+      // dept_admin sees all students in their college — no dept scope restriction
 
       const skip = (input.page - 1) * input.limit;
       const [students, total] = await Promise.all([
@@ -204,10 +197,6 @@ export const studentRouter = router({
       const student = await Student.findById(input.student_id).lean();
       if (!student) throw new TRPCError({ code: "NOT_FOUND", message: "Student not found" });
 
-      if (!ctx.user.is_college_owner && !ctx.user.dept_ids.includes(student.dept_id)) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Dept scope not permitted" });
-      }
-
       await Student.findByIdAndUpdate(input.student_id, { $set: { status: input.status } });
       return { ok: true };
     }),
@@ -221,10 +210,6 @@ export const studentRouter = router({
 
       const student = await Student.findById(input.student_id).lean();
       if (!student) throw new TRPCError({ code: "NOT_FOUND", message: "Student not found" });
-
-      if (!ctx.user.is_college_owner && !ctx.user.dept_ids.includes(student.dept_id)) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Dept scope not permitted" });
-      }
 
       const Session  = getSessionModel(conn);
       const QueryLog = getQueryLogModel(conn);

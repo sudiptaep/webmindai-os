@@ -1,14 +1,20 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-interface AdminUser {
+export interface AdminUser {
   _id: string;
   name: string;
   email: string;
+  role: 'college_admin' | 'dept_admin';
   college_id: string;
-  dept_ids: string[];
-  is_college_owner: boolean;
-  status: string;
+  college_slug?: string;
+  // dept_admin fields
+  dept_id?: string;
+  dept_name?: string;
+  faculty_title?: string;
+  permissions?: Record<string, boolean>;
+  // college_admin fields
+  admin_title?: string;
 }
 
 interface AuthState {
@@ -30,6 +36,6 @@ export const useAuthStore = create<AuthState>()(
       clearAuth: () => set({ token: null, user: null }),
       setCollegeSlug: (slug) => set({ collegeSlug: slug }),
     }),
-    { name: 'admin-auth' }
-  )
+    { name: 'admin-auth' },
+  ),
 );

@@ -7,7 +7,7 @@ import Link from 'next/link';
 export default function AnalyticsPage() {
   const { token, user } = useAuthStore();
   const collegeId = user?.college_id ?? '';
-  const deptId = user?.dept_ids?.[0] ?? '';
+  const deptId = user?.dept_id ?? '';
 
   const { data: stats } = trpc.analytics.collegeStats.useQuery(
     { college_id: collegeId },

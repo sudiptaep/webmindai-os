@@ -18,8 +18,6 @@ interface Student {
 export default function StudentsPage() {
   const { token, user } = useAuthStore();
   const collegeId = user?.college_id ?? '';
-  const isOwner = user?.is_college_owner ?? false;
-
   const [filterDeptId, setFilterDeptId] = useState('');
   const [filterYear, setFilterYear] = useState('');
   const [tab, setTab] = useState<'active' | 'pending' | 'disabled'>('active');
@@ -34,13 +32,13 @@ export default function StudentsPage() {
   const isMedical = college?.type === 'medical';
   const yearLabel = isMedical ? 'Year' : 'Semester';
 
-  const { data, isLoading, refetch } = trpc.student.list.useQuery(
-    { dept_id: undefined, status: tab === 'pending' ? 'pending_approval' : tab, page: 1, limit: 1000 },
+  const { data, isLoading, isError, error, refetch } = trpc.student.list.useQuery(
+    { status: tab === 'pending' ? 'pending_approval' : tab, page: 1, limit: 1000 },
     { enabled: !!collegeId && !!token }
   );
 
   const { data: pendingData } = trpc.student.list.useQuery(
-    { dept_id: undefined, status: 'pending_approval', page: 1, limit: 1000 },
+    { status: 'pending_approval', page: 1, limit: 1000 },
     { enabled: !!collegeId && !!token }
   );
   const pendingCount = pendingData?.total ?? 0;
@@ -89,8 +87,8 @@ export default function StudentsPage() {
           )}
         </div>
         <div className="flex flex-wrap gap-2">
-          {/* Dept filter — only show if >1 dept or owner */}
-          {(isOwner || (depts && depts.length > 1)) && (
+          {/* Dept filter — only show if >1 dept */}
+          {depts && depts.length > 1 ? (
             <select
               value={filterDeptId}
               onChange={(e) => setFilterDeptId(e.target.value)}
@@ -101,7 +99,11 @@ export default function StudentsPage() {
                 <option key={String(d._id)} value={String(d._id)}>{d.name}</option>
               ))}
             </select>
-          )}
+          ) : depts?.[0] ? (
+            <span className="text-sm text-gray-400 px-2 py-1.5 bg-gray-800 rounded border border-gray-600">
+              {depts[0].name}
+            </span>
+          ) : null}
           {/* Year/Semester filter */}
           <select
             value={filterYear}
@@ -152,8 +154,15 @@ export default function StudentsPage() {
 
       {isLoading && <p className="text-gray-400 text-sm">Loading…</p>}
 
-      {!isLoading && filtered.length === 0 && (
-        <p className="text-gray-500 text-sm">No students found.</p>
+      {isError && (
+        <p className="text-red-400 text-sm mb-4">
+          Error: {(error as { message?: string })?.message ?? 'Failed to load students'}
+          {!collegeId && ' — college_id missing from token, please re-login'}
+        </p>
+      )}
+
+      {!isLoading && !isError && filtered.length === 0 && (
+        <p className="text-gray-500 text-sm">No {tab} students found.</p>
       )}
 
       {!isLoading && filtered.length > 0 && (
@@ -164,7 +173,7 @@ export default function StudentsPage() {
                 <th className="text-left px-4 py-2.5 font-medium">Name</th>
                 <th className="text-left px-4 py-2.5 font-medium">Email</th>
                 <th className="text-left px-4 py-2.5 font-medium">Roll No.</th>
-                {(isOwner || (depts && depts.length > 1)) && (
+                {(depts && depts.length > 1) && (
                   <th className="text-left px-4 py-2.5 font-medium">Department</th>
                 )}
                 <th className="text-left px-4 py-2.5 font-medium">{yearLabel}</th>
@@ -186,7 +195,7 @@ export default function StudentsPage() {
                   </td>
                   <td className="px-4 py-2.5 text-gray-400">{s.email}</td>
                   <td className="px-4 py-2.5 text-gray-400">{s.roll_number ?? '—'}</td>
-                  {(isOwner || (depts && depts.length > 1)) && (
+                  {(depts && depts.length > 1) && (
                     <td className="px-4 py-2.5 text-gray-400">
                       {deptMap[s.dept_id] ?? '—'}
                     </td>

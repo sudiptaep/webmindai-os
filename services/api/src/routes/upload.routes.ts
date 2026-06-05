@@ -38,7 +38,7 @@ const uploadRoutesPlugin: FastifyPluginAsync = async (fastify: FastifyInstance) 
         verifyJWT,
         resolveCollege,
         requireRole("dept_admin", "super_admin"),
-        requireDeptScope((req) => (req.body as Record<string, string>)?.dept_id ?? ""),
+        // dept scope checked inline after multipart parsing (body not available at preHandler stage)
       ],
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
@@ -94,7 +94,7 @@ const uploadRoutesPlugin: FastifyPluginAsync = async (fastify: FastifyInstance) 
 
       // Validate uploader has scope for this dept
       const user = request.user;
-      if (isDeptAdmin(user) && !user.is_college_owner && !user.dept_ids.includes(deptId)) {
+      if (isDeptAdmin(user) && user.dept_id !== deptId) {
         return reply.status(403).send({ statusCode: 403, error: "Forbidden", message: "Dept scope not permitted" });
       }
 

@@ -68,8 +68,7 @@ const pyqRoutesPlugin: FastifyPluginAsync = async (fastify: FastifyInstance) => 
       if (fileBuffer.byteLength > 50 * 1024 * 1024)
         return reply.code(413).send({ error: "File exceeds 50 MB limit" });
 
-      const user = req.user as { sub: string; is_college_owner?: boolean; dept_ids?: string[] };
-      if (isDeptAdmin(req.user) && !user.is_college_owner && !user.dept_ids?.includes(deptId))
+      if (isDeptAdmin(req.user) && req.user.dept_id !== deptId)
         return reply.code(403).send({ error: "Dept scope not permitted" });
 
       const docId      = randomUUID();

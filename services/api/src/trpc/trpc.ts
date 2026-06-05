@@ -1,8 +1,10 @@
 import { initTRPC, TRPCError } from "@trpc/server";
 import {
   isSuperAdmin,
+  isCollegeAdmin,
   isDeptAdmin,
   isStudent,
+  type CollegeAdminJWTPayload,
   type DeptAdminJWTPayload,
   type StudentJWTPayload,
 } from "@college-chatbot/shared";
@@ -22,6 +24,12 @@ export const superAdminProcedure = protectedProcedure.use(({ ctx, next }) => {
   if (!isSuperAdmin(ctx.user))
     throw new TRPCError({ code: "FORBIDDEN", message: "Super admin access required" });
   return next({ ctx });
+});
+
+export const collegeAdminProcedure = protectedProcedure.use(({ ctx, next }) => {
+  if (!isCollegeAdmin(ctx.user) && !isSuperAdmin(ctx.user))
+    throw new TRPCError({ code: "FORBIDDEN", message: "College admin access required" });
+  return next({ ctx: { ...ctx, user: ctx.user as CollegeAdminJWTPayload } });
 });
 
 export const deptAdminProcedure = protectedProcedure.use(({ ctx, next }) => {

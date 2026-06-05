@@ -21,11 +21,13 @@ import { getSubjectModel } from "../models/college/subject.model";
 import { getSessionModel } from "../models/college/session.model";
 import { getQueryLogModel } from "../models/college/query-log.model";
 import { getCollegeDb } from "../db/college.db";
-import { sendInviteEmail } from "./email.service";
+import { sendInviteEmail, sendCollegeAdminInvite } from "./email.service";
+import { getCollegeAdminModel } from "../models/college/college-admin.model";
 
 async function initCollegeDb(conn: Connection): Promise<void> {
   const models = [
     getDepartmentModel(conn),
+    getCollegeAdminModel(conn),
     getDeptAdminModel(conn),
     getStudentModel(conn),
     getDocumentModel(conn),
@@ -84,31 +86,34 @@ export async function provisionCollege(input: CreateCollegeInput): Promise<Colle
       pinecone_namespace: buildGenericNamespace(collegeId),
     });
 
-    // College owner (dept_admin) — invited, no usable password until accept-invite
-    const tempPasswordHash = await bcrypt.hash(randomUUID(), 12);
-    const DeptAdmin = getDeptAdminModel(conn);
-    const owner = await DeptAdmin.create({
+    // College Admin (Principal) — invited, no password until accept-invite
+    const CollegeAdmin = getCollegeAdminModel(conn);
+    const inviteToken = randomUUID();
+    const inviteExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const owner = await CollegeAdmin.create({
       college_id: collegeId,
-      dept_ids: [],
       name: owner_email.split("@")[0],
       email: owner_email.toLowerCase(),
-      password_hash: tempPasswordHash,
-      role: "dept_admin",
-      is_college_owner: true,
+      password_hash: "",
+      admin_title: "Principal",
+      permissions: {
+        can_create_dept_admins: true, can_deactivate_dept_admins: true,
+        can_view_student_list: true, can_export_reports: true, can_view_cost_usage: false,
+      },
+      role: "college_admin",
       status: "invited",
+      invite_token: inviteToken,
+      invite_token_expires_at: inviteExpiresAt,
+      college_admin_count: 1,
     });
 
-    await College.updateOne({ _id: collegeId }, { owner_admin_id: String(owner._id) });
-
-    // Invite token — 7 days
-    const inviteToken = jwt.sign(
-      { email: owner_email.toLowerCase(), college_id: collegeId, type: "invite" },
-      process.env.JWT_SECRET!,
-      { expiresIn: "7d" },
+    await College.updateOne(
+      { _id: collegeId },
+      { owner_admin_id: String(owner._id), primary_contact_email: owner_email.toLowerCase(), college_admin_count: 1 },
     );
 
     // Non-blocking: email failure must not roll back provisioning
-    sendInviteEmail(owner_email, inviteToken, college.slug).catch((err) => {
+    sendCollegeAdminInvite(owner_email, inviteToken, college.slug, owner.name, "Principal", college.name).catch((err) => {
       console.error("[provision] invite email failed:", err?.message);
     });
 
@@ -122,8 +127,7 @@ export async function provisionCollege(input: CreateCollegeInput): Promise<Colle
 export async function assignDeptAdmin(
   college_id: string,
   email: string,
-  dept_ids: string[],
-  is_college_owner: boolean,
+  dept_id: string,
 ): Promise<void> {
   const conn = await getCollegeDb(college_id);
   const DeptAdmin = getDeptAdminModel(conn);
@@ -131,33 +135,34 @@ export async function assignDeptAdmin(
 
   const existing = await DeptAdmin.findOne({ email: email.toLowerCase() }).lean();
   if (existing) {
-    await DeptAdmin.updateOne(
-      { email: email.toLowerCase() },
-      { $addToSet: { dept_ids: { $each: dept_ids } } },
-    );
+    // Dept admin already exists in this college — do not duplicate
     return;
   }
 
-  const tempHash = await bcrypt.hash(randomUUID(), 12);
+  const token = randomUUID();
+  const inviteExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
   await DeptAdmin.create({
     college_id,
-    dept_ids,
+    dept_id,
     name: email.split("@")[0],
     email: email.toLowerCase(),
-    password_hash: tempHash,
+    password_hash: "",
     role: "dept_admin",
-    is_college_owner,
+    permissions: {
+      can_upload_documents: true, can_delete_documents: true,
+      can_manage_subjects: true, can_view_student_list: true, can_reset_student_passwords: false,
+    },
     status: "invited",
+    invite_token: token,
+    invite_token_expires_at: inviteExpiresAt,
+    invited_by_role: "super_admin",
   });
 
-  const collegeDoc = await College.findById(college_id).select("slug").lean();
-  const inviteToken = jwt.sign(
-    { email: email.toLowerCase(), college_id, type: "invite" },
-    process.env.JWT_SECRET!,
-    { expiresIn: "7d" },
-  );
-
-  sendInviteEmail(email, inviteToken, collegeDoc?.slug ?? college_id).catch((err) => {
-    console.error("[assignDeptAdmin] invite email failed:", err?.message);
-  });
+  const collegeDoc = await College.findById(college_id).lean();
+  if (collegeDoc) {
+    sendInviteEmail(email, token, collegeDoc.slug).catch((err) => {
+      console.error("[assignDeptAdmin] invite email failed:", err?.message);
+    });
+  }
 }

@@ -49,12 +49,22 @@ export default function PYQPage() {
   const [examName,    setExamName]    = useState('');
   const [university,  setUniversity]  = useState('');
 
-  // Filter state
-  const [filterDeptId, setFilterDeptId] = useState('');
+  // Filter state — auto-set to admin's single dept
+  const userDeptId = user?.dept_id ?? '';
+  const [filterDeptId, setFilterDeptId] = useState(userDeptId);
 
   const { data: depts } = trpc.department.listOwn.useQuery(undefined, {
     enabled: !!collegeId && !!token,
   });
+
+  // Auto-select single dept for upload form and filter
+  useEffect(() => {
+    if (depts?.[0]) {
+      const id = String(depts[0]._id);
+      if (!selectedDeptId) setSelectedDeptId(id);
+      if (!filterDeptId) setFilterDeptId(id);
+    }
+  }, [depts, selectedDeptId, filterDeptId]);
 
   const { data: subjects } = trpc.subject.list.useQuery(
     { college_id: collegeId, dept_id: selectedDeptId },
@@ -154,16 +164,22 @@ export default function PYQPage() {
         <div className="grid grid-cols-2 gap-3 mb-3">
           <div>
             <label className="block text-xs text-gray-400 mb-1">Department *</label>
-            <select
-              value={selectedDeptId}
-              onChange={e => setSelectedDeptId(e.target.value)}
-              className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-sm"
-            >
-              <option value="">Select department</option>
-              {(depts ?? []).map(d => (
-                <option key={String(d._id)} value={String(d._id)}>{d.name}</option>
-              ))}
-            </select>
+            {(depts ?? []).length > 1 ? (
+              <select
+                value={selectedDeptId}
+                onChange={e => setSelectedDeptId(e.target.value)}
+                className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-sm"
+              >
+                <option value="">Select department</option>
+                {(depts ?? []).map(d => (
+                  <option key={String(d._id)} value={String(d._id)}>{d.name}</option>
+                ))}
+              </select>
+            ) : (
+              <div className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-sm text-gray-300">
+                {depts?.[0]?.name ?? 'Loading…'}
+              </div>
+            )}
           </div>
           <div>
             <label className="block text-xs text-gray-400 mb-1">Subject</label>
@@ -244,16 +260,22 @@ export default function PYQPage() {
 
       {/* Filter */}
       <div className="flex items-center gap-3 mb-4">
-        <select
-          value={filterDeptId}
-          onChange={e => setFilterDeptId(e.target.value)}
-          className="bg-gray-800 border border-gray-600 rounded px-2 py-1.5 text-sm"
-        >
-          <option value="">All Departments</option>
-          {(depts ?? []).map(d => (
-            <option key={String(d._id)} value={String(d._id)}>{d.name}</option>
-          ))}
-        </select>
+        {(depts ?? []).length > 1 ? (
+          <select
+            value={filterDeptId}
+            onChange={e => setFilterDeptId(e.target.value)}
+            className="bg-gray-800 border border-gray-600 rounded px-2 py-1.5 text-sm"
+          >
+            <option value="">All Departments</option>
+            {(depts ?? []).map(d => (
+              <option key={String(d._id)} value={String(d._id)}>{d.name}</option>
+            ))}
+          </select>
+        ) : depts?.[0] ? (
+          <span className="text-sm text-gray-400 px-2 py-1.5 bg-gray-800 rounded border border-gray-600">
+            {depts[0].name}
+          </span>
+        ) : null}
         <span className="text-xs text-gray-500">{papers.length} papers</span>
       </div>
 

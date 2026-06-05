@@ -9,6 +9,7 @@ import { logout } from '@/lib/auth';
 const NAV: { href: string; label: string; exact?: boolean }[] = [
   { href: '/dashboard', label: 'Overview', exact: true },
   { href: '/dashboard/colleges', label: 'Colleges' },
+  { href: '/dashboard/users', label: 'Users' },
   { href: '/dashboard/alerts', label: 'Alerts' },
   { href: '/dashboard/cost-planner', label: 'Cost Planner' },
   { href: '/dashboard/policies/global', label: 'Global Policy' },

@@ -1,6 +1,11 @@
 import jwt from "jsonwebtoken";
 import type { FastifyRequest, FastifyReply } from "fastify";
-import { isDeptAdmin, isStudent, type AnyJWTPayload } from "@college-chatbot/shared";
+import {
+  isDeptAdmin,
+  isCollegeAdmin,
+  isStudent,
+  type AnyJWTPayload,
+} from "@college-chatbot/shared";
 import { getCollegeDb as _getCollegeDb } from "../db/college.db";
 import type { Connection } from "mongoose";
 
@@ -10,8 +15,13 @@ export function createContext({ req }: { req: FastifyRequest; res: FastifyReply 
 
   if (authHeader?.startsWith("Bearer ")) {
     const token = authHeader.slice(7);
-    // Try regular JWT_SECRET first, then SUPER_ADMIN_JWT_SECRET
-    for (const secret of [process.env.JWT_SECRET!, process.env.SUPER_ADMIN_JWT_SECRET].filter(Boolean) as string[]) {
+    const secrets = [
+      process.env.JWT_SECRET!,
+      process.env.COLLEGE_ADMIN_JWT_SECRET,
+      process.env.SUPER_ADMIN_JWT_SECRET,
+    ].filter(Boolean) as string[];
+
+    for (const secret of secrets) {
       try {
         user = jwt.verify(token, secret) as AnyJWTPayload;
         break;
@@ -22,7 +32,9 @@ export function createContext({ req }: { req: FastifyRequest; res: FastifyReply 
   }
 
   const collegeId =
-    user && (isDeptAdmin(user) || isStudent(user)) ? user.college_id : null;
+    user && (isDeptAdmin(user) || isCollegeAdmin(user) || isStudent(user))
+      ? user.college_id
+      : null;
 
   return {
     user,

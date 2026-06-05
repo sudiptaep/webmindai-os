@@ -108,14 +108,13 @@ export const collegeRouter = router({
       z.object({
         college_id: z.string(),
         email: z.string().email(),
-        dept_ids: z.array(z.string()).default([]),
-        is_college_owner: z.boolean().default(false),
+        dept_id: z.string(),
       }),
     )
     .mutation(async ({ input }) => {
-      const { college_id, email, dept_ids, is_college_owner } = input;
+      const { college_id, email, dept_id } = input;
       try {
-        await assignDeptAdmin(college_id, email, dept_ids, is_college_owner);
+        await assignDeptAdmin(college_id, email, dept_id);
         return { success: true };
       } catch (err: unknown) {
         throw new TRPCError({
@@ -133,8 +132,6 @@ export const collegeRouter = router({
       const DeptAdmin = getDeptAdminModel(conn);
       const admin = await DeptAdmin.findById(admin_id).lean();
       if (!admin) throw new TRPCError({ code: "NOT_FOUND", message: "Admin not found" });
-      if (admin.is_college_owner)
-        throw new TRPCError({ code: "FORBIDDEN", message: "Cannot remove college owner" });
       await DeptAdmin.findByIdAndUpdate(admin_id, { status: "disabled" });
       return { success: true };
     }),

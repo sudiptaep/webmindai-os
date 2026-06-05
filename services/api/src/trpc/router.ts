@@ -8,6 +8,8 @@ import { studentRouter } from "./routers/student.router";
 import { settingsRouter } from "./routers/settings.router";
 import { costPolicyRouter } from "./routers/costPolicy.router";
 import { superAdminDashboardRouter } from "./routers/superAdminDashboard.router";
+import { superAdminUsersRouter } from "./routers/superAdminUsers.router";
+import { collegeAdminRouter } from "./routers/collegeAdmin.router";
 
 export const appRouter = router({
   college: collegeRouter,
@@ -19,6 +21,8 @@ export const appRouter = router({
   settings: settingsRouter,
   costPolicy: costPolicyRouter,
   superAdminDashboard: superAdminDashboardRouter,
+  superAdminUsers: superAdminUsersRouter,
+  collegeAdmin: collegeAdminRouter,
 });
 
 export type AppRouter = typeof appRouter;

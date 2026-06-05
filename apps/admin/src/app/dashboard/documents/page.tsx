@@ -1,18 +1,9 @@
 'use client';
 
-import { useState, useRef, useEffect, ChangeEvent } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/auth.store';
 import { trpc } from '@/lib/trpc';
-
-const API = process.env.NEXT_PUBLIC_API_URL!;
-
-const CURRENT_YEAR = new Date().getFullYear();
-const ACADEMIC_YEAR_OPTIONS = [
-  `${CURRENT_YEAR - 1}-${CURRENT_YEAR}`,
-  `${CURRENT_YEAR}-${CURRENT_YEAR + 1}`,
-  `${CURRENT_YEAR + 1}-${CURRENT_YEAR + 2}`,
-];
 
 type IngestionStatus = 'pending' | 'processing' | 'completed' | 'failed';
 
@@ -39,13 +30,7 @@ type DocItem = {
 export default function DocumentsPage() {
   const { token, user } = useAuthStore();
   const collegeId = user?.college_id ?? '';
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState('');
-  const [academicYear, setAcademicYear] = useState(ACADEMIC_YEAR_OPTIONS[0]);
   const [selectedDeptId, setSelectedDeptId] = useState('');
-  const [selectedSubjectId, setSelectedSubjectId] = useState('');
 
   // Inline subject-edit state
   const [editingDocId, setEditingDocId] = useState<string | null>(null);
@@ -55,16 +40,19 @@ export default function DocumentsPage() {
     enabled: !!collegeId && !!token,
   });
 
-  // '' = All Departments (no dept filter)
-  const activeDeptId = selectedDeptId;
+  // Auto-select the single dept for dept_admin on first load
+  useEffect(() => {
+    if (depts?.[0] && !selectedDeptId) {
+      setSelectedDeptId(String(depts[0]._id));
+    }
+  }, [depts, selectedDeptId]);
+
+  const activeDeptId = selectedDeptId || (user?.dept_id ?? '');
 
   const { data: subjects } = trpc.subject.list.useQuery(
     { college_id: collegeId, dept_id: activeDeptId },
     { enabled: !!collegeId && !!activeDeptId && !!token }
   );
-
-  // Reset subject when dept changes
-  useEffect(() => { setSelectedSubjectId(''); }, [activeDeptId]);
 
   const { data, isLoading, refetch } = trpc.document.list.useQuery(
     { college_id: collegeId, dept_id: activeDeptId || undefined, page: 1, limit: 50 },
@@ -99,43 +87,6 @@ export default function DocumentsPage() {
     });
   }
 
-  async function handleUpload(e: ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file || !token) return;
-    if (!activeDeptId) {
-      setUploadError('Select a department first');
-      return;
-    }
-
-    setUploadError('');
-    setUploading(true);
-
-    const form = new FormData();
-    form.append('file', file);
-    form.append('dept_id', activeDeptId);
-    form.append('academic_year', academicYear);
-    if (selectedSubjectId) form.append('subject_id', selectedSubjectId);
-
-    try {
-      const res = await fetch(`${API}/api/v1/college/${collegeId}/admin/documents/upload`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        credentials: 'include',
-        body: form,
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error((err as { message?: string }).message ?? 'Upload failed');
-      }
-      await refetch();
-    } catch (err) {
-      setUploadError(err instanceof Error ? err.message : 'Upload failed');
-    } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
-  }
-
   const subjectMap = new Map<string, SubjectItem>(
     (subjects ?? []).map((s: SubjectItem) => [s._id, s])
   );
@@ -145,61 +96,24 @@ export default function DocumentsPage() {
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
         <h1 className="text-xl font-semibold">Documents</h1>
         <div className="flex items-center gap-3 flex-wrap">
-          <select
-            value={selectedDeptId}
-            onChange={(e) => setSelectedDeptId(e.target.value)}
-            className="bg-gray-800 border border-gray-600 rounded px-2 py-1.5 text-sm"
-          >
-            <option value="">All Departments</option>
-            {(depts ?? []).map((d) => (
-              <option key={String(d._id)} value={String(d._id)}>
-                {d.name}
-              </option>
-            ))}
-          </select>
-          <select
-            value={academicYear}
-            onChange={(e) => setAcademicYear(e.target.value)}
-            className="bg-gray-800 border border-gray-600 rounded px-2 py-1.5 text-sm"
-          >
-            {ACADEMIC_YEAR_OPTIONS.map((y) => (
-              <option key={y} value={y}>{y}</option>
-            ))}
-          </select>
-          <select
-            value={selectedSubjectId}
-            onChange={(e) => setSelectedSubjectId(e.target.value)}
-            disabled={!activeDeptId}
-            className="bg-gray-800 border border-gray-600 rounded px-2 py-1.5 text-sm disabled:opacity-50"
-          >
-            <option value="">{activeDeptId ? 'No Subject (General)' : 'Select a dept first'}</option>
-            {(subjects ?? []).map((s: SubjectItem) => (
-              <option key={s._id} value={s._id}>{s.name} ({s.code})</option>
-            ))}
-          </select>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".pdf,.pptx,.docx,.mp4,.mp3,.m4a"
-            onChange={handleUpload}
-            className="hidden"
-            id="upload-input"
-          />
-          <label
-            htmlFor="upload-input"
-            className={`cursor-pointer bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm font-medium transition-colors ${uploading || !activeDeptId ? 'opacity-50 pointer-events-none' : ''}`}
-            title={!activeDeptId ? 'Select a department to upload' : undefined}
-          >
-            {uploading ? 'Uploading…' : 'Upload Document'}
-          </label>
+          {(depts ?? []).length > 1 ? (
+            <select
+              value={selectedDeptId}
+              onChange={(e) => setSelectedDeptId(e.target.value)}
+              className="bg-gray-800 border border-gray-600 rounded px-2 py-1.5 text-sm"
+            >
+              <option value="">All Departments</option>
+              {(depts ?? []).map((d) => (
+                <option key={String(d._id)} value={String(d._id)}>{d.name}</option>
+              ))}
+            </select>
+          ) : depts?.[0] ? (
+            <span className="text-sm text-gray-400 px-2 py-1.5 bg-gray-800 rounded border border-gray-600">
+              {depts[0].name}
+            </span>
+          ) : null}
         </div>
       </div>
-
-      {uploadError && (
-        <div className="mb-4 bg-red-900/30 border border-red-700 rounded px-4 py-2 text-sm text-red-300">
-          {uploadError}
-        </div>
-      )}
 
       {isLoading && <p className="text-gray-400 text-sm">Loading…</p>}
 

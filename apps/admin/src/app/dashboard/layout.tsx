@@ -23,24 +23,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   useEffect(() => setMounted(true), []);
 
   useEffect(() => {
-    if (mounted && !token) router.replace('/login');
-  }, [mounted, token, router]);
+    if (mounted && !token) router.replace('/dept-admin/login');
+    if (mounted && token && user?.role === 'college_admin') router.replace('/college-admin/dashboard');
+  }, [mounted, token, user, router]);
 
   async function handleLogout() {
     await logout();
     clearAuth();
-    router.replace('/login');
+    router.replace('/dept-admin/login');
   }
 
-  if (!mounted || !token) return null;
+  if (!mounted || !token || user?.role === 'college_admin') return null;
 
   return (
     <div className="min-h-screen flex">
       {/* Sidebar */}
       <aside className="w-56 bg-gray-900 border-r border-gray-800 flex flex-col">
         <div className="p-4 border-b border-gray-800">
-          <p className="font-semibold text-sm">Admin Panel</p>
-          <p className="text-xs text-gray-400 mt-0.5 truncate">{user?.email}</p>
+          <p className="font-semibold text-sm truncate">{user?.dept_name ?? 'Department'}</p>
+          <p className="text-xs text-indigo-400 mt-0.5 truncate">{user?.name}</p>
+          {user?.faculty_title && <p className="text-xs text-gray-500 mt-0.5">{user.faculty_title}</p>}
         </div>
         <nav className="flex-1 p-3 space-y-1">
           {NAV.map(({ href, label }) => (

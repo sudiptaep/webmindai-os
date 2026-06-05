@@ -36,7 +36,7 @@ async function resolveCollegeConn(user: AnyJWTPayload, collegeId: string) {
 }
 
 function checkDeptScope(user: DeptAdminJWTPayload, deptId: string) {
-  if (!user.is_college_owner && !user.dept_ids.includes(deptId)) {
+  if (user.dept_id !== deptId) {
     throw new TRPCError({ code: "FORBIDDEN", message: "Dept scope not permitted" });
   }
 }
@@ -64,9 +64,7 @@ export const documentRouter = router({
         if (isDeptAdmin(ctx.user)) checkDeptScope(ctx.user, input.dept_id);
         filter.dept_id = input.dept_id;
       } else if (isDeptAdmin(ctx.user)) {
-        if (!ctx.user.is_college_owner) {
-          filter.dept_id = { $in: ctx.user.dept_ids };
-        }
+        filter.dept_id = ctx.user.dept_id;
       }
 
       if (input.subject_id !== undefined) {
