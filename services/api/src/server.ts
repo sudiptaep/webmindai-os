@@ -18,6 +18,7 @@ import { casesRoutes } from "./routes/cases.routes";
 import { diseaseRoutes } from "./routes/disease.routes";
 import { yearNavRoutes } from "./routes/year-nav.routes";
 import { superAdminCostRoutes } from "./routes/super-admin-cost.routes";
+import { observatoryRoutes } from "./routes/observatory.routes";
 import { connectPlatformDb } from "./db/platform.db";
 import { appRouter } from "./trpc/router";
 import { createContext } from "./trpc/context";
@@ -77,6 +78,9 @@ async function bootstrap() {
 
   // F-12: Super Admin cost CSV export (REST — tRPC can't stream file downloads)
   await server.register(superAdminCostRoutes, { prefix: "/api/v1/super-admin" });
+
+  // F-15: Unified Usage Observatory
+  await server.register(observatoryRoutes, { prefix: "/api/v1/super-admin" });
 
   // tRPC — all admin CRUD
   await server.register(fastifyTRPCPlugin, {

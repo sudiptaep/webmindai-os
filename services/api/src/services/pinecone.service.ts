@@ -1,5 +1,6 @@
 import { Pinecone } from "@pinecone-database/pinecone";
 import { buildPineconeNamespace, EMBEDDING_DIMS, RAG_TOP_K_RETRIEVE } from "@college-chatbot/shared";
+import { updatePineconeMetrics } from "../jobs/probes/pinecone.probe";
 
 export interface PineconeChunk {
   id: string;
@@ -30,6 +31,7 @@ export async function queryNamespace(
 
   const namespace = buildPineconeNamespace(collegeId, deptId);
   const filter = allowedDocIds ? { doc_id: { $in: allowedDocIds } } : undefined;
+  const queryStart = Date.now();
   const result = await getIndex().namespace(namespace).query({
     vector,
     topK,
@@ -37,6 +39,7 @@ export async function queryNamespace(
     includeMetadata: true,
     includeValues: false,
   });
+  updatePineconeMetrics(Date.now() - queryStart, topK, 0);
 
   return (result.matches ?? []).map((m) => ({
     id: m.id,

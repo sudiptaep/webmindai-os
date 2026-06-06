@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import { EMBEDDING_MODEL } from "@college-chatbot/shared";
 import { recordCostEvent, getRateTable, getBillingMonth, getBillingDay } from "./metering.service";
+import { updateOpenAIMetrics } from "../jobs/probes/openai.probe";
 
 export interface EmbeddingMeteringContext {
   collegeId: string;
@@ -21,10 +22,13 @@ export async function embedQuery(
   metering?: EmbeddingMeteringContext,
 ): Promise<number[]> {
   const client = getClient();
+  const embedStart = Date.now();
   const response = await client.embeddings.create({
     model: EMBEDDING_MODEL,
     input: text.trim(),
   });
+  const embedLatency = Date.now() - embedStart;
+  updateOpenAIMetrics(response.usage.total_tokens, embedLatency, metering?.actionType ?? "query_embedding", true);
 
   if (metering) {
     const rate = await getRateTable("openai_embeddings", EMBEDDING_MODEL);

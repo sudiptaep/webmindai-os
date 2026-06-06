@@ -13,6 +13,7 @@ const NAV: { href: string; label: string; exact?: boolean }[] = [
   { href: '/dashboard/alerts', label: 'Alerts' },
   { href: '/dashboard/cost-planner', label: 'Cost Planner' },
   { href: '/dashboard/policies/global', label: 'Global Policy' },
+  { href: '/dashboard/observatory', label: 'Observatory' },
   { href: '/dashboard/analytics', label: 'Analytics' },
   { href: '/dashboard/settings', label: 'Settings' },
 ];

@@ -8,6 +8,14 @@ import { runSRSMaintenance } from "./srsMaintenance";
 import { runRebuildCostSummaries } from "./rebuildCostSummaries";
 import { runEvaluateAlerts } from "./evaluateAlerts";
 import { runRebuildPlatformAverages } from "./rebuildPlatformAverages";
+// F-15: Telemetry probes
+import { runAnthropicProbe } from "./probes/anthropic.probe";
+import { runOpenAIProbe } from "./probes/openai.probe";
+import { runMongoProbe } from "./probes/mongo.probe";
+import { runPineconeProbe } from "./probes/pinecone.probe";
+import { runRedisProbe } from "./probes/redis.probe";
+import { runDiskProbe } from "./probes/disk.probe";
+import { runRebuildDailyRollups } from "./rebuildDailyRollups";
 
 const PLATFORM_JOBS_QUEUE = "platform_jobs";
 
@@ -72,6 +80,34 @@ export async function startScheduler(): Promise<void> {
     { repeat: { pattern: "0 3 * * *" }, removeOnComplete: { count: 7 }, removeOnFail: { count: 5 } }
   );
 
+  // F-15: Telemetry — LLM APIs every 1 minute
+  await queue.add(
+    "telemetry-llm",
+    {},
+    { repeat: { pattern: "* * * * *" }, removeOnComplete: { count: 5 }, removeOnFail: { count: 5 } }
+  );
+
+  // F-15: Telemetry — DB + Vector + Cache every 5 minutes
+  await queue.add(
+    "telemetry-db",
+    {},
+    { repeat: { pattern: "*/5 * * * *" }, removeOnComplete: { count: 5 }, removeOnFail: { count: 5 } }
+  );
+
+  // F-15: Telemetry — Disk every 15 minutes
+  await queue.add(
+    "telemetry-disk",
+    {},
+    { repeat: { pattern: "*/15 * * * *" }, removeOnComplete: { count: 5 }, removeOnFail: { count: 5 } }
+  );
+
+  // F-15: Daily rollup — 1 AM UTC
+  await queue.add(
+    "telemetry-rollup",
+    {},
+    { repeat: { pattern: "0 1 * * *" }, removeOnComplete: { count: 7 }, removeOnFail: { count: 5 } }
+  );
+
   const worker = new Worker(
     PLATFORM_JOBS_QUEUE,
     async (job) => {
@@ -99,6 +135,19 @@ export async function startScheduler(): Promise<void> {
           break;
         case "rebuild-platform-averages":
           await runRebuildPlatformAverages();
+          break;
+        // F-15: Telemetry jobs
+        case "telemetry-llm":
+          await Promise.allSettled([runAnthropicProbe(), runOpenAIProbe()]);
+          break;
+        case "telemetry-db":
+          await Promise.allSettled([runMongoProbe(), runPineconeProbe(), runRedisProbe()]);
+          break;
+        case "telemetry-disk":
+          await runDiskProbe();
+          break;
+        case "telemetry-rollup":
+          await runRebuildDailyRollups();
           break;
         default:
           throw new Error(`Unknown job: ${job.name}`);

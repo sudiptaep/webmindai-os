@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { LLM_MODEL_CHAT, LLM_MODEL_EXAM, LLM_MAX_TOKENS } from "@college-chatbot/shared";
 import { recordCostEvent, getRateTable, getBillingMonth, getBillingDay } from "./metering.service";
+import { updateAnthropicMetrics } from "../jobs/probes/anthropic.probe";
 
 export interface LLMStreamResult {
   tokenStream: AsyncGenerator<string, void, unknown>;
@@ -39,8 +40,11 @@ export async function streamChatResponse(
   });
 
   let tokensUsed = 0;
+  const streamStart = Date.now();
   const usagePromise = stream.finalMessage().then(async (msg) => {
     tokensUsed = msg.usage.input_tokens + msg.usage.output_tokens;
+    const latencyMs = Date.now() - streamStart;
+    updateAnthropicMetrics(msg.usage.input_tokens, msg.usage.output_tokens, latencyMs, true);
     if (metering) {
       const rate = await getRateTable("anthropic", model);
       const costUsd =
@@ -89,6 +93,7 @@ export async function generateExamQuestions(
   metering?: LLMMeteringContext,
 ): Promise<string> {
   const client = getClient();
+  const examStart = Date.now();
   const msg = await client.messages.create({
     model: LLM_MODEL_EXAM,
     max_tokens: 4096,
@@ -96,6 +101,7 @@ export async function generateExamQuestions(
     messages: [{ role: "user", content: userMessage }],
   });
 
+  updateAnthropicMetrics(msg.usage.input_tokens, msg.usage.output_tokens, Date.now() - examStart, true);
   if (metering) {
     const rate = await getRateTable("anthropic", LLM_MODEL_EXAM);
     const costUsd =
