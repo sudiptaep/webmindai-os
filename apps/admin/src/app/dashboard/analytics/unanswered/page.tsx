@@ -10,7 +10,7 @@ const LIMIT = 20;
 export default function UnansweredPage() {
   const router = useRouter();
   const { token, user } = useAuthStore();
-  const deptId = user?.dept_ids?.[0] ?? '';
+  const deptId = user?.dept_id ?? '';
   const [page, setPage] = useState(1);
 
   const { data, refetch } = trpc.analytics.unansweredQueue.useQuery(

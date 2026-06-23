@@ -136,7 +136,8 @@ export default function DeptCostPage() {
                 <BarChart data={actionChartData} layout="vertical">
                   <XAxis type="number" tick={{ fontSize: 10, fill: '#6b7280' }} tickFormatter={(v: number) => `$${v.toFixed(3)}`} />
                   <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: '#9ca3af' }} width={80} />
-                  <Tooltip formatter={(v: number) => [`$${v.toFixed(4)}`, 'Cost']} />
+                  <Tooltip formatter={(v: any) => [`$${v ? Number(v).toFixed(4) : '0.0000'}`, 'Cost']} />
+
                   <Bar dataKey="cost" fill="#8b5cf6" radius={[0,2,2,0]} />
                 </BarChart>
               </ResponsiveContainer>

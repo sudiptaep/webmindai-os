@@ -77,7 +77,8 @@ export default function EditDeptAdminPage() {
           <div>
             <p className="font-medium">{admin.name as string}</p>
             <p className="text-gray-400 text-sm">{admin.email as string}</p>
-            {admin.faculty_title && <p className="text-gray-400 text-xs mt-0.5">{admin.faculty_title as string}</p>}
+            {!!admin.faculty_title && <p className="text-gray-400 text-xs mt-0.5">{admin.faculty_title as string}</p>}
+
           </div>
           <InviteStatusBadge status={admin.status as string} />
         </div>

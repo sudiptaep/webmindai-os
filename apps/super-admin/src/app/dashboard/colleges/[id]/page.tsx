@@ -160,7 +160,14 @@ export default function CollegeDetailPage({ params }: { params: { id: string } }
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            addAdminMut.mutate({ college_id: params.id, email: addAdminEmail });
+            const collegeId = Array.isArray(params.id) ? params.id[0] : params.id;
+            
+            if (collegeId) {
+              addAdminMut.mutate({
+                college_id: collegeId, email: addAdminEmail,
+                dept_id: ''
+              });
+            }
           }}
           className="flex gap-2"
         >

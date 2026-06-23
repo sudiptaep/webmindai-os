@@ -28,7 +28,8 @@ export default function LoginPage() {
       if ('requires_mfa' in result) {
         setMfaToken(result.mfa_session_token);
       } else {
-        setAuth(result.token, result.user as Parameters<typeof setAuth>[1]);
+       setAuth(result.token, (result.user as unknown) as Parameters<typeof setAuth>[1]);
+
         router.replace('/dashboard');
       }
     } catch (err) {
@@ -45,7 +46,8 @@ export default function LoginPage() {
     setLoading(true);
     try {
       const { token, user } = await verifyMfa(mfaToken, totpCode);
-      setAuth(token, user as Parameters<typeof setAuth>[1]);
+      setAuth(token, (user as unknown) as Parameters<typeof setAuth>[1]);
+
       router.replace('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Invalid code');

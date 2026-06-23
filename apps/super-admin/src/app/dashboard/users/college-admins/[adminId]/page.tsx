@@ -90,7 +90,8 @@ export default function EditCollegeAdminPage() {
         <div className="mt-3 text-xs text-gray-500 space-y-1">
           <p>Last login: {admin.last_login ? new Date(admin.last_login as string).toLocaleString() : 'Never'}</p>
           <p>Login count: {admin.login_count as number}</p>
-          {admin.last_login_ip && <p>Last IP: {admin.last_login_ip as string}</p>}
+          {!!admin.last_login_ip && <p>Last IP: {admin.last_login_ip as string}</p>}
+
         </div>
       </div>
 

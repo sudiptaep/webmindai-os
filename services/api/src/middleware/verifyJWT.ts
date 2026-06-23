@@ -33,7 +33,8 @@ export async function verifyJWT(request: FastifyRequest, reply: FastifyReply): P
   }
 
   // Force-refresh check: invalidate old dept_admin tokens that carry is_college_owner
-  if (payload.role === "dept_admin" && (payload as Record<string, unknown>).is_college_owner !== undefined) {
+  if (payload.role === "dept_admin" && "is_college_owner" in payload) {
+
     try {
       const redis = getRedisConnection();
       const forceRefresh = await redis.get("force_token_refresh:all_dept_admins");

@@ -49,9 +49,10 @@ export default function DocumentDetailPage({ params }: { params: { id: string } 
         <Row label="Uploaded" value={new Date(doc.created_at ?? '').toLocaleString()} />
       </div>
 
-      {doc.download_url && (
+
+      {((doc as any).download_url) && (
         <a
-          href={doc.download_url}
+          href={((doc as any).download_url)}
           target="_blank"
           rel="noopener noreferrer"
           className="mt-4 inline-block text-sm text-blue-400 hover:underline"

@@ -110,7 +110,7 @@ export default function DashboardPage() {
                 <Pie data={serviceData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} dataKey="value">
                   {serviceData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                 </Pie>
-                <Tooltip formatter={(v: number) => fmt$(v)} />
+                <Tooltip formatter={(v) => fmt$(v ? Number(v) : 0)} />
                 <Legend formatter={(v: string) => <span className="text-xs text-gray-400">{v}</span>} />
               </PieChart>
             </ResponsiveContainer>
@@ -127,7 +127,7 @@ export default function DashboardPage() {
             <BarChart data={dailyTrend}>
               <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#6b7280' }} />
               <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} tickFormatter={(v: number) => `$${v.toFixed(3)}`} />
-              <Tooltip formatter={(v: number) => [fmt$(v), 'Cost']} />
+              <Tooltip formatter={(v) => [fmt$(v ? Number(v) : 0), 'Cost']} />
               <Bar dataKey="cost" fill="#3b82f6" radius={[2,2,0,0]} />
             </BarChart>
           </ResponsiveContainer>
