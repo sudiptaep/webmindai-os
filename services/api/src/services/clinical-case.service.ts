@@ -4,9 +4,8 @@ import type { Connection } from "mongoose";
 import type { ClinicalCase, CaseQuestionType, CaseDifficulty } from "@college-chatbot/shared";
 import { LLM_MODEL_EXAM } from "@college-chatbot/shared";
 import { getClinicalCaseModel } from "../models/college/clinical-case.model";
-import { getChapterMapModel } from "../models/college/chapter-map.model";
 import { getDocumentModel } from "../models/college/document.model";
-import { fetchChapterChunks } from "./pinecone.service";
+import { fetchDocChunks } from "./pinecone.service";
 
 const CASE_MODEL        = process.env.CASE_GENERATION_MODEL ?? LLM_MODEL_EXAM;
 const CASE_MAX_TOKENS   = Number(process.env.CASE_MAX_TOKENS ?? 2048);
@@ -144,35 +143,25 @@ export async function generateClinicalCase(
     return formatCaseForStudent(cached, true);
   }
 
-  // 2. Load chapter metadata
-  const ChapterMap = getChapterMapModel(conn);
-  const chapterMap = await ChapterMap.findOne({ doc_id: docId }).lean();
-  const chapter = chapterMap?.chapters.find(c => c.chapter_index === chapterIndex);
-  if (!chapter) throw new Error(`Chapter ${chapterIndex} not found for doc ${docId}`);
+  // 2. Get document metadata
+  const Document = getDocumentModel(conn);
+  const doc = await Document.findById(docId).select("original_filename subject_id").lean();
+  if (!doc) throw new Error(`Document ${docId} not found`);
+  const filename  = doc.original_filename ?? docId;
+  const subjectId = doc.subject_id ?? "";
 
-  // 3. Fetch chapter chunks from Pinecone
-  const chunks = await fetchChapterChunks(
-    collegeId, deptId, docId,
-    chapter.start_page, chapter.end_page,
-    15,
-  );
-  if (chunks.length === 0) throw new Error("No content indexed for this chapter");
+  // 3. Fetch chunks from entire document (not limited to a single chapter)
+  const chunks = await fetchDocChunks(collegeId, deptId, docId, 30);
+  if (chunks.length === 0) throw new Error("No content indexed for this document");
 
   const contextText = chunks
     .map(c => `[Page ${c.page_num}] ${c.text}`)
     .join("\n\n")
     .slice(0, CASE_MAX_CONTEXT);
 
-  // 4. Get document filename for prompt context
-  const Document = getDocumentModel(conn);
-  const doc = await Document.findById(docId).select("original_filename subject_id").lean();
-  const filename = doc?.original_filename ?? docId;
-  const subjectId = doc?.subject_id ?? "";
-
-  // 5. Build and send prompt
+  // 4. Build and send prompt
   const userPrompt = `${CASE_TYPE_PROMPTS[questionType]}
 ${DIFFICULTY_PROMPTS[difficulty]}
-Chapter ${chapter.chapter_index}: "${chapter.title}" (pages ${chapter.start_page}–${chapter.end_page})
 Document: ${filename}
 
 Textbook content:

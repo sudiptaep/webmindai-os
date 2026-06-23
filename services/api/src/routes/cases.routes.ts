@@ -34,13 +34,10 @@ const casesRoutesPlugin: FastifyPluginAsync = async (fastify: FastifyInstance) =
       };
       const conn = await getCollegeDb(collegeId);
 
-      // Validate doc exists and has chapter map
+      // Validate doc exists
       const Document = getDocumentModel(conn);
       const doc = await Document.findById(docId).lean();
       if (!doc) return reply.code(404).send({ error: "Document not found" });
-      if (!doc.has_chapter_map) {
-        return reply.code(400).send({ error: "No chapter map for this document" });
-      }
 
       const body = GenerateCaseSchema.parse(req.body ?? {});
 
@@ -57,9 +54,6 @@ const casesRoutesPlugin: FastifyPluginAsync = async (fastify: FastifyInstance) =
         return reply.send(result);
       } catch (err) {
         const msg = (err as Error).message;
-        if (msg.includes("Chapter") && msg.includes("not found")) {
-          return reply.code(404).send({ error: msg });
-        }
         if (msg.includes("No content indexed")) {
           return reply.code(422).send({ error: msg });
         }

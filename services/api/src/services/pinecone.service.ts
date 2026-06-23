@@ -54,7 +54,7 @@ export async function fetchDocChunks(
   deptId: string,
   docId: string,
   topK = 200,
-): Promise<Array<{ chunk_index: number; text: string }>> {
+): Promise<Array<{ chunk_index: number; text: string; page_num: number }>> {
   const namespace = buildPineconeNamespace(collegeId, deptId);
   const zero = new Array<number>(EMBEDDING_DIMS).fill(0);
   const result = await getIndex().namespace(namespace).query({
@@ -67,7 +67,9 @@ export async function fetchDocChunks(
   return (result.matches ?? [])
     .map((m) => ({
       chunk_index: (m.metadata?.chunk_index as number) ?? 0,
-      text: (m.metadata?.text as string) ?? "",
+      text:        (m.metadata?.text as string) ?? "",
+      page_num:    (m.metadata?.page_num as number)
+                   ?? ((m.metadata?.section_index as number) ?? 0) + 1,
     }))
     .sort((a, b) => a.chunk_index - b.chunk_index)
     .filter((c) => c.text.length > 0);
@@ -100,12 +102,16 @@ export async function fetchChapterChunks(
 ): Promise<Array<{ chunk_index: number; text: string; page_num: number }>> {
   const namespace = buildPineconeNamespace(collegeId, deptId);
   const zero = new Array<number>(EMBEDDING_DIMS).fill(0);
+  // Old vectors only have section_index (0-based); new vectors also have page_num (1-based).
   const result = await getIndex().namespace(namespace).query({
     vector: zero,
     topK,
     filter: {
-      doc_id:   { $eq: docId },
-      page_num: { $gte: startPage, $lte: endPage },
+      doc_id: { $eq: docId },
+      $or: [
+        { page_num:     { $gte: startPage,     $lte: endPage     } },
+        { section_index: { $gte: startPage - 1, $lte: endPage - 1 } },
+      ],
     },
     includeMetadata: true,
     includeValues: false,
