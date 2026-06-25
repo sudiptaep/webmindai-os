@@ -10,7 +10,9 @@ export async function getCollegeDb(collegeId: string): Promise<mongoose.Connecti
   if (!baseUri) throw new Error("MONGO_BASE_URI is not set");
 
   const dbName = `cc_${collegeId.replace(/-/g, "").slice(0, 24)}`;
-  const conn = mongoose.createConnection(`${baseUri}/${dbName}`);
+  const uri = new URL(baseUri);
+  uri.pathname = `/${dbName}`;
+  const conn = mongoose.createConnection(uri.toString());
   await conn.asPromise();
   connections.set(collegeId, conn);
   return conn;

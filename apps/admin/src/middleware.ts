@@ -4,10 +4,12 @@ import type { NextRequest } from 'next/server';
 export function middleware(request: NextRequest) {
   const hostname = request.headers.get('host') ?? '';
 
+  const reservedSubdomains = ['www', 'admin', 'student', 'superadmin', 'api'];
+
   let collegeSlug = '';
   if (!hostname.startsWith('localhost') && hostname.includes('.')) {
     const subdomain = hostname.split('.')[0];
-    if (subdomain && subdomain !== 'www') {
+    if (subdomain && !reservedSubdomains.includes(subdomain)) {
       collegeSlug = subdomain;
     }
   }
