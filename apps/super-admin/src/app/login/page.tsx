@@ -61,7 +61,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <div className="text-3xl mb-2">🧠</div>
-          <h1 className="text-xl font-bold text-white">EduMind AI</h1>
+          <h1 className="text-xl font-bold text-white">Medimind AI</h1>
           <p className="text-sm text-gray-400 mt-1">Super Admin Console</p>
         </div>
 
@@ -74,7 +74,7 @@ export default function LoginPage() {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="sudipta@edumindai.com"
+                  placeholder="sudipta@medimindai.com"
                   className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-blue-500 transition-colors"
                   required
                 />

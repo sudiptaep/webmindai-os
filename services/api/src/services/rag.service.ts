@@ -1,23 +1,30 @@
 import {
   CONFIDENCE_THRESHOLD,
+  IMAGE_CONFIDENCE_THRESHOLD,
+  IMAGE_TOP_K,
   RAG_TOP_K_RETRIEVE,
   RAG_TOP_K_RERANK,
   RAG_CONVERSATION_TURNS,
   LLM_MODEL_EXAM,
   type SourceCitation,
   type Chapter,
+  type ImageAsset,
+  type ImageToken,
 } from "@college-chatbot/shared";
 import { embedQuery } from "./embedding.service";
 import { queryMultiNamespace, queryChapterScoped, queryDocUnscoped, type PineconeChunk } from "./pinecone.service";
 import { streamChatResponse, generateExamQuestions } from "./llm.service";
 import { getCachedResponse, setCachedResponse } from "./cache.service";
 import { recordCostEvent, getRateTable, getBillingMonth, getBillingDay } from "./metering.service";
+import { getCollegeDb } from "../db/college.db";
+import { getImageAssetModel } from "../models/college/image-asset.model";
+import { generateFileToken, TOKEN_TTL } from "./file-token.service";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export type RAGEvent =
   | { type: "token"; content: string }
-  | { type: "done"; sources: SourceCitation[]; confidence_score: number; answered: boolean; tokens_used: number };
+  | { type: "done"; sources: SourceCitation[]; confidence_score: number; answered: boolean; tokens_used: number; images: ImageToken[] };
 
 export interface RAGMeteringContext {
   deptId: string;
@@ -161,6 +168,82 @@ Output this exact JSON structure:
 }`;
 }
 
+// ─── Image-aware retrieval (F-17) ─────────────────────────────────────────────
+
+function splitChunksByType(chunks: PineconeChunk[]): { textChunks: PineconeChunk[]; imageChunks: PineconeChunk[] } {
+  const textChunks: PineconeChunk[] = [];
+  const imageChunks: PineconeChunk[] = [];
+  for (const chunk of chunks) {
+    if (chunk.metadata.chunk_type === "image") imageChunks.push(chunk);
+    else textChunks.push(chunk);
+  }
+  return { textChunks, imageChunks };
+}
+
+async function resolveImageTokens(
+  collegeId: string,
+  imageChunks: PineconeChunk[],
+  studentId?: string | null,
+): Promise<ImageToken[]> {
+  const topImageChunks = imageChunks
+    .filter((c) => c.score >= IMAGE_CONFIDENCE_THRESHOLD)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, IMAGE_TOP_K);
+
+  if (topImageChunks.length === 0) return [];
+
+  const conn = await getCollegeDb(collegeId);
+  const ImageAssetModel = getImageAssetModel(conn);
+
+  const resolved = await Promise.all(
+    topImageChunks.map(async (chunk) => {
+      const imageAssetId = chunk.metadata.image_asset_id as string | undefined;
+      if (!imageAssetId) return null;
+
+      const asset = await ImageAssetModel.findById(imageAssetId).lean<ImageAsset>();
+      if (!asset || asset.hidden) return null;
+
+      const tokenBase = {
+        college_id: collegeId,
+        dept_id: asset.dept_id,
+        student_id: studentId ?? "",
+        doc_id: asset.doc_id,
+        mime_type: "image/jpeg",
+        single_use: false,
+      } as const;
+
+      const [viewToken, thumbToken] = await Promise.all([
+        generateFileToken({ ...tokenBase, file_path: asset.file_path, intent: "preview", filename: `image_${asset._id}.jpg` }, TOKEN_TTL.preview),
+        generateFileToken({ ...tokenBase, file_path: asset.thumbnail_path, intent: "preview", filename: `image_${asset._id}_thumb.jpg` }, TOKEN_TTL.preview),
+      ]);
+
+      const imageToken: ImageToken = {
+        image_asset_id: asset._id,
+        token_url: `/files/serve?token=${viewToken}`,
+        thumbnail_url: `/files/serve?token=${thumbToken}`,
+        caption: asset.caption ?? "",
+        image_type: asset.image_type ?? "other",
+        source_page: asset.source_page,
+        doc_filename: (chunk.metadata.filename as string) ?? "",
+        alt_text: asset.alt_text ?? "",
+        labels: asset.labels_extracted ?? [],
+        relevance_score: chunk.score,
+      };
+      return imageToken;
+    }),
+  );
+
+  return resolved.filter((t): t is ImageToken => t !== null);
+}
+
+function buildImageCaptionContext(images: ImageToken[]): string {
+  if (images.length === 0) return "";
+  return (
+    "\n\nRelevant diagrams being shown to the student:\n" +
+    images.map((img) => `- ${img.caption} (Page ${img.source_page}, ${img.image_type})`).join("\n")
+  );
+}
+
 // ─── Source extraction ────────────────────────────────────────────────────────
 
 function extractSources(chunks: PineconeChunk[]): SourceCitation[] {
@@ -202,6 +285,7 @@ export async function* runRAG(params: RAGParams): AsyncGenerator<RAGEvent> {
         confidence_score: cached.confidence_score,
         answered: cached.answered,
         tokens_used: 0,
+        images: [],
       };
       return;
     }
@@ -243,11 +327,17 @@ export async function* runRAG(params: RAGParams): AsyncGenerator<RAGEvent> {
     });
   }
 
+  // Step 3a: split text vs image chunks — images skip BM25 (already semantically matched)
+  const { textChunks, imageChunks } = splitChunksByType(retrieved);
+
   // Step 3b: BM25 hybrid re-rank (in-memory, no extra API call)
-  const hybridRanked = bm25Merge(query, retrieved);
+  const hybridRanked = bm25Merge(query, textChunks);
 
   // Step 4: Take top-K from BM25 hybrid ranking (no external reranker needed)
   const reranked = hybridRanked.slice(0, RAG_TOP_K_RERANK);
+
+  // Resolve image matches independently of the text confidence gate below
+  const images = await resolveImageTokens(collegeId, imageChunks, metering?.studentId);
 
   // Step 5: Confidence check
   const maxScore = reranked[0]?.score ?? 0;
@@ -258,7 +348,7 @@ export async function* runRAG(params: RAGParams): AsyncGenerator<RAGEvent> {
     const fallback =
       "I don't have information about this topic in the uploaded course material. Please consult your instructor or course resources.";
     yield { type: "token", content: fallback };
-    yield { type: "done", sources: [], confidence_score: maxScore, answered: false, tokens_used: 0 };
+    yield { type: "done", sources: [], confidence_score: maxScore, answered: false, tokens_used: 0, images: [] };
     return;
   }
 
@@ -285,6 +375,7 @@ export async function* runRAG(params: RAGParams): AsyncGenerator<RAGEvent> {
       confidence_score: maxScore,
       answered: true,
       tokens_used: 0,
+      images: [],
     };
     return;
   }
@@ -296,8 +387,9 @@ export async function* runRAG(params: RAGParams): AsyncGenerator<RAGEvent> {
     { role: "user", content: query },
   ];
 
-  // Step 7: Stream response
-  const systemPrompt = buildChatSystemPrompt(reranked);
+  // Step 7: Stream response — image captions are added to context so the LLM can
+  // reference "as shown in the diagram"; the image itself is never sent to the LLM.
+  const systemPrompt = buildChatSystemPrompt(reranked) + buildImageCaptionContext(images);
   const { tokenStream, getUsage } = await streamChatResponse(systemPrompt, messages, undefined, llmMetering);
 
   let fullResponse = "";
@@ -324,6 +416,7 @@ export async function* runRAG(params: RAGParams): AsyncGenerator<RAGEvent> {
     confidence_score: maxScore,
     answered: true,
     tokens_used: tokensUsed,
+    images,
   };
 }
 

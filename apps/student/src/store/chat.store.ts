@@ -8,11 +8,25 @@ export interface SourceCitation {
   chunk_index?: number;
 }
 
+export interface ChatImage {
+  image_asset_id: string;
+  token_url: string;
+  thumbnail_url: string;
+  caption: string;
+  image_type: string;
+  source_page: number;
+  doc_filename: string;
+  alt_text: string;
+  labels: string[];
+  relevance_score: number;
+}
+
 export interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
   sources?: SourceCitation[];
+  images?: ChatImage[];
   confidence_score?: number;
   answered?: boolean;
   streaming?: boolean;
@@ -25,7 +39,7 @@ interface ChatState {
   setSessionId: (id: string) => void;
   addMessage: (msg: Message) => void;
   appendToken: (id: string, token: string) => void;
-  finalizeMessage: (id: string, sources: SourceCitation[], confidence: number, answered: boolean) => void;
+  finalizeMessage: (id: string, sources: SourceCitation[], confidence: number, answered: boolean, images?: ChatImage[]) => void;
   setStreaming: (v: boolean) => void;
   reset: () => void;
 }
@@ -47,11 +61,11 @@ export const useChatStore = create<ChatState>((set) => ({
       ),
     })),
 
-  finalizeMessage: (id, sources, confidence_score, answered) =>
+  finalizeMessage: (id, sources, confidence_score, answered, images) =>
     set((s) => ({
       messages: s.messages.map((m) =>
         m.id === id
-          ? { ...m, sources, confidence_score, answered, streaming: false }
+          ? { ...m, sources, confidence_score, answered, images, streaming: false }
           : m
       ),
     })),

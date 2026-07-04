@@ -38,6 +38,9 @@ const casesRoutesPlugin: FastifyPluginAsync = async (fastify: FastifyInstance) =
       const Document = getDocumentModel(conn);
       const doc = await Document.findById(docId).lean();
       if (!doc) return reply.code(404).send({ error: "Document not found" });
+      if (doc.ingestion_status !== "completed") {
+        return reply.code(422).send({ error: "Document not yet processed" });
+      }
 
       const body = GenerateCaseSchema.parse(req.body ?? {});
 

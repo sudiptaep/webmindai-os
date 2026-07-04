@@ -5,7 +5,7 @@ import { CollegeSlugProvider } from '@/lib/college-context';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'College AI Assistant',
+  title: 'Medimind AI',
   description: 'Ask your college AI anything',
 };
 

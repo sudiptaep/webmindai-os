@@ -127,7 +127,7 @@ async function sendAlertEmail(title: string, message: string, severity: AlertSev
     const severityLabel = severity.toUpperCase();
 
     await transporter.sendMail({
-      from: `"EduMind AI Observatory" <${process.env.SMTP_USER}>`,
+      from: `"Medimind AI Observatory" <${process.env.SMTP_USER}>`,
       to,
       cc: process.env.OBSERVATORY_ALERT_EMAIL_CC,
       subject: `[${severityLabel}] ${title}`,
@@ -139,7 +139,7 @@ async function sendAlertEmail(title: string, message: string, severity: AlertSev
           <div style="border:1px solid #e5e7eb;border-top:none;padding:20px;border-radius:0 0 6px 6px">
             <p>${message}</p>
             <p style="color:#6b7280;font-size:13px">
-              EduMind AI Observatory — ${new Date().toISOString()}<br/>
+              Medimind AI Observatory — ${new Date().toISOString()}<br/>
               Log in to super admin to acknowledge or resolve this alert.
             </p>
           </div>

@@ -7,8 +7,9 @@ import { ChapterHeader } from '../chapter/ChapterHeader';
 import { ChapterChat } from '../chat/ChapterChat';
 import { ChapterSummary } from '../chat/ChapterSummary';
 import { PdfViewer } from '@/components/library/DocumentViewer/PdfViewer';
+import { ImageGalleryTab } from '@/components/library/gallery/ImageGalleryTab';
 
-type Tab = 'chat' | 'read' | 'summary';
+type Tab = 'chat' | 'read' | 'summary' | 'images';
 
 interface Props {
   chapter: Chapter | null;
@@ -56,6 +57,7 @@ export function ContentPanel({ chapter, docId, collegeId, onSwitchChapter }: Pro
           { key: 'chat',    label: 'Chat' },
           { key: 'read',    label: 'Read' },
           { key: 'summary', label: 'Summary' },
+          { key: 'images',  label: 'Images' },
         ] as { key: Tab; label: string }[]).map(({ key, label }) => (
           <button
             key={key}
@@ -102,6 +104,10 @@ export function ContentPanel({ chapter, docId, collegeId, onSwitchChapter }: Pro
             docId={docId}
             collegeId={collegeId}
           />
+        </div>
+
+        <div className={`absolute inset-0 flex flex-col overflow-hidden ${activeTab === 'images' ? '' : 'hidden'}`}>
+          <ImageGalleryTab docId={docId} collegeId={collegeId} />
         </div>
       </div>
     </main>

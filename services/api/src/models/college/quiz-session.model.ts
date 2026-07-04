@@ -16,6 +16,7 @@ const QuizQuestionSchema = new Schema<QuizQuestion>(
     is_pyq:             { type: Boolean, default: false },
     pyq_question_id:    { type: String },
     pyq_year:           { type: String },
+    image_asset_id:     { type: String },
     student_answer:     { type: String },
     is_correct:         { type: Boolean },
     time_taken_seconds: { type: Number },
@@ -40,7 +41,7 @@ const QuizSessionSchema = new Schema<QuizSession>(
     },
     question_type:         {
       type: String,
-      enum: ["MCQ", "TF", "SAQ", "CASE", "MIXED", "PYQ"] as QuizQuestionType[],
+      enum: ["MCQ", "TF", "SAQ", "CASE", "MIXED", "PYQ", "IMAGE_LABEL"] as QuizQuestionType[],
       required: true,
     },
     difficulty:            {

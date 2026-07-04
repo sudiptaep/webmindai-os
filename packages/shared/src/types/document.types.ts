@@ -32,6 +32,13 @@ export interface Document {
   // F-13: populated after chapter extraction completes
   has_chapter_map?: boolean;
   chapter_count?: number;
+  // F-17: image intelligence
+  image_count_raw?: number;
+  image_count_analysed?: number;
+  image_count_indexed?: number;
+  image_ingestion_status?: ImageIngestionStatus;
+  image_ingestion_cost_usd?: number;
+  images_enabled?: boolean;
   created_at: Date;
   updated_at: Date;
 }
@@ -124,7 +131,7 @@ export interface IngestionCallbackPayload {
 
 export type ExtractionMethod = "pdf_bookmarks" | "heuristic" | "manual";
 export type QuizMode = "practice" | "test" | "timed" | "pyq_sim" | "weak_spots" | "socratic";
-export type QuizQuestionType = "MCQ" | "TF" | "SAQ" | "CASE" | "MIXED" | "PYQ";
+export type QuizQuestionType = "MCQ" | "TF" | "SAQ" | "CASE" | "MIXED" | "PYQ" | "IMAGE_LABEL";
 export type QuizDifficulty = "recall" | "application" | "analysis" | "adaptive";
 export type PYQQuestionType = "MCQ" | "SAQ" | "LAQ" | "CASE" | "FIB";
 
@@ -209,6 +216,7 @@ export interface QuizQuestion {
   is_pyq: boolean;
   pyq_question_id?: string;
   pyq_year?: string;
+  image_asset_id?: string;
   student_answer?: string;
   is_correct?: boolean;
   time_taken_seconds?: number;
@@ -301,4 +309,100 @@ export interface PYQIngestionCallbackPayload {
   status:         "completed" | "failed";
   question_count?: number;
   error?:          string;
+}
+
+// ── F-17: Visual Content Intelligence ─────────────────────────────────────────
+
+export type ImageIngestionStatus = "not_started" | "queued" | "processing" | "completed" | "partial" | "failed";
+export type ImageVisionStatus = "pending" | "processing" | "completed" | "failed" | "skipped";
+export type ImageType =
+  | "anatomical_diagram"
+  | "histology"
+  | "pathology"
+  | "flowchart"
+  | "graph_chart"
+  | "circuit_diagram"
+  | "block_diagram"
+  | "chemical_structure"
+  | "clinical_image"
+  | "photograph"
+  | "table_image"
+  | "equation"
+  | "other";
+
+export interface ImageAsset {
+  _id: string;
+  doc_id: string;
+  college_id: string;
+  dept_id: string;
+  subject_id?: string;
+
+  file_path: string;
+  thumbnail_path: string;
+  file_size_bytes: number;
+  width_px: number;
+  height_px: number;
+  format: "jpg" | "png" | "gif" | "webp";
+
+  source_page: number;
+  image_index_on_page: number;
+  global_image_index: number;
+  content_hash: string;
+
+  vision_status: ImageVisionStatus;
+  vision_tokens_used?: number;
+  description?: string;
+  labels_extracted: string[];
+  caption?: string;
+  image_type?: ImageType;
+  clinical_relevance?: string;
+  searchable_terms: string[];
+  alt_text?: string;
+
+  pinecone_vector_id?: string;
+  was_filtered: boolean;
+  filter_reason?: "too_small" | "logo_icon" | "low_quality" | "duplicate";
+  hidden?: boolean;
+
+  created_at: Date;
+  updated_at: Date;
+}
+
+export interface ImageIngestionJobPayload {
+  job_id: string;
+  doc_id: string;
+  college_id: string;
+  dept_id: string;
+  subject_id: string | null;
+  file_path: string;
+  file_type: "pdf" | "pptx";
+  doc_filename: string;
+  dept_name: string;
+  subject_name?: string;
+  academic_year: string;
+  job_type: "image_ingestion";
+  callback_url: string;
+  bulk_save_url: string;
+}
+
+export interface ImageIngestionCallbackPayload {
+  status: "completed" | "failed";
+  image_count_raw?: number;
+  image_count_analysed?: number;
+  image_count_indexed?: number;
+  cost_usd?: number;
+  error?: string;
+}
+
+export interface ImageToken {
+  image_asset_id: string;
+  token_url: string;
+  thumbnail_url: string;
+  caption: string;
+  image_type: ImageType;
+  source_page: number;
+  doc_filename: string;
+  alt_text: string;
+  labels: string[];
+  relevance_score: number;
 }

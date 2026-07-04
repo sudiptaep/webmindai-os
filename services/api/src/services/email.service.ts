@@ -100,11 +100,11 @@ export async function sendCollegeAdminInvite(
   await getTransporter().sendMail({
     from: FROM,
     to: toEmail,
-    subject: `You've been added as College Administrator — EduMind AI`,
+    subject: `You've been added as College Administrator — Medimind AI`,
     html: `
-      <h2>Welcome to EduMind AI</h2>
+      <h2>Welcome to Medimind AI</h2>
       <p>Dear ${adminName},</p>
-      <p>You have been set up as the <strong>College Administrator</strong> for <strong>${collegeName}</strong> on EduMind AI.</p>
+      <p>You have been set up as the <strong>College Administrator</strong> for <strong>${collegeName}</strong> on Medimind AI.</p>
       <p><strong>Your role:</strong> ${adminTitle}</p>
       <p><strong>Access:</strong> All departments in ${collegeName}</p>
       <br/>
@@ -112,7 +112,7 @@ export async function sendCollegeAdminInvite(
       <br/>
       <p style="color:#6b7280;font-size:13px;">This link expires in 7 days.</p>
       <p style="color:#6b7280;font-size:13px;">Once logged in, you'll be able to view all departments and their AI usage, monitor student confusion topics, add and manage faculty, and export college usage reports.</p>
-      <p style="color:#6b7280;font-size:13px;">Need help? Contact support@edumindai.com</p>
+      <p style="color:#6b7280;font-size:13px;">Need help? Contact support@medimindai.com</p>
     `,
   });
 }
@@ -129,9 +129,9 @@ export async function sendDeptAdminInvite(
   await getTransporter().sendMail({
     from: FROM,
     to: toEmail,
-    subject: `You've been added as Dept Admin — ${deptName} · EduMind AI`,
+    subject: `You've been added as Dept Admin — ${deptName} · Medimind AI`,
     html: `
-      <h2>Welcome to EduMind AI</h2>
+      <h2>Welcome to Medimind AI</h2>
       <p>Dear ${adminName},</p>
       <p>You have been set up as the <strong>Department Administrator</strong> for:</p>
       <p><strong>Department:</strong> ${deptName}<br/><strong>College:</strong> ${collegeName}</p>
@@ -140,7 +140,7 @@ export async function sendDeptAdminInvite(
       <br/>
       <p style="color:#6b7280;font-size:13px;">This link expires in 7 days.</p>
       <p style="color:#6b7280;font-size:13px;">Once logged in, you'll be able to upload textbooks and notes, monitor what your students ask the AI, and see which topics confuse them most.</p>
-      <p style="color:#6b7280;font-size:13px;">Need help? Contact support@edumindai.com</p>
+      <p style="color:#6b7280;font-size:13px;">Need help? Contact support@medimindai.com</p>
     `,
   });
 }
@@ -154,7 +154,7 @@ export async function sendCollegeAdminPasswordReset(
   await getTransporter().sendMail({
     from: FROM,
     to: toEmail,
-    subject: "Reset your College Admin password — EduMind AI",
+    subject: "Reset your College Admin password — Medimind AI",
     html: `
       <h2>Password Reset Request</h2>
       <p>We received a request to reset your College Administrator password.</p>
@@ -173,7 +173,7 @@ export async function sendDeptAdminPasswordReset(
   await getTransporter().sendMail({
     from: FROM,
     to: toEmail,
-    subject: "Reset your Faculty Admin password — EduMind AI",
+    subject: "Reset your Faculty Admin password — Medimind AI",
     html: `
       <h2>Password Reset Request</h2>
       <p>We received a request to reset your Department Administrator password.</p>

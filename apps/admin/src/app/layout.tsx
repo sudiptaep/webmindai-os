@@ -5,7 +5,7 @@ import { CollegeSlugProvider } from '@/lib/college-context';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Admin Dashboard',
+  title: 'Medimind AI — Admin Dashboard',
   description: 'College admin panel',
 };
 

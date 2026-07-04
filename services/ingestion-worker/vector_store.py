@@ -56,6 +56,48 @@ def upsert_chunks(
     return len(vectors)
 
 
+def upsert_image_vector(
+    image_asset_id: str,
+    doc_id: str,
+    college_id: str,
+    dept_id: str,
+    subject_id: str | None,
+    source_page: int,
+    embedding: list[float],
+    vision_result: dict,
+    doc_filename: str,
+    academic_year: str,
+) -> str:
+    """
+    Upsert one image description vector into the same namespace as text chunks.
+    Distinguished from text chunks via metadata.chunk_type == "image".
+    """
+    pc = _get_client()
+    index = pc.Index(os.environ["PINECONE_INDEX_NAME"])
+    namespace = build_namespace(college_id, dept_id)
+    vector_id = f"{doc_id}_img_{image_asset_id}"
+
+    metadata = {
+        "doc_id": doc_id,
+        "college_id": college_id,
+        "dept_id": dept_id,
+        "subject_id": subject_id or "",
+        "filename": doc_filename,
+        "page_num": source_page,
+        "academic_year": academic_year,
+        "chunk_type": "image",
+        "image_asset_id": image_asset_id,
+        "image_type": vision_result.get("image_type", "other"),
+        "caption": (vision_result.get("caption") or "")[:200],
+        "labels": ", ".join(vision_result.get("labels_extracted", []))[:300],
+        "alt_text": (vision_result.get("alt_text") or "")[:200],
+        "text": vision_result.get("description", ""),
+    }
+
+    index.upsert(vectors=[{"id": vector_id, "values": embedding, "metadata": metadata}], namespace=namespace)
+    return vector_id
+
+
 def delete_doc_vectors(college_id: str, dept_id: str, doc_id: str) -> None:
     """Delete all vectors for a document (used during reingest)."""
     pc = _get_client()

@@ -6,7 +6,8 @@ import { fetchChapterChunks } from "./pinecone.service";
 import { getQuizSessionModel } from "../models/college/quiz-session.model";
 import { getChapterMapModel } from "../models/college/chapter-map.model";
 import { getPYQQuestionModel } from "../models/college/pyq-question.model";
-import type { QuizSession, QuizQuestion, QuizMode, QuizQuestionType, QuizDifficulty } from "@college-chatbot/shared";
+import { getImageAssetModel } from "../models/college/image-asset.model";
+import type { QuizSession, QuizQuestion, QuizMode, QuizQuestionType, QuizDifficulty, ImageAsset } from "@college-chatbot/shared";
 
 const QUIZ_MAX_CONTEXT = 60_000;
 const QUIZ_GENERATION_MODEL = process.env.QUIZ_GENERATION_MODEL ?? LLM_MODEL_EXAM;
@@ -72,6 +73,62 @@ function parseQuizJson(raw: string): QuizQuestion[] {
   }
 }
 
+// ─── F-17-G: Image-label questions ─────────────────────────────────────────────
+
+function pickRandom<T>(arr: T[], n: number): T[] {
+  const copy = [...arr];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy.slice(0, n);
+}
+
+async function generateImageLabelQuestions(
+  collegeId: string,
+  docId: string,
+  startPage: number,
+  endPage: number,
+  count: number,
+  conn: Connection,
+): Promise<QuizQuestion[]> {
+  const ImageAssetModel = getImageAssetModel(conn);
+  const candidates = await ImageAssetModel.find({
+    doc_id: docId,
+    was_filtered: false,
+    vision_status: "completed",
+    hidden: { $ne: true },
+    source_page: { $gte: startPage, $lte: endPage },
+  }).lean<ImageAsset[]>();
+
+  const eligible = candidates.filter((img) => (img.labels_extracted ?? []).length >= 3);
+  if (eligible.length === 0) return [];
+
+  const chosen = pickRandom(eligible, Math.min(count, eligible.length));
+
+  return chosen.map((asset) => {
+    const targetLabel = asset.labels_extracted[Math.floor(Math.random() * asset.labels_extracted.length)];
+    const options = pickRandom(asset.labels_extracted.filter((l) => l !== targetLabel), 3);
+    options.push(targetLabel);
+
+    return {
+      question_id: randomUUID(),
+      question_text: "In the diagram shown, what structure is indicated by the highlighted label?",
+      question_type: "IMAGE_LABEL" as QuizQuestionType,
+      options: pickRandom(options, options.length),
+      correct_answer: targetLabel,
+      explanation: `This is the ${targetLabel}. ${(asset.description ?? "").slice(0, 200)}`,
+      source_page: asset.source_page,
+      bloom_level: "remember",
+      difficulty: "recall" as QuizDifficulty,
+      is_pyq: false,
+      image_asset_id: asset._id,
+      student_answer: undefined,
+      is_correct: undefined,
+    };
+  });
+}
+
 export async function generateQuiz(params: GenerateQuizParams): Promise<QuizGenerateResult> {
   const {
     collegeId, deptId, docId, chapterIndex, studentId, subjectId,
@@ -83,6 +140,40 @@ export async function generateQuiz(params: GenerateQuizParams): Promise<QuizGene
   const chapterMap = await ChapterMap.findOne({ doc_id: docId }).lean();
   const chapter = chapterMap?.chapters.find(c => c.chapter_index === chapterIndex);
   if (!chapter) throw new Error(`Chapter ${chapterIndex} not found`);
+
+  // F-17-G: image-label questions bypass the LLM entirely — built directly from ImageAsset records
+  if (questionType === "IMAGE_LABEL") {
+    const imageQuestions = await generateImageLabelQuestions(collegeId, docId, chapter.start_page, chapter.end_page, count, conn);
+    if (imageQuestions.length === 0) {
+      throw new Error("No labelled diagrams available for this chapter yet");
+    }
+
+    const QuizSession = getQuizSessionModel(conn);
+    const session = await QuizSession.create({
+      _id: randomUUID(),
+      student_id: studentId,
+      doc_id: docId,
+      chapter_index: chapterIndex,
+      subject_id: subjectId,
+      college_id: collegeId,
+      dept_id: deptId,
+      quiz_mode: "practice",
+      question_type: questionType,
+      difficulty,
+      time_limit_seconds: null,
+      questions: imageQuestions,
+      status: "in_progress",
+      total_count: imageQuestions.length,
+      started_at: new Date(),
+    });
+
+    return {
+      quiz_session_id: session._id,
+      questions: imageQuestions,
+      total_count: imageQuestions.length,
+      time_limit_seconds: null,
+    };
+  }
 
   // 2. Fetch chapter chunks from Pinecone
   const chunks = await fetchChapterChunks(collegeId, deptId, docId, chapter.start_page, chapter.end_page);
@@ -214,7 +305,7 @@ export async function submitSingleAnswer(
   const question = session.questions.find(q => q.question_id === questionId);
   if (!question) throw new Error("Question not found");
 
-  const isCorrect = question.question_type === "MCQ" || question.question_type === "TF"
+  const isCorrect = question.question_type === "MCQ" || question.question_type === "TF" || question.question_type === "IMAGE_LABEL"
     ? studentAnswer.trim().toUpperCase() === question.correct_answer.trim().toUpperCase()
     : studentAnswer.trim().length > 0; // SAQ/LAQ — attempt = credit (detailed grading in future)
 

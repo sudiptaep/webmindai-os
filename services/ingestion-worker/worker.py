@@ -21,6 +21,7 @@ from jobs.ingest_document import run_pipeline, post_callback
 from jobs.extract_pages import run_extract_pages, post_extraction_callback
 from jobs.extract_chapters import run_extract_chapters, post_chapter_failure
 from jobs.ingest_pyq import run_ingest_pyq, post_pyq_failure
+from jobs.image_ingestion import handle_image_ingestion, post_image_callback, post_image_failure
 
 logger = logging.getLogger(__name__)
 
@@ -117,6 +118,22 @@ async def _handle_extract_chapters(job_data: dict) -> dict:
         raise
 
 
+async def _handle_image_ingestion_job(job_data: dict) -> dict:
+    callback_url: str = job_data["callback_url"]
+    college_id:   str = job_data["college_id"]
+    doc_id:       str = job_data["doc_id"]
+
+    try:
+        result = await handle_image_ingestion(job_data)
+        await post_image_callback(callback_url, college_id, {"status": "completed", **result})
+        return result
+
+    except Exception as exc:
+        logger.exception("Image ingestion failed: doc_id=%s", doc_id)
+        await post_image_failure(callback_url, college_id, str(exc))
+        raise
+
+
 async def process_job(job, job_token: str) -> dict:
     job_data: dict = job.data
     job_type: str  = job_data.get("job_type", "ingest")
@@ -127,6 +144,8 @@ async def process_job(job, job_token: str) -> dict:
         return await _handle_extract_chapters(job_data)
     elif job_type == "ingest_pyq":
         return await _handle_ingest_pyq(job_data)
+    elif job_type == "image_ingestion":
+        return await _handle_image_ingestion_job(job_data)
     else:
         return await _handle_ingest(job_data, job)
 

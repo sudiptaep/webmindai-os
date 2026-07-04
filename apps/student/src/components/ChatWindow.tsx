@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, KeyboardEvent, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useChatStore, type SourceCitation } from '@/store/chat.store';
+import { useChatStore, type SourceCitation, type ChatImage } from '@/store/chat.store';
 import { useAuthStore } from '@/store/auth.store';
 import { MessageBubble } from './MessageBubble';
 import { GenericFallbackBanner } from './GenericFallbackBanner';
@@ -120,6 +120,7 @@ export function ChatWindow({ initialSessionId, subjects = [] }: ChatWindowProps)
             type: string;
             content?: string;
             sources?: SourceCitation[];
+            images?: ChatImage[];
             confidence_score?: number;
             answered?: boolean;
             session_id?: string;
@@ -129,7 +130,7 @@ export function ChatWindow({ initialSessionId, subjects = [] }: ChatWindowProps)
           if (event.type === 'token' && event.content) {
             appendToken(assistantMsgId, event.content);
           } else if (event.type === 'done') {
-            finalizeMessage(assistantMsgId, event.sources ?? [], event.confidence_score ?? 0, event.answered ?? false);
+            finalizeMessage(assistantMsgId, event.sources ?? [], event.confidence_score ?? 0, event.answered ?? false, event.images ?? []);
           } else if (event.type === 'session' && event.session_id) {
             setSessionId(event.session_id);
           }

@@ -19,7 +19,7 @@ export interface RateTableEntry {
 const RateTableSchema = new Schema<RateTableEntry>(
   {
     _id: { type: String, default: () => randomUUID() },
-    service: { type: String, enum: ["anthropic","openai_embeddings","cohere","pinecone"], required: true },
+    service: { type: String, enum: ["anthropic","openai_embeddings","cohere","pinecone","openai_vision"], required: true },
     model: { type: String, required: true },
     input_token_cost_per_1k: { type: Number, default: 0 },
     output_token_cost_per_1k: { type: Number, default: 0 },

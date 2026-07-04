@@ -3,7 +3,7 @@ import { Providers } from '@/lib/providers';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Platform Admin',
+  title: 'Medimind AI — Platform Admin',
   description: 'Super admin panel',
 };
 

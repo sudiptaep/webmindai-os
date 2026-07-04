@@ -4,6 +4,7 @@ import { router, protectedProcedure } from "../trpc";
 import { getCollegeDb } from "../../db/college.db";
 import { getDocumentModel } from "../../models/college/document.model";
 import { getDownloadLogModel } from "../../models/college/download-log.model";
+import { getImageAssetModel } from "../../models/college/image-asset.model";
 import { deleteFile, resolveLocalPath } from "../../services/storage.service";
 import { enqueueIngestionJob, enqueueChapterExtractionJob } from "../../services/queue.service";
 import { deleteDocVectors } from "../../services/pinecone.service";
@@ -124,6 +125,7 @@ export const documentRouter = router({
         doc_id:                  z.string(),
         download_enabled:        z.boolean().optional(),
         is_visible_to_students:  z.boolean().optional(),
+        images_enabled:          z.boolean().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -138,6 +140,7 @@ export const documentRouter = router({
       const patch: Record<string, unknown> = {};
       if (input.download_enabled       !== undefined) patch.download_enabled       = input.download_enabled;
       if (input.is_visible_to_students !== undefined) patch.is_visible_to_students = input.is_visible_to_students;
+      if (input.images_enabled         !== undefined) patch.images_enabled         = input.images_enabled;
 
       if (Object.keys(patch).length === 0) {
         throw new TRPCError({ code: "BAD_REQUEST", message: "No fields to update" });
@@ -278,5 +281,57 @@ export const documentRouter = router({
       });
 
       return { doc_id: input.doc_id, status: "pending" };
+    }),
+
+  // F-17: Admin image management ────────────────────────────────────────────
+
+  listImages: protectedProcedure
+    .input(z.object({ college_id: z.string(), doc_id: z.string() }))
+    .query(async ({ ctx, input }) => {
+      requireAdminRole(ctx.user);
+      const conn = await resolveCollegeConn(ctx.user, input.college_id);
+      const Document = getDocumentModel(conn);
+
+      const doc = await Document.findById(input.doc_id).lean();
+      if (!doc) throw new TRPCError({ code: "NOT_FOUND", message: "Document not found" });
+      if (isDeptAdmin(ctx.user)) checkDeptScope(ctx.user, doc.dept_id);
+
+      const ImageAsset = getImageAssetModel(conn);
+      const images = await ImageAsset.find({ doc_id: input.doc_id }).sort({ global_image_index: 1 }).lean();
+
+      const statusSummary = images.reduce<Record<string, number>>((acc, img) => {
+        acc[img.vision_status] = (acc[img.vision_status] ?? 0) + 1;
+        return acc;
+      }, {});
+
+      return {
+        images,
+        total: images.length,
+        vision_status_summary: statusSummary,
+        image_ingestion_status: doc.image_ingestion_status ?? "not_started",
+        image_ingestion_cost_usd: doc.image_ingestion_cost_usd ?? 0,
+      };
+    }),
+
+  hideImage: protectedProcedure
+    .input(z.object({ college_id: z.string(), doc_id: z.string(), image_asset_id: z.string(), hidden: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      requireAdminRole(ctx.user);
+      const conn = await resolveCollegeConn(ctx.user, input.college_id);
+      const Document = getDocumentModel(conn);
+
+      const doc = await Document.findById(input.doc_id).lean();
+      if (!doc) throw new TRPCError({ code: "NOT_FOUND", message: "Document not found" });
+      if (isDeptAdmin(ctx.user)) checkDeptScope(ctx.user, doc.dept_id);
+
+      const ImageAsset = getImageAssetModel(conn);
+      const updated = await ImageAsset.findOneAndUpdate(
+        { _id: input.image_asset_id, doc_id: input.doc_id },
+        { $set: { hidden: input.hidden } },
+        { new: true, lean: true },
+      );
+      if (!updated) throw new TRPCError({ code: "NOT_FOUND", message: "Image not found" });
+
+      return { ok: true };
     }),
 });

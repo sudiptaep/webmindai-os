@@ -29,6 +29,7 @@ import { streamChatResponse } from "../services/llm.service";
 import { fetchDocChunks } from "../services/pinecone.service";
 import { getStudentNotesModel } from "../models/college/student-notes.model";
 import { getChapterSummaryModel } from "../models/college/chapter-summary.model";
+import { getImageAssetModel } from "../models/college/image-asset.model";
 
 // ── Rate limit config (env-overridable) ─────────────────────────────────────
 
@@ -1152,6 +1153,87 @@ const libraryRoutesPlugin: FastifyPluginAsync = async (fastify: FastifyInstance)
         .header("Content-Type", "text/plain; charset=utf-8")
         .header("Content-Disposition", `attachment; filename="chapter_${chapterIdx}_notes.txt"`)
         .send(text);
+    },
+  );
+
+  // ── F-17-F: Image gallery for a document ─────────────────────────────────
+  fastify.get(
+    "/college/:collegeId/student/library/:docId/images",
+    { preHandler: PRE },
+    async (req: FastifyRequest, reply: FastifyReply) => {
+      const { collegeId, docId } = req.params as { collegeId: string; docId: string };
+      const q = req.query as {
+        page?: string; limit?: string; image_type?: string;
+        source_page_from?: string; source_page_to?: string; q?: string;
+      };
+      const student = getStudent(req);
+      const page  = Math.max(1, Number(q.page  ?? 1));
+      const limit = Math.min(100, Math.max(1, Number(q.limit ?? 24)));
+
+      const conn = await getCollegeDb(collegeId);
+      const doc  = await getDocumentModel(conn).findById(docId).lean();
+      if (!doc)                                 return reply.status(404).send({ statusCode: 404, error: "Not Found",  message: "Document not found" });
+      if (doc.is_visible_to_students === false) return reply.status(403).send({ statusCode: 403, error: "Forbidden", message: "Document not available" });
+
+      const ImageAsset = getImageAssetModel(conn);
+      const filter: Record<string, unknown> = { doc_id: docId, was_filtered: false, hidden: { $ne: true } };
+
+      if (q.image_type) filter.image_type = q.image_type;
+      if (q.source_page_from || q.source_page_to) {
+        filter.source_page = {
+          ...(q.source_page_from ? { $gte: Number(q.source_page_from) } : {}),
+          ...(q.source_page_to   ? { $lte: Number(q.source_page_to) }   : {}),
+        };
+      }
+      if (q.q) {
+        filter.$or = [
+          { caption:       { $regex: q.q, $options: "i" } },
+          { labels_extracted: { $regex: q.q, $options: "i" } },
+          { description:   { $regex: q.q, $options: "i" } },
+        ];
+      }
+
+      const allAssets = await ImageAsset.find(filter as never).sort({ global_image_index: 1 }).lean();
+      const total     = allAssets.length;
+      const pageAssets = allAssets.slice((page - 1) * limit, page * limit);
+
+      const byType: Record<string, number> = {};
+      for (const asset of allAssets) {
+        const t = asset.image_type ?? "other";
+        byType[t] = (byType[t] ?? 0) + 1;
+      }
+
+      const images = await Promise.all(
+        pageAssets.map(async (asset) => {
+          const [token, thumbToken] = await Promise.all([
+            generateFileToken(
+              { file_path: asset.file_path, intent: "preview", college_id: collegeId, dept_id: asset.dept_id, student_id: student.sub, doc_id: docId, filename: `image_${asset._id}.jpg`, mime_type: "image/jpeg", single_use: false },
+              TOKEN_TTL.preview,
+            ),
+            generateFileToken(
+              { file_path: asset.thumbnail_path, intent: "preview", college_id: collegeId, dept_id: asset.dept_id, student_id: student.sub, doc_id: docId, filename: `image_${asset._id}_thumb.jpg`, mime_type: "image/jpeg", single_use: false },
+              TOKEN_TTL.preview,
+            ),
+          ]);
+          return {
+            image_asset_id: asset._id,
+            token_url: `/files/serve?token=${token}`,
+            thumbnail_url: `/files/serve?token=${thumbToken}`,
+            caption: asset.caption ?? "",
+            image_type: asset.image_type ?? "other",
+            source_page: asset.source_page,
+            labels: asset.labels_extracted ?? [],
+            alt_text: asset.alt_text ?? "",
+          };
+        }),
+      );
+
+      return reply.send({
+        images,
+        total,
+        by_type: byType,
+        pagination: { page, limit, total_pages: Math.ceil(total / limit) },
+      });
     },
   );
 };

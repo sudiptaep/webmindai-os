@@ -1,5 +1,6 @@
 import type { Message } from '@/store/chat.store';
 import { SourceCitation } from './SourceCitation';
+import { InlineChatImage } from './InlineChatImage';
 
 const NEGATIVE_PATTERNS = [
   /\bi don'?t have (information|details|data)/i,
@@ -37,6 +38,13 @@ export function MessageBubble({ message }: { message: Message }) {
           <div className="flex flex-wrap gap-1 mt-1.5 px-1">
             {message.sources.map((src) => (
               <SourceCitation key={src.doc_id + (src.chunk_index ?? '')} source={src} />
+            ))}
+          </div>
+        )}
+        {!isUser && message.answered && message.images && message.images.length > 0 && (
+          <div className="flex flex-wrap gap-2 px-1">
+            {message.images.map((img) => (
+              <InlineChatImage key={img.image_asset_id} image={img} />
             ))}
           </div>
         )}

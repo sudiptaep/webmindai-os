@@ -279,7 +279,7 @@ export function AppSidebar({ currentSessionId, onClose, onCollapse }: AppSidebar
         </div>
         <div className="min-w-0">
           <p className="text-sm font-semibold text-gray-100 truncate">
-            {user?.college_type === 'medical' ? 'MedMind AI OS' : user?.college_type === 'engineering' ? 'Webmind OS' : 'EduMind AI'}
+            Medimind AI
           </p>
         </div>
         <div className="ml-auto flex items-center">

@@ -13,14 +13,48 @@ import {
   computeExamReadiness,
 } from "../services/quiz.service";
 import { addCorrectAnswersToSRS } from "../services/srs.service";
-import type { StudentJWTPayload } from "@college-chatbot/shared";
+import { getImageAssetModel } from "../models/college/image-asset.model";
+import { generateFileToken, TOKEN_TTL } from "../services/file-token.service";
+import type { Connection } from "mongoose";
+import type { StudentJWTPayload, QuizQuestion } from "@college-chatbot/shared";
 
 function getStudent(req: FastifyRequest): StudentJWTPayload {
   return req.user as StudentJWTPayload;
 }
 
+// IMAGE_LABEL questions store only image_asset_id — resolve a fresh preview token per request
+async function attachImageTokens(
+  questions: QuizQuestion[],
+  collegeId: string,
+  studentId: string,
+  conn: Connection,
+): Promise<Array<QuizQuestion & { image_token_url?: string }>> {
+  const imageQuestions = questions.filter((q) => q.question_type === "IMAGE_LABEL" && q.image_asset_id);
+  if (imageQuestions.length === 0) return questions;
+
+  const ImageAsset = getImageAssetModel(conn);
+  const tokenMap = new Map<string, string>();
+  await Promise.all(
+    imageQuestions.map(async (q) => {
+      const asset = await ImageAsset.findById(q.image_asset_id).lean();
+      if (!asset) return;
+      const token = await generateFileToken(
+        { file_path: asset.file_path, intent: "preview", college_id: collegeId, dept_id: asset.dept_id, student_id: studentId, doc_id: asset.doc_id, filename: `image_${asset._id}.jpg`, mime_type: "image/jpeg", single_use: false },
+        TOKEN_TTL.preview,
+      );
+      tokenMap.set(q.image_asset_id!, `/files/serve?token=${token}`);
+    }),
+  );
+
+  return questions.map((q) =>
+    q.image_asset_id && tokenMap.has(q.image_asset_id)
+      ? { ...q, image_token_url: tokenMap.get(q.image_asset_id) }
+      : q,
+  );
+}
+
 const GenerateSchema = z.object({
-  question_type:          z.enum(["MCQ", "TF", "SAQ", "CASE", "MIXED"]).default("MCQ"),
+  question_type:          z.enum(["MCQ", "TF", "SAQ", "CASE", "MIXED", "IMAGE_LABEL"]).default("MCQ"),
   difficulty:             z.enum(["recall", "application", "analysis", "adaptive"]).default("application"),
   count:                  z.number().int().min(1).max(40).default(10),
   include_pyq:            z.boolean().default(false),
@@ -71,7 +105,8 @@ const quizRoutesPlugin: FastifyPluginAsync = async (fastify: FastifyInstance) =>
         conn,
       });
 
-      return reply.send(result);
+      const questions = await attachImageTokens(result.questions, collegeId, student.sub, conn);
+      return reply.send({ ...result, questions });
     },
   );
 
@@ -89,7 +124,8 @@ const quizRoutesPlugin: FastifyPluginAsync = async (fastify: FastifyInstance) =>
       if (!session) return reply.code(404).send({ error: "Session not found" });
       if (session.student_id !== student.sub) return reply.code(403).send({ error: "Forbidden" });
 
-      return reply.send(session);
+      const questions = await attachImageTokens(session.questions, collegeId, student.sub, conn);
+      return reply.send({ ...session, questions });
     },
   );
 

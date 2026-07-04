@@ -49,6 +49,7 @@ const uploadRoutesPlugin: FastifyPluginAsync = async (fastify: FastifyInstance) 
       let deptId: string | undefined;
       let subjectId: string | undefined;
       let academicYear: string | undefined;
+      let imagesEnabled: string | undefined;
       let fileBuffer: Buffer | undefined;
       let filename: string | undefined;
       let fileExt: string | undefined;
@@ -58,6 +59,7 @@ const uploadRoutesPlugin: FastifyPluginAsync = async (fastify: FastifyInstance) 
           if (part.fieldname === "dept_id") deptId = part.value as string;
           else if (part.fieldname === "subject_id") subjectId = part.value as string;
           else if (part.fieldname === "academic_year") academicYear = part.value as string;
+          else if (part.fieldname === "images_enabled") imagesEnabled = part.value as string;
         } else if (part.type === "file" && part.fieldname === "file") {
           filename = part.filename;
           const ext = filename.split(".").pop()?.toLowerCase();
@@ -123,6 +125,9 @@ const uploadRoutesPlugin: FastifyPluginAsync = async (fastify: FastifyInstance) 
         ingestion_status: "pending",
         uploaded_by: uploadedBy,
         academic_year: academicYear,
+        images_enabled: imagesEnabled !== undefined
+          ? imagesEnabled === "true"
+          : (fileType === "pdf" || fileType === "pptx"),
       });
 
       // Enqueue ingestion job

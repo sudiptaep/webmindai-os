@@ -10,7 +10,10 @@ import { getStudentModel } from "../models/college/student.model";
 import { getChapterMapModel } from "../models/college/chapter-map.model";
 import { getPYQPaperModel } from "../models/college/pyq-paper.model";
 import { getPYQQuestionModel } from "../models/college/pyq-question.model";
-import { enqueueChapterExtractionJob } from "../services/queue.service";
+import { getSubjectModel } from "../models/college/subject.model";
+import { getImageAssetModel } from "../models/college/image-asset.model";
+import { enqueueChapterExtractionJob, enqueueImageIngestionJob } from "../services/queue.service";
+import { recordCostEvent, getBillingMonth, getBillingDay } from "../services/metering.service";
 
 const callbackSchema = z.object({
   status: z.enum(["completed", "failed"]),
@@ -91,6 +94,38 @@ const internalRoutesPlugin: FastifyPluginAsync = async (fastify: FastifyInstance
             callback_url: `${apiBase}/api/v1/internal/ingest/${docId}/chapter-map/webhook`,
           }).catch((err) => {
             fastify.log.warn({ err, docId }, "Failed to enqueue chapter extraction — non-fatal");
+          });
+        }
+
+        // F-17: enqueue image ingestion for PDF/PPTX docs (admin-toggleable)
+        if ((doc.file_type === "pdf" || doc.file_type === "pptx") && doc.file_path && doc.images_enabled !== false) {
+          const apiBase = process.env.API_INTERNAL_BASE_URL ?? `http://localhost:${process.env.PORT ?? 3000}`;
+          const Department = getDepartmentModel(conn);
+          const Subject = getSubjectModel(conn);
+          const [dept, subject] = await Promise.all([
+            Department.findById(doc.dept_id).lean(),
+            doc.subject_id ? Subject.findById(doc.subject_id).lean() : Promise.resolve(null),
+          ]);
+
+          await Document.findByIdAndUpdate(docId, { $set: { image_ingestion_status: "queued" } });
+
+          await enqueueImageIngestionJob({
+            job_id:        `image_${docId}`,
+            doc_id:        docId,
+            college_id:    collegeId,
+            dept_id:       doc.dept_id,
+            subject_id:    doc.subject_id ?? null,
+            file_path:     doc.file_path,
+            file_type:     doc.file_type,
+            doc_filename:  doc.original_filename,
+            dept_name:     dept?.name ?? "",
+            subject_name:  subject?.name,
+            academic_year: doc.academic_year,
+            job_type:      "image_ingestion",
+            callback_url:  `${apiBase}/api/v1/internal/ingest/${docId}/images/webhook`,
+            bulk_save_url: `${apiBase}/api/v1/internal/ingest/${docId}/images/bulk-save`,
+          }).catch((err) => {
+            fastify.log.warn({ err, docId }, "Failed to enqueue image ingestion — non-fatal");
           });
         }
 
@@ -389,6 +424,107 @@ const internalRoutesPlugin: FastifyPluginAsync = async (fastify: FastifyInstance
       }
 
       return reply.status(200).send({ ok: true });
+    },
+  );
+
+  // ── Image ingestion callback (from Python image_ingestion worker) ───────
+  const imageIngestionCallbackSchema = z.object({
+    status:                 z.enum(["completed", "failed"]),
+    image_count_raw:        z.number().int().nonnegative().optional(),
+    image_count_analysed:   z.number().int().nonnegative().optional(),
+    image_count_indexed:    z.number().int().nonnegative().optional(),
+    cost_usd:               z.number().nonnegative().optional(),
+    error:                  z.string().optional(),
+  });
+
+  fastify.post(
+    "/ingest/:docId/images/webhook",
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const secret = request.headers["x-internal-secret"];
+      if (!secret || secret !== process.env.API_INTERNAL_SECRET) {
+        return reply.status(401).send({ statusCode: 401, error: "Unauthorized" });
+      }
+
+      const collegeId = request.headers["x-college-id"] as string | undefined;
+      if (!collegeId) {
+        return reply.status(400).send({ statusCode: 400, error: "Bad Request", message: "x-college-id header required" });
+      }
+
+      const { docId } = request.params as { docId: string };
+      const parsed = imageIngestionCallbackSchema.safeParse(request.body);
+      if (!parsed.success) {
+        return reply.status(400).send({ statusCode: 400, error: "Bad Request", message: parsed.error.message });
+      }
+
+      const cb = parsed.data;
+      const conn = await getCollegeDb(collegeId);
+      const Document = getDocumentModel(conn);
+
+      if (cb.status === "completed") {
+        const analysed = cb.image_count_analysed ?? 0;
+        const indexed = cb.image_count_indexed ?? 0;
+        await Document.findByIdAndUpdate(docId, {
+          $set: {
+            image_count_raw: cb.image_count_raw ?? 0,
+            image_count_analysed: analysed,
+            image_count_indexed: indexed,
+            image_ingestion_cost_usd: cb.cost_usd ?? 0,
+            image_ingestion_status: indexed < analysed && indexed > 0 ? "partial" : "completed",
+          },
+        });
+
+        if (cb.cost_usd && cb.cost_usd > 0) {
+          const doc = await Document.findById(docId).lean();
+          if (doc) {
+            recordCostEvent({
+              college_id: collegeId,
+              dept_id: doc.dept_id,
+              action_type: "image_ingestion",
+              service: "openai_vision",
+              model: "gpt-4o",
+              cost_usd: cb.cost_usd,
+              billing_month: getBillingMonth(),
+              billing_day: getBillingDay(),
+              created_at: new Date(),
+            });
+          }
+        }
+      } else {
+        await Document.findByIdAndUpdate(docId, {
+          $set: { image_ingestion_status: "failed" },
+        });
+        fastify.log.warn({ docId, error: cb.error }, "Image ingestion failed");
+      }
+
+      return reply.status(200).send({ ok: true });
+    },
+  );
+
+  // ── Image asset bulk-save (called by image_ingestion.py) ────────────────
+  fastify.post(
+    "/ingest/:docId/images/bulk-save",
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const secret = request.headers["x-internal-secret"];
+      if (!secret || secret !== process.env.API_INTERNAL_SECRET) {
+        return reply.status(401).send({ statusCode: 401, error: "Unauthorized" });
+      }
+
+      const collegeId = request.headers["x-college-id"] as string | undefined;
+      if (!collegeId) {
+        return reply.status(400).send({ statusCode: 400, error: "Bad Request", message: "x-college-id header required" });
+      }
+
+      const body = request.body as { images?: unknown[] } | null;
+      if (!body?.images?.length) return reply.status(400).send({ error: "images required" });
+
+      const conn = await getCollegeDb(collegeId);
+      const ImageAsset = getImageAssetModel(conn);
+
+      await ImageAsset.insertMany(body.images, { ordered: false }).catch(() => {
+        // Silently swallow duplicate key errors on re-runs
+      });
+
+      return reply.status(201).send({ ok: true, count: body.images.length });
     },
   );
 }

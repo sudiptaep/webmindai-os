@@ -49,7 +49,7 @@ function AcceptInviteForm() {
     <div className="min-h-screen flex items-center justify-center bg-gray-950">
       <div className="w-full max-w-sm">
         <h1 className="text-2xl font-bold text-center mb-2">Set Your Password</h1>
-        <p className="text-gray-400 text-sm text-center mb-8">Department Admin Portal · EduMind AI</p>
+        <p className="text-gray-400 text-sm text-center mb-8">Department Admin Portal · Medimind AI</p>
 
         <form onSubmit={handleSubmit} className="space-y-4 bg-gray-900 rounded-xl p-6 border border-gray-800">
           <div>

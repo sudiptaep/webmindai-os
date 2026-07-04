@@ -45,6 +45,7 @@ export function QuizRunner({ collegeId, sessionId, questions, timeLimitSeconds, 
   const q = questions[idx];
   const isLast = idx === questions.length - 1;
   const isTextBased = q.question_type === 'SAQ' || q.question_type === 'CASE';
+  const isImageLabel = q.question_type === 'IMAGE_LABEL';
 
   async function handleAnswer() {
     const ans = isTextBased ? textAnswer.trim() : (selected ?? '');
@@ -133,6 +134,46 @@ export function QuizRunner({ collegeId, sessionId, questions, timeLimitSeconds, 
         </div>
 
         <p className="text-sm text-gray-200 leading-relaxed mb-4">{q.question_text}</p>
+
+        {/* Image label diagram */}
+        {isImageLabel && q.image_token_url && (
+          <img
+            src={q.image_token_url}
+            alt="Diagram"
+            className="w-full max-h-64 object-contain bg-white rounded-lg mb-3"
+          />
+        )}
+
+        {/* Image label options (plain label text, not lettered) */}
+        {isImageLabel && (
+          <div className="space-y-2">
+            {q.options.map((opt, i) => {
+              const isSelected = selected === opt;
+              const showCorrect = feedback != null;
+              const isCorrectOpt = opt.trim().toUpperCase() === feedback?.correct_answer.trim().toUpperCase();
+              const isWrong = showCorrect && isSelected && !feedback!.is_correct;
+
+              return (
+                <button
+                  key={i}
+                  disabled={!!feedback || hasAnsweredCurrent}
+                  onClick={() => setSelected(opt)}
+                  className={`w-full text-left text-xs px-3 py-2 rounded-lg border transition-colors ${
+                    showCorrect && isCorrectOpt
+                      ? 'bg-teal-900/40 border-teal-700 text-teal-300'
+                      : isWrong
+                        ? 'bg-red-900/40 border-red-700 text-red-300'
+                        : isSelected
+                          ? 'bg-violet-900/50 border-violet-600 text-violet-200'
+                          : 'bg-gray-800 border-gray-700 text-gray-300 hover:border-gray-600'
+                  }`}
+                >
+                  {opt}
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {/* MCQ / TF options */}
         {(q.question_type === 'MCQ' || q.question_type === 'TF') && (

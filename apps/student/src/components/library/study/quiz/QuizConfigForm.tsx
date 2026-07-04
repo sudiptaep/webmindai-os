@@ -11,10 +11,11 @@ interface Props {
 }
 
 const TYPES: { key: QuizQuestionType; label: string }[] = [
-  { key: 'MCQ',   label: 'MCQ'     },
-  { key: 'TF',    label: 'T / F'   },
-  { key: 'SAQ',   label: 'SAQ'     },
-  { key: 'MIXED', label: 'Mixed'   },
+  { key: 'MCQ',         label: 'MCQ'     },
+  { key: 'TF',          label: 'T / F'   },
+  { key: 'SAQ',         label: 'SAQ'     },
+  { key: 'MIXED',       label: 'Mixed'   },
+  { key: 'IMAGE_LABEL', label: 'Diagram' },
 ];
 
 const DIFFS: { key: QuizDifficulty; label: string }[] = [
@@ -52,12 +53,12 @@ export function QuizConfigForm({ chapterTitle, hasPyq, onGenerate, loading }: Pr
       {/* Question type */}
       <div>
         <p className="text-xs text-gray-500 mb-1.5">Type</p>
-        <div className="grid grid-cols-4 gap-1">
+        <div className="grid grid-cols-5 gap-1">
           {TYPES.map(t => (
             <button
               key={t.key}
               onClick={() => setQType(t.key)}
-              className={`text-xs py-1.5 rounded-lg border transition-colors ${
+              className={`text-[10px] py-1.5 rounded-lg border transition-colors ${
                 qType === t.key
                   ? 'bg-violet-900/60 border-violet-600 text-violet-300'
                   : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600'

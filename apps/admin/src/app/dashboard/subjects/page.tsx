@@ -56,6 +56,7 @@ function SubjectCard({ sub, collegeId, deptId, acadYear, isMedical }: SubjectCar
   const [collapsed, setCollapsed] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
+  const [imagesEnabled, setImagesEnabled] = useState(true);
 
   const { data, isLoading } = trpc.document.list.useQuery(
     { college_id: collegeId, dept_id: deptId, subject_id: sub._id, page: 1, limit: 500 },
@@ -78,6 +79,7 @@ function SubjectCard({ sub, collegeId, deptId, acadYear, isMedical }: SubjectCar
     form.append('dept_id', deptId);
     form.append('academic_year', acadYear);
     form.append('subject_id', sub._id);
+    form.append('images_enabled', String(imagesEnabled));
     try {
       const res = await fetch(`${API}/api/v1/college/${collegeId}/admin/documents/upload`, {
         method: 'POST',
@@ -117,7 +119,16 @@ function SubjectCard({ sub, collegeId, deptId, acadYear, isMedical }: SubjectCar
           <span className="text-gray-500 text-xs shrink-0">{collapsed ? '▼' : '▲'}</span>
         </button>
 
-        <div className="flex gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
+          <label className="flex items-center gap-1 text-xs text-gray-400 cursor-pointer" title="Extract & analyse embedded diagrams (GPT-4o Vision, ~$0.25-0.60/book)">
+            <input
+              type="checkbox"
+              checked={imagesEnabled}
+              onChange={(e) => setImagesEnabled(e.target.checked)}
+              className="cursor-pointer"
+            />
+            Images
+          </label>
           <input
             ref={fileInputRef}
             type="file"

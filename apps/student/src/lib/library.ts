@@ -47,6 +47,24 @@ export interface ChapterMapResponse {
   chapters: Chapter[];
 }
 
+export interface GalleryImage {
+  image_asset_id: string;
+  token_url: string;
+  thumbnail_url: string;
+  caption: string;
+  image_type: string;
+  source_page: number;
+  labels: string[];
+  alt_text: string;
+}
+
+export interface ImageGalleryResponse {
+  images: GalleryImage[];
+  total: number;
+  by_type: Record<string, number>;
+  pagination: { page: number; limit: number; total_pages: number };
+}
+
 export interface SubjectGroup {
   subject_id: string | null;
   subject_name: string;
@@ -203,6 +221,25 @@ export async function getAccessToken(
     token,
   );
   return { ...res, token_url: absoluteUrl(res.token_url) };
+}
+
+export async function fetchImageGallery(
+  collegeId: string,
+  docId: string,
+  token: string,
+  params: { image_type?: string; q?: string; page?: number; limit?: number } = {},
+): Promise<ImageGalleryResponse> {
+  const qs = new URLSearchParams();
+  Object.entries(params).forEach(([k, v]) => { if (v !== undefined) qs.set(k, String(v)); });
+  const res = await apiFetch<ImageGalleryResponse>(
+    `${API}/api/v1/college/${collegeId}/student/library/${docId}/images?${qs}`,
+    token,
+  );
+  res.images.forEach((img) => {
+    img.token_url = absoluteUrl(img.token_url);
+    img.thumbnail_url = absoluteUrl(img.thumbnail_url);
+  });
+  return res;
 }
 
 export async function extractText(
@@ -386,7 +423,7 @@ export async function fetchChapterPyq(
 
 // ── F-13-D: Quiz Engine ───────────────────────────────────────────────────
 
-export type QuizQuestionType = 'MCQ' | 'TF' | 'SAQ' | 'CASE' | 'MIXED';
+export type QuizQuestionType = 'MCQ' | 'TF' | 'SAQ' | 'CASE' | 'MIXED' | 'IMAGE_LABEL';
 export type QuizDifficulty   = 'recall' | 'application' | 'analysis' | 'adaptive';
 export type QuizMode         = 'practice' | 'test' | 'timed';
 
@@ -402,6 +439,8 @@ export interface QuizQuestion {
   difficulty:      QuizDifficulty;
   is_pyq:          boolean;
   pyq_year?:       string;
+  image_asset_id?: string;
+  image_token_url?:string;
   student_answer?: string;
   is_correct?:     boolean;
 }
@@ -455,11 +494,13 @@ export async function generateQuiz(
   body: GenerateQuizBody,
   token: string,
 ): Promise<QuizGenerateResult> {
-  return apiFetch(
+  const res = await apiFetch<QuizGenerateResult>(
     `${API}/api/v1/college/${collegeId}/student/library/${docId}/chapters/${chapterIdx}/quiz`,
     token,
     { method: 'POST', body: JSON.stringify(body) },
   );
+  res.questions.forEach((q) => { if (q.image_token_url) q.image_token_url = absoluteUrl(q.image_token_url); });
+  return res;
 }
 
 export async function submitAnswer(

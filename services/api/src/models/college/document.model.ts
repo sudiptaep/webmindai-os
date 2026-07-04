@@ -39,6 +39,16 @@ const DocumentSchema = new Schema<ChatDocument>(
     version: { type: Number, default: 1 },
     has_chapter_map: { type: Boolean, default: false },
     chapter_count: { type: Number },
+    image_count_raw: { type: Number },
+    image_count_analysed: { type: Number },
+    image_count_indexed: { type: Number },
+    image_ingestion_status: {
+      type: String,
+      enum: ["not_started", "queued", "processing", "completed", "partial", "failed"],
+      default: "not_started",
+    },
+    image_ingestion_cost_usd: { type: Number },
+    images_enabled: { type: Boolean, default: true },
   },
   { _id: false, timestamps: { createdAt: "created_at", updatedAt: "updated_at" }, versionKey: false },
 );

@@ -60,7 +60,7 @@ export default function DeptAdminLoginPage() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold">Department Admin Portal</h1>
-          <p className="text-gray-400 text-sm mt-2">EduMind AI</p>
+          <p className="text-gray-400 text-sm mt-2">Medimind AI</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 bg-gray-900 rounded-xl p-6 border border-gray-800">
