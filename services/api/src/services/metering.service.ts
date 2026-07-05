@@ -83,12 +83,16 @@ export async function getMonthlyTokenUsage(
 export async function getMonthlyCostUsd(
   collegeId: string,
   billingMonth?: string,
+  deptId?: string | null,
 ): Promise<number> {
   const month = billingMonth ?? getBillingMonth();
   const CostEvent = getCostEventModel();
 
+  const match: Record<string, unknown> = { college_id: collegeId, billing_month: month };
+  if (deptId) match.dept_id = deptId;
+
   const [result] = await CostEvent.aggregate([
-    { $match: { college_id: collegeId, billing_month: month } },
+    { $match: match },
     { $group: { _id: null, total: { $sum: "$cost_usd" } } },
   ]);
 

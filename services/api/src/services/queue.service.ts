@@ -80,12 +80,30 @@ export async function enqueuePYQIngestionJob(payload: PYQIngestionJobPayload): P
 
 export async function enqueueImageIngestionJob(payload: ImageIngestionJobPayload): Promise<void> {
   const queue = getIngestionQueue();
+  // Unique jobId per enqueue (timestamped, like chapter jobs) so re-ingest always
+  // runs. A static `image_<docId>` collides with the prior completed job and BullMQ
+  // silently returns the old one instead of re-running — which permanently blocks
+  // re-processing a document's images. Callback routing uses docId in the URL, not jobId.
   await queue.add(QUEUE_NAME, payload, {
-    jobId: `image_${payload.doc_id}`,
+    jobId: `image_${payload.doc_id}_${Date.now()}`,
     attempts: 2,
     backoff: { type: "exponential", delay: 5000 },
     removeOnComplete: { count: 100 },
     removeOnFail: { count: 50 },
+  });
+}
+
+/**
+ * Remove a job by id from the queue (any state) so a subsequent enqueue with the
+ * same jobId is not silently deduped. Required for reingest: the main ingestion job
+ * uses a static jobId (= doc_id), and BullMQ ignores add() when a completed job with
+ * that id still exists — which previously caused deleteDocVectors to wipe a document's
+ * vectors with no rebuild ever running (permanent data loss).
+ */
+export async function removeIngestionJob(jobId: string): Promise<void> {
+  const queue = getIngestionQueue();
+  await queue.remove(jobId).catch(() => {
+    // Job may be active (can't remove) or already gone — non-fatal.
   });
 }
 

@@ -36,7 +36,7 @@ export function ChatWindow({ initialSessionId, subjects = [] }: ChatWindowProps)
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const { messages, isStreaming, sessionId, addMessage, appendToken, finalizeMessage, setStreaming, setSessionId } =
+  const { messages, isStreaming, sessionId, addMessage, appendToken, finalizeMessage, setMessageError, setStreaming, setSessionId } =
     useChatStore();
   const { token, user, refreshToken, clearAuth } = useAuthStore();
 
@@ -94,7 +94,23 @@ export function ChatWindow({ initialSessionId, subjects = [] }: ChatWindowProps)
       }
 
       if (!response.ok || !response.body) {
-        finalizeMessage(assistantMsgId, [], 0, false);
+        let errorType: 'budget' | 'rate_limit' | 'auth' | 'server' = 'server';
+        let errorMessage = "Something went wrong on our end. Please try again in a moment.";
+        if (response.status === 429) {
+          let body: { error?: string; message?: string } = {};
+          try { body = await response.json(); } catch { /* non-JSON body */ }
+          if (body.error === 'Cost Limit Exceeded') {
+            errorType = 'budget';
+            errorMessage = "Your college's monthly usage budget has been reached. Chat is temporarily unavailable — please contact your administrator.";
+          } else {
+            errorType = 'rate_limit';
+            errorMessage = "You're sending messages too quickly. Please wait a moment and try again.";
+          }
+        } else if (response.status === 401) {
+          errorType = 'auth';
+          errorMessage = "Your session has expired. Please log in again.";
+        }
+        setMessageError(assistantMsgId, errorType, errorMessage);
         setStreaming(false);
         return;
       }
@@ -137,7 +153,7 @@ export function ChatWindow({ initialSessionId, subjects = [] }: ChatWindowProps)
         }
       }
     } catch {
-      finalizeMessage(assistantMsgId, [], 0, false);
+      setMessageError(assistantMsgId, 'network', "Couldn't reach the server. Check your connection and try again.");
     } finally {
       setStreaming(false);
     }

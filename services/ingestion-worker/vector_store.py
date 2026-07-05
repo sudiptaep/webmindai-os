@@ -4,6 +4,7 @@ from pinecone import Pinecone
 UPSERT_BATCH_SIZE = 100
 
 _pc: Pinecone | None = None
+_index = None
 
 
 def _get_client() -> Pinecone:
@@ -11,6 +12,15 @@ def _get_client() -> Pinecone:
     if _pc is None:
         _pc = Pinecone(api_key=os.environ["PINECONE_API_KEY"])
     return _pc
+
+
+def _get_index():
+    """Cached index handle. pc.Index() re-runs plugin discovery each call — caching it
+    avoids thousands of redundant discoveries (and log spam) during bulk image upserts."""
+    global _index
+    if _index is None:
+        _index = _get_client().Index(os.environ["PINECONE_INDEX_NAME"])
+    return _index
 
 
 def build_namespace(college_id: str, dept_id: str) -> str:
@@ -30,8 +40,7 @@ def upsert_chunks(
     if not chunks:
         return 0
 
-    pc = _get_client()
-    index = pc.Index(os.environ["PINECONE_INDEX_NAME"])
+    index = _get_index()
     namespace = build_namespace(college_id, dept_id)
 
     vectors = [
@@ -72,8 +81,7 @@ def upsert_image_vector(
     Upsert one image description vector into the same namespace as text chunks.
     Distinguished from text chunks via metadata.chunk_type == "image".
     """
-    pc = _get_client()
-    index = pc.Index(os.environ["PINECONE_INDEX_NAME"])
+    index = _get_index()
     namespace = build_namespace(college_id, dept_id)
     vector_id = f"{doc_id}_img_{image_asset_id}"
 
@@ -100,8 +108,7 @@ def upsert_image_vector(
 
 def delete_doc_vectors(college_id: str, dept_id: str, doc_id: str) -> None:
     """Delete all vectors for a document (used during reingest)."""
-    pc = _get_client()
-    index = pc.Index(os.environ["PINECONE_INDEX_NAME"])
+    index = _get_index()
     namespace = build_namespace(college_id, dept_id)
     # Pinecone delete by prefix filter (metadata filter on doc_id)
     index.delete(filter={"doc_id": {"$eq": doc_id}}, namespace=namespace)

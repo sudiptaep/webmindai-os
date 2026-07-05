@@ -82,7 +82,15 @@ export const costPolicyRouter = router({
     }),
 
   setDeptPolicy: superAdminProcedure
-    .input(z.object({ deptId: z.string(), collegeId: z.string(), policy: PolicyInputSchema }))
+    .input(z.object({
+      deptId: z.string(),
+      collegeId: z.string(),
+      policy: PolicyInputSchema.extend({
+        // Department budgets are capped platform-wide — enforced here, not just in the UI,
+        // since a college/dept admin route calling this directly would otherwise bypass it.
+        cost_budget_usd_per_month: z.number().positive().max(50, "Department budget cannot exceed $50/month").optional(),
+      }),
+    }))
     .mutation(async ({ input, ctx }) => {
       const CostPolicy = getCostPolicyModel();
       const adminId = ctx.user.sub;

@@ -12,7 +12,7 @@ import {
   type ImageToken,
 } from "@college-chatbot/shared";
 import { embedQuery } from "./embedding.service";
-import { queryMultiNamespace, queryChapterScoped, queryDocUnscoped, type PineconeChunk } from "./pinecone.service";
+import { queryMultiNamespace, queryImageMultiNamespace, queryChapterScoped, queryDocUnscoped, type PineconeChunk } from "./pinecone.service";
 import { streamChatResponse, generateExamQuestions } from "./llm.service";
 import { getCachedResponse, setCachedResponse } from "./cache.service";
 import { recordCostEvent, getRateTable, getBillingMonth, getBillingDay } from "./metering.service";
@@ -136,6 +136,7 @@ Your goal is to give thorough, exam-ready answers. Follow these rules:
 5. If the context contains multiple relevant chunks, synthesise them into one coherent answer.
 6. End with a short "Key Takeaway" summary in 1–2 sentences.
 7. If the information is genuinely not in the context, say so clearly and do not guess.
+8. IMPORTANT: This platform automatically surfaces relevant diagrams and images from the course material alongside your text response. Do NOT say you cannot show images — the UI handles image display separately. If diagrams are listed below under "Relevant diagrams", reference them naturally (e.g. "as shown in the diagram above").
 
 CONTEXT:
 ${context}`;
@@ -169,16 +170,6 @@ Output this exact JSON structure:
 }
 
 // ─── Image-aware retrieval (F-17) ─────────────────────────────────────────────
-
-function splitChunksByType(chunks: PineconeChunk[]): { textChunks: PineconeChunk[]; imageChunks: PineconeChunk[] } {
-  const textChunks: PineconeChunk[] = [];
-  const imageChunks: PineconeChunk[] = [];
-  for (const chunk of chunks) {
-    if (chunk.metadata.chunk_type === "image") imageChunks.push(chunk);
-    else textChunks.push(chunk);
-  }
-  return { textChunks, imageChunks };
-}
 
 async function resolveImageTokens(
   collegeId: string,
@@ -298,19 +289,18 @@ export async function* runRAG(params: RAGParams): AsyncGenerator<RAGEvent> {
   // Step 1-2: Embed query
   const queryVector = await embedQuery(query, embeddingMetering);
 
-  // Step 3: Dense retrieval across all dept namespaces that hold the allowed docs
-  const retrieved = await queryMultiNamespace(
-    collegeId,
-    namespacedDocs,
-    queryVector,
-    RAG_TOP_K_RETRIEVE,
-  );
+  // Step 3: Dense retrieval — text and image run as separate parallel queries
+  // so image vectors never compete with text for the same topK slots.
+  const [retrieved, imageChunks] = await Promise.all([
+    queryMultiNamespace(collegeId, namespacedDocs, queryVector, RAG_TOP_K_RETRIEVE),
+    queryImageMultiNamespace(collegeId, namespacedDocs, queryVector),
+  ]);
 
-  // Meter Pinecone reads (one read unit per namespace queried)
+  // Meter Pinecone reads (two queries per namespace: text + image)
   if (metering && namespacedDocs.length > 0) {
     const namespacesQueried = namespacedDocs.filter((n) => n.docIds.length > 0).length;
     const pineconeRate = await getRateTable("pinecone", "serverless");
-    const costUsd = (namespacesQueried / 1_000_000) * pineconeRate.per_unit_cost;
+    const costUsd = (namespacesQueried * 2 / 1_000_000) * pineconeRate.per_unit_cost;
     recordCostEvent({
       college_id:        collegeId,
       dept_id:           metering.deptId,
@@ -319,7 +309,7 @@ export async function* runRAG(params: RAGParams): AsyncGenerator<RAGEvent> {
       action_type:       "pinecone_read",
       service:           "pinecone",
       model:             "serverless",
-      vector_read_units: namespacesQueried,
+      vector_read_units: namespacesQueried * 2,
       cost_usd:          costUsd,
       billing_month:     getBillingMonth(),
       billing_day:       getBillingDay(),
@@ -327,13 +317,10 @@ export async function* runRAG(params: RAGParams): AsyncGenerator<RAGEvent> {
     });
   }
 
-  // Step 3a: split text vs image chunks — images skip BM25 (already semantically matched)
-  const { textChunks, imageChunks } = splitChunksByType(retrieved);
+  // Step 3a: BM25 hybrid re-rank on text chunks only (images already semantically filtered)
+  const hybridRanked = bm25Merge(query, retrieved);
 
-  // Step 3b: BM25 hybrid re-rank (in-memory, no extra API call)
-  const hybridRanked = bm25Merge(query, textChunks);
-
-  // Step 4: Take top-K from BM25 hybrid ranking (no external reranker needed)
+  // Step 4: Take top-K from BM25 hybrid ranking
   const reranked = hybridRanked.slice(0, RAG_TOP_K_RERANK);
 
   // Resolve image matches independently of the text confidence gate below

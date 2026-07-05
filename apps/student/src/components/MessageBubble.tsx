@@ -18,6 +18,7 @@ function isNegativeAnswer(content: string): boolean {
 
 export function MessageBubble({ message }: { message: Message }) {
   const isUser = message.role === 'user';
+  const hasError = !isUser && !!message.errorType;
 
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4`}>
@@ -26,10 +27,12 @@ export function MessageBubble({ message }: { message: Message }) {
           className={`rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap ${
             isUser
               ? 'bg-blue-600 text-white rounded-br-sm'
-              : 'bg-gray-800 text-gray-100 rounded-bl-sm'
+              : hasError
+                ? 'bg-red-950/40 text-red-200 border border-red-900/50 rounded-bl-sm'
+                : 'bg-gray-800 text-gray-100 rounded-bl-sm'
           }`}
         >
-          {message.content}
+          {hasError ? message.errorMessage : message.content}
           {message.streaming && (
             <span className="inline-block w-1.5 h-4 bg-blue-400 ml-0.5 animate-pulse" />
           )}

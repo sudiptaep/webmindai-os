@@ -10,17 +10,17 @@ const ImageAssetSchema = new Schema<ImageAsset>(
     dept_id: { type: String, required: true },
     subject_id: { type: String },
 
-    file_path: { type: String, required: true },
-    thumbnail_path: { type: String, required: true },
-    file_size_bytes: { type: Number, required: true },
-    width_px: { type: Number, required: true },
-    height_px: { type: Number, required: true },
-    format: { type: String, enum: ["jpg", "png", "gif", "webp"], required: true },
+    file_path: { type: String, default: "" },
+    thumbnail_path: { type: String, default: "" },
+    file_size_bytes: { type: Number, default: 0 },
+    width_px: { type: Number, default: 0 },
+    height_px: { type: Number, default: 0 },
+    format: { type: String, enum: ["jpg", "png", "gif", "webp"], default: "jpg" },
 
     source_page: { type: Number, required: true },
-    image_index_on_page: { type: Number, required: true },
-    global_image_index: { type: Number, required: true },
-    content_hash: { type: String, required: true },
+    image_index_on_page: { type: Number, default: 0 },
+    global_image_index: { type: Number, default: 0 },
+    content_hash: { type: String, default: "" },
 
     vision_status: {
       type: String,

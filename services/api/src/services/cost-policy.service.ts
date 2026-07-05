@@ -27,7 +27,7 @@ const GLOBAL_DEFAULTS: ResolvedPolicy = {
   max_exam_gen_per_student_per_day:     Number(process.env.DEFAULT_MAX_EXAM_GEN_PER_STUDENT_PER_DAY  ?? 5),
   allowed_llm_models:                 ["claude-haiku-4-5-20251001"],
   embedding_model:                    "text-embedding-3-small",
-  cost_budget_usd_per_month:          Number(process.env.DEFAULT_COST_BUDGET_USD ?? 2.50),
+  cost_budget_usd_per_month:          Number(process.env.DEFAULT_COST_BUDGET_USD ?? 50),
   cost_soft_warn_pct:                 75,
   storage_limit_gb:                   Number(process.env.DEFAULT_STORAGE_LIMIT_GB ?? 50),
 };
@@ -165,11 +165,17 @@ export async function enforceCostPolicy(
     }
   }
 
-  // 5. Cost budget hard stop
+  // 5. Cost budget hard stop — scoped to the dept if a dept-level budget is set,
+  // otherwise college-wide. Without this, a dept override would be compared against
+  // the whole college's spend, making a tight per-dept budget meaningless.
   if (policy.llm_token_hard_stop) {
-    const monthlyCost = await getMonthlyCostUsd(collegeId);
+    const budgetScopeDeptId = deptPolicy?.cost_budget_usd_per_month != null ? deptId : null;
+    const monthlyCost = await getMonthlyCostUsd(collegeId, undefined, budgetScopeDeptId);
     if (monthlyCost >= policy.cost_budget_usd_per_month) {
-      throw new CostLimitError("COLLEGE_BUDGET_EXCEEDED", { cost: monthlyCost });
+      throw new CostLimitError(
+        budgetScopeDeptId ? "DEPT_BUDGET_EXCEEDED" : "COLLEGE_BUDGET_EXCEEDED",
+        { cost: monthlyCost },
+      );
     }
 
     // 6. Soft warning (async — don't block)

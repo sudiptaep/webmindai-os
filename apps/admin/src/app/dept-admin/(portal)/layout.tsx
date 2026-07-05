@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/auth.store';
 import { logout } from '@/lib/auth';
+import { useIdleLogout } from '@/lib/useIdleLogout';
 
 const NAV = [
   { href: '/dashboard/documents', label: 'Documents' },
@@ -31,6 +32,8 @@ export default function DeptAdminLayout({ children }: { children: React.ReactNod
     clearAuth();
     router.replace('/dept-admin/login');
   }
+
+  useIdleLogout(handleLogout, mounted && !!token && user?.role === 'dept_admin');
 
   if (!mounted || !token || user?.role !== 'dept_admin') return null;
 

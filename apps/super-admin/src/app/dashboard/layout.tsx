@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/auth.store';
 import { logout } from '@/lib/auth';
+import { useIdleLogout } from '@/lib/useIdleLogout';
 
 const NAV: { href: string; label: string; exact?: boolean }[] = [
   { href: '/dashboard', label: 'Overview', exact: true },
@@ -35,6 +36,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     clearAuth();
     router.replace('/login');
   }
+
+  useIdleLogout(handleLogout, mounted && !!token);
 
   if (!mounted || !token) return null;
 

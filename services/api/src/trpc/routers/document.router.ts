@@ -6,7 +6,7 @@ import { getDocumentModel } from "../../models/college/document.model";
 import { getDownloadLogModel } from "../../models/college/download-log.model";
 import { getImageAssetModel } from "../../models/college/image-asset.model";
 import { deleteFile, resolveLocalPath } from "../../services/storage.service";
-import { enqueueIngestionJob, enqueueChapterExtractionJob } from "../../services/queue.service";
+import { enqueueIngestionJob, enqueueChapterExtractionJob, removeIngestionJob } from "../../services/queue.service";
 import { deleteDocVectors } from "../../services/pinecone.service";
 import { isDeptAdmin, isSuperAdmin, type DeptAdminJWTPayload } from "@college-chatbot/shared";
 import type { AnyJWTPayload } from "@college-chatbot/shared";
@@ -266,6 +266,10 @@ export const documentRouter = router({
 
       const apiBase = process.env.API_BASE_URL ?? `http://localhost:${process.env.PORT ?? 3000}`;
       const callbackUrl = `${apiBase}/api/v1/internal/ingest/${input.doc_id}/webhook`;
+      // Remove any prior completed/failed job with this static jobId first; otherwise
+      // BullMQ dedups the add() and the rebuild never runs — leaving the document with
+      // vectors already deleted above and nothing to restore them.
+      await removeIngestionJob(input.doc_id);
       await enqueueIngestionJob({
         job_id: input.doc_id,
         doc_id: input.doc_id,

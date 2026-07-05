@@ -21,6 +21,10 @@ export interface ChatImage {
   relevance_score: number;
 }
 
+/** Set when the request never reached RAG (429 budget/rate-limit, 401, 5xx, network
+ * failure) — distinct from a genuine "no relevant content" answer from the model. */
+export type ChatErrorType = 'budget' | 'rate_limit' | 'auth' | 'server' | 'network';
+
 export interface Message {
   id: string;
   role: 'user' | 'assistant';
@@ -30,6 +34,8 @@ export interface Message {
   confidence_score?: number;
   answered?: boolean;
   streaming?: boolean;
+  errorType?: ChatErrorType;
+  errorMessage?: string;
 }
 
 interface ChatState {
@@ -40,6 +46,7 @@ interface ChatState {
   addMessage: (msg: Message) => void;
   appendToken: (id: string, token: string) => void;
   finalizeMessage: (id: string, sources: SourceCitation[], confidence: number, answered: boolean, images?: ChatImage[]) => void;
+  setMessageError: (id: string, errorType: ChatErrorType, errorMessage: string) => void;
   setStreaming: (v: boolean) => void;
   reset: () => void;
 }
@@ -67,6 +74,13 @@ export const useChatStore = create<ChatState>((set) => ({
         m.id === id
           ? { ...m, sources, confidence_score, answered, images, streaming: false }
           : m
+      ),
+    })),
+
+  setMessageError: (id, errorType, errorMessage) =>
+    set((s) => ({
+      messages: s.messages.map((m) =>
+        m.id === id ? { ...m, errorType, errorMessage, streaming: false } : m
       ),
     })),
 

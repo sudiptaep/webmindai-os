@@ -1,6 +1,6 @@
 export const CONFIDENCE_THRESHOLD = 0.60;
-export const IMAGE_CONFIDENCE_THRESHOLD = 0.65;
-export const IMAGE_TOP_K = 3;
+export const IMAGE_CONFIDENCE_THRESHOLD = 0.45;
+export const IMAGE_TOP_K = 5;
 
 export const CHUNK_SIZE = 512;
 export const CHUNK_OVERLAP = 50;

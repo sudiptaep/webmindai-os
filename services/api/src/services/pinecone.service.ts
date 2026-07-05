@@ -1,5 +1,5 @@
 import { Pinecone } from "@pinecone-database/pinecone";
-import { buildPineconeNamespace, EMBEDDING_DIMS, RAG_TOP_K_RETRIEVE } from "@college-chatbot/shared";
+import { buildPineconeNamespace, EMBEDDING_DIMS, RAG_TOP_K_RETRIEVE, IMAGE_TOP_K } from "@college-chatbot/shared";
 import { updatePineconeMetrics } from "../jobs/probes/pinecone.probe";
 
 export interface PineconeChunk {
@@ -87,6 +87,50 @@ export async function queryMultiNamespace(
     namespacedDocs
       .filter((n) => n.docIds.length > 0)
       .map(({ deptId, docIds }) => queryNamespace(collegeId, deptId, vector, topK, docIds)),
+  );
+
+  return results.flat().sort((a, b) => b.score - a.score).slice(0, topK);
+}
+
+/** Dedicated image-only query — uses chunk_type filter so image vectors never compete with text. */
+async function queryImageNamespace(
+  collegeId: string,
+  deptId: string,
+  vector: number[],
+  topK: number,
+  allowedDocIds: string[],
+): Promise<PineconeChunk[]> {
+  if (allowedDocIds.length === 0) return [];
+  const namespace = buildPineconeNamespace(collegeId, deptId);
+  const queryStart = Date.now();
+  const result = await getIndex().namespace(namespace).query({
+    vector,
+    topK,
+    filter: { chunk_type: { $eq: "image" }, doc_id: { $in: allowedDocIds } },
+    includeMetadata: true,
+    includeValues: false,
+  });
+  updatePineconeMetrics(Date.now() - queryStart, topK, 0);
+  return (result.matches ?? []).map((m) => ({
+    id: m.id,
+    score: m.score ?? 0,
+    text: (m.metadata?.text as string) ?? "",
+    metadata: (m.metadata as Record<string, unknown>) ?? {},
+  }));
+}
+
+export async function queryImageMultiNamespace(
+  collegeId: string,
+  namespacedDocs: Array<{ deptId: string; docIds: string[] }>,
+  vector: number[],
+  topK: number = IMAGE_TOP_K,
+): Promise<PineconeChunk[]> {
+  if (namespacedDocs.length === 0) return [];
+
+  const results = await Promise.all(
+    namespacedDocs
+      .filter((n) => n.docIds.length > 0)
+      .map(({ deptId, docIds }) => queryImageNamespace(collegeId, deptId, vector, topK, docIds)),
   );
 
   return results.flat().sort((a, b) => b.score - a.score).slice(0, topK);
