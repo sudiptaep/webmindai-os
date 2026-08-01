@@ -163,7 +163,7 @@ export const collegeRouter = router({
     .query(async ({ input }) => {
       const conn = await getCollegeDb(input.college_id);
       const [deptCount, studentCount, docCount] = await Promise.all([
-        getDepartmentModel(conn).countDocuments({ college_id: input.college_id }),
+        getDepartmentModel(conn).countDocuments({ college_id: input.college_id, deleted: { $ne: true } }),
         getStudentModel(conn).countDocuments({ college_id: input.college_id }),
         getDocumentModel(conn).countDocuments({ college_id: input.college_id }),
       ]);
