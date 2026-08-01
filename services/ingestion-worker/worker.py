@@ -44,6 +44,7 @@ async def _handle_ingest(job_data: dict, job) -> dict:
         for key in (
             "text_cache_path", "thumbnail_path", "transcript_path",
             "page_count", "slide_count", "duration_seconds",
+            "signal_breakdown", "quality_formula_version", "extraction_artifacts_cached",
         ):
             if result.get(key) is not None:
                 payload[key] = result[key]

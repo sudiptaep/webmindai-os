@@ -8,6 +8,7 @@ import { getImageAssetModel } from "../../models/college/image-asset.model";
 import { deleteFile, resolveLocalPath } from "../../services/storage.service";
 import { enqueueIngestionJob, enqueueChapterExtractionJob, removeIngestionJob } from "../../services/queue.service";
 import { deleteDocVectors } from "../../services/pinecone.service";
+import { rescoreFromTextCache } from "../../services/quality-rescore.service";
 import { isDeptAdmin, isSuperAdmin, type DeptAdminJWTPayload } from "@college-chatbot/shared";
 import type { AnyJWTPayload } from "@college-chatbot/shared";
 
@@ -337,5 +338,77 @@ export const documentRouter = router({
       if (!updated) throw new TRPCError({ code: "NOT_FOUND", message: "Image not found" });
 
       return { ok: true };
+    }),
+
+  // F-18-A: extraction quality diagnostics ────────────────────────────────
+
+  qualityBreakdown: protectedProcedure
+    .input(z.object({ college_id: z.string(), doc_id: z.string() }))
+    .query(async ({ ctx, input }) => {
+      requireAdminRole(ctx.user);
+      const conn = await resolveCollegeConn(ctx.user, input.college_id);
+      const Document = getDocumentModel(conn);
+
+      const doc = await Document.findById(input.doc_id).lean();
+      if (!doc) throw new TRPCError({ code: "NOT_FOUND", message: "Document not found" });
+      if (isDeptAdmin(ctx.user)) checkDeptScope(ctx.user, doc.dept_id);
+
+      const recommendations: string[] = [];
+      const signals = doc.signal_breakdown;
+      if (signals) {
+        if (doc.ocr_used && signals.ocr_confidence < 0.6) {
+          recommendations.push("Low OCR confidence — consider re-scanning at higher resolution or requesting a cleaner copy.");
+        }
+        if (signals.vocab_validity < 0.7) {
+          recommendations.push("High garbage-word ratio detected — extracted text may contain OCR artifacts.");
+        }
+        if (signals.boilerplate_penalty < 0.85) {
+          recommendations.push("Significant repeated header/footer text detected in extracted content.");
+        }
+      }
+
+      return {
+        quality_score: doc.quality_score,
+        signal_breakdown: signals ?? null,
+        quality_formula_version: doc.quality_formula_version ?? 1,
+        quality_rescoring_needed: doc.quality_rescoring_needed ?? false,
+        recommendations,
+      };
+    }),
+
+  rescore: protectedProcedure
+    .input(z.object({ college_id: z.string(), doc_id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      requireAdminRole(ctx.user);
+      const conn = await resolveCollegeConn(ctx.user, input.college_id);
+      const Document = getDocumentModel(conn);
+
+      const doc = await Document.findById(input.doc_id).lean();
+      if (!doc) throw new TRPCError({ code: "NOT_FOUND", message: "Document not found" });
+      if (isDeptAdmin(ctx.user)) checkDeptScope(ctx.user, doc.dept_id);
+
+      const result = await rescoreFromTextCache({
+        textCachePath: doc.text_cache_path,
+        ocrUsed: doc.ocr_used,
+      });
+
+      if (result.status === "flagged") {
+        await Document.findByIdAndUpdate(input.doc_id, { $set: { quality_rescoring_needed: true } });
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Cannot re-score: ${result.reason}. Re-ingest this document to get real signal data.`,
+        });
+      }
+
+      await Document.findByIdAndUpdate(input.doc_id, {
+        $set: {
+          quality_score: result.quality_score,
+          signal_breakdown: result.signal_breakdown,
+          quality_formula_version: 2,
+          quality_rescoring_needed: false,
+        },
+      });
+
+      return { ok: true, quality_score: result.quality_score, signal_breakdown: result.signal_breakdown };
     }),
 });

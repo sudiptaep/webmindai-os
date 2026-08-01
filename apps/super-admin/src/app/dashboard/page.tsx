@@ -21,6 +21,7 @@ export default function DashboardPage() {
   const [month, setMonth] = useState(defaultMonth);
 
   const { data, isLoading } = trpc.superAdminDashboard.getDashboard.useQuery({ month });
+  const { data: truncation } = trpc.superAdminObservatory.truncationRate.useQuery({ days: 7 });
 
   const months = Array.from({ length: 12 }, (_, i) => {
     const d = new Date(now);
@@ -119,6 +120,45 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+
+      {truncation && truncation.by_college.length > 0 && (
+        <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="text-sm font-semibold text-gray-300">Response Truncation Rate — last 7 days</h2>
+            <span className={`text-lg font-bold ${truncation.platform_wide_pct > truncation.alert_threshold_pct ? 'text-red-400' : 'text-green-400'}`}>
+              {truncation.platform_wide_pct}%
+            </span>
+          </div>
+          <p className="text-xs text-gray-500 mb-4">Target: &lt; {truncation.alert_threshold_pct}%</p>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div>
+              <h3 className="text-xs font-medium text-gray-400 mb-2">By college</h3>
+              <div className="space-y-1">
+                {truncation.by_college.map((row) => (
+                  <div key={row.college_id} className="flex items-center justify-between text-xs">
+                    <span className="text-gray-300 truncate">{row.college_id}</span>
+                    <span className={row.truncation_pct > truncation.alert_threshold_pct ? 'text-red-400' : 'text-gray-400'}>
+                      {row.truncation_pct}% {row.truncation_pct > truncation.alert_threshold_pct ? '⚠' : ''}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div>
+              <h3 className="text-xs font-medium text-gray-400 mb-2">By question type</h3>
+              <div className="space-y-1">
+                {truncation.by_question_type.map((row) => (
+                  <div key={row.query_complexity} className="flex items-center justify-between text-xs">
+                    <span className="text-gray-300">{row.query_complexity}</span>
+                    <span className="text-gray-400">{row.truncation_pct}%</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {dailyTrend.length > 0 && (
         <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">

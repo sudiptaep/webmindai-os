@@ -17,7 +17,7 @@ import os
 
 import httpx
 
-from chunker import chunk_texts, compute_quality_score
+from chunker import chunk_texts
 from embedder import embed_chunks
 from vector_store import upsert_chunks
 from parsers.pdf_parser import parse_pdf
@@ -25,6 +25,7 @@ from parsers.pptx_parser import parse_pptx
 from parsers.docx_parser import parse_docx
 from parsers.audio_parser import parse_audio_verbose
 from jobs.generate_thumbnail import generate_thumbnail
+from quality.compute_quality_score import compute_document_quality
 
 logger = logging.getLogger(__name__)
 
@@ -93,15 +94,19 @@ def run_pipeline(job_data: dict) -> dict:
 
     # 2. Parse
     timing: list[dict] = []
+    page_ocr_data: list[dict | None]
     if file_type in ("mp4", "mkv", "mp3", "m4a"):
         sections, timing, ocr_used = parse_audio_verbose(file_path, file_type)
+        page_ocr_data = [None] * len(sections)
     elif file_type == "pdf":
-        sections, ocr_used = parse_pdf(file_path)
+        sections, ocr_used, page_ocr_data = parse_pdf(file_path)
     elif file_type == "pptx":
         sections, ocr_used = parse_pptx(file_path)
+        page_ocr_data = [None] * len(sections)
     elif file_type == "docx":
         from parsers.docx_parser import parse_docx
         sections, ocr_used = parse_docx(file_path)
+        page_ocr_data = [None] * len(sections)
     else:
         raise ValueError(f"Unsupported file type: {file_type}")
 
@@ -109,6 +114,11 @@ def run_pipeline(job_data: dict) -> dict:
 
     if not sections:
         raise ValueError("Parser returned no text content")
+
+    # 3a. Multi-signal quality scoring (F-18-A) — also runs hyphenation repair
+    # and boilerplate stripping, so `sections` is replaced with the cleaned text.
+    quality_result = compute_document_quality(sections, ocr_used, page_ocr_data)
+    sections = quality_result["cleaned_pages"]
 
     # 3. Chunk
     base_metadata = {
@@ -125,9 +135,6 @@ def run_pipeline(job_data: dict) -> dict:
     if not chunks:
         raise ValueError("No chunks produced after splitting")
 
-    # 4. Quality score
-    quality_score = compute_quality_score(chunks, ocr_used)
-
     # 5. Embed
     chunks = embed_chunks(chunks)
     logger.info("Embedded %d chunks", len(chunks))
@@ -136,10 +143,16 @@ def run_pipeline(job_data: dict) -> dict:
     upserted = upsert_chunks(chunks, college_id, dept_id, doc_id)
     logger.info("Upserted %d vectors to Pinecone", upserted)
 
-    # 7a. Text cache — one entry per section (page / slide / segment)
+    # 7a. Text cache — one entry per section (page / slide / segment).
+    # Includes real per-page OCR confidence so a future re-score (§2.6) can
+    # recompute the quality signals without re-running OCR.
     tc_path = _text_cache_path(college_id, doc_id)
     cache_pages = [
-        {"page_num": i + 1, "text": text, "ocr_confidence": None}
+        {
+            "page_num": i + 1,
+            "text": text,
+            "ocr_confidence": (page_ocr_data[i]["confidence"] if i < len(page_ocr_data) and page_ocr_data[i] else None),
+        }
         for i, text in enumerate(sections)
     ]
     _write_json(tc_path, {"total_pages": len(sections), "pages": cache_pages})
@@ -167,7 +180,10 @@ def run_pipeline(job_data: dict) -> dict:
 
     return {
         "chunk_count": len(chunks),
-        "quality_score": quality_score,
+        "quality_score": quality_result["quality_score"],
+        "signal_breakdown": quality_result["signal_breakdown"],
+        "quality_formula_version": quality_result["quality_formula_version"],
+        "extraction_artifacts_cached": True,
         "ocr_used": ocr_used,
         "text_cache_path": tc_path,
         "thumbnail_path": th_path,

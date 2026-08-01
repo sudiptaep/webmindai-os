@@ -24,6 +24,11 @@ export default function AnalyticsPage() {
     { enabled: !!deptId && !!token }
   );
 
+  const { data: precision } = trpc.analytics.retrievalPrecision.useQuery(
+    { dept_id: deptId, days: 7 },
+    { enabled: !!deptId && !!token }
+  );
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -72,6 +77,34 @@ export default function AnalyticsPage() {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Retrieval precision (F-18-B) */}
+      <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 mb-6">
+        <h2 className="text-sm font-medium mb-1 text-gray-300">Retrieval precision — last 7 days</h2>
+        <p className="text-xs text-gray-500 mb-3">
+          % of retrieved chunks that survived diversity re-selection into the final answer. Low values may mean topK is too broad or chunking needs work.
+        </p>
+        {precision?.query_count === 0 && <p className="text-gray-500 text-xs">No data yet.</p>}
+        {precision && precision.query_count > 0 && (
+          <>
+            <p className="text-2xl font-bold mb-3">{precision.weekly_precision_pct}%</p>
+            <div className="space-y-1">
+              {precision.by_complexity.map((row) => (
+                <div key={row.query_complexity} className="flex items-center gap-3 text-xs">
+                  <span className="text-gray-400 w-24 shrink-0">{row.query_complexity}</span>
+                  <div className="flex-1 bg-gray-700 rounded-full h-2">
+                    <div
+                      className="bg-emerald-500 rounded-full h-2"
+                      style={{ width: `${Math.round(row.avg_precision * 100)}%` }}
+                    />
+                  </div>
+                  <span className="text-gray-300 w-10 text-right">{Math.round(row.avg_precision * 100)}%</span>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       {/* Trending topics */}

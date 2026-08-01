@@ -35,6 +35,8 @@ export interface Session {
   chat_mode?: ChatMode;
 }
 
+export type QueryComplexity = "simple" | "multi_part" | "case_based";
+
 export interface QueryLog {
   _id: string;
   student_id: string;
@@ -49,6 +51,22 @@ export interface QueryLog {
   response_time_ms: number;
   tokens_used: number;
   created_at: Date;
+  // F-18-B: retrieval telemetry
+  retrieved_chunk_ids?: string[];
+  cited_chunk_ids?: string[];
+  retrieval_precision?: number;
+  query_complexity?: QueryComplexity;
+  top_k_used?: number;
+  mmr_applied?: boolean;
+  query_rewritten_text?: string;
+  // F-18-C: rerank monitoring
+  rerank_top_score?: number;
+  rerank_score_spread?: number;
+  rerank_candidate_count?: number;
+  // F-18-D: truncation telemetry
+  stop_reason?: string;
+  was_truncated?: boolean;
+  was_truncated_and_continued?: boolean;
 }
 
 export interface SSETokenEvent {

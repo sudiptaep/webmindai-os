@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/auth.store';
+import { trpc } from '@/lib/trpc';
 
 const API = process.env.NEXT_PUBLIC_API_URL!;
 
@@ -489,6 +490,9 @@ export default function ObservatoryPage() {
         </div>
       )}
 
+      {/* F-18-C: Rerank score monitor */}
+      <RerankScoreMonitor />
+
       {/* Student usage quick-link */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
         <div className="flex items-center justify-between">
@@ -516,6 +520,60 @@ export default function ObservatoryPage() {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// ── F-18-C: Rerank score monitor ────────────────────────────────────────────
+
+function RerankScoreMonitor() {
+  const { data, isLoading } = trpc.superAdminObservatory.rerankScores.useQuery({ days: 7 });
+
+  if (isLoading) return null;
+
+  return (
+    <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+      <div className="flex items-center justify-between mb-1">
+        <h2 className="text-sm font-semibold text-gray-300">Rerank Score Monitor — last 7 days</h2>
+        <span className="text-xs text-gray-500">Alert threshold: {data?.alert_threshold}</span>
+      </div>
+      <p className="text-xs text-gray-500 mb-3">
+        Rolling average top rerank score per college. A drop usually signals a content gap or a
+        newly uploaded document with poor extraction quality dragging down retrieval for that topic.
+      </p>
+      {(!data || data.colleges.length === 0) && (
+        <p className="text-xs text-gray-500">No rerank data yet.</p>
+      )}
+      {data && data.colleges.length > 0 && (
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="text-left text-gray-500 border-b border-gray-800">
+                <th className="py-1.5 pr-3">College</th>
+                <th className="py-1.5 pr-3">Avg top score</th>
+                <th className="py-1.5 pr-3">Score spread</th>
+                <th className="py-1.5 pr-3">Queries</th>
+                <th className="py-1.5">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.colleges.map((row) => (
+                <tr key={row.college_id} className="border-b border-gray-800/50">
+                  <td className="py-1.5 pr-3 text-gray-300">{row.college_id}</td>
+                  <td className="py-1.5 pr-3 text-gray-100">{row.avg_top_score.toFixed(3)}</td>
+                  <td className="py-1.5 pr-3 text-gray-400">{row.avg_score_spread.toFixed(3)}</td>
+                  <td className="py-1.5 pr-3 text-gray-400">{row.query_count}</td>
+                  <td className="py-1.5">
+                    {row.below_alert_threshold
+                      ? <span className="text-red-400">⚠ below threshold</span>
+                      : <span className="text-green-400">● ok</span>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

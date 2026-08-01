@@ -9,6 +9,8 @@ import { settingsRouter } from "./routers/settings.router";
 import { costPolicyRouter } from "./routers/costPolicy.router";
 import { superAdminDashboardRouter } from "./routers/superAdminDashboard.router";
 import { superAdminUsersRouter } from "./routers/superAdminUsers.router";
+import { superAdminObservatoryRouter } from "./routers/superAdminObservatory.router";
+import { comparisonLabRouter } from "./routers/comparisonLab.router";
 import { collegeAdminRouter } from "./routers/collegeAdmin.router";
 
 export const appRouter = router({
@@ -22,6 +24,8 @@ export const appRouter = router({
   costPolicy: costPolicyRouter,
   superAdminDashboard: superAdminDashboardRouter,
   superAdminUsers: superAdminUsersRouter,
+  superAdminObservatory: superAdminObservatoryRouter,
+  comparisonLab: comparisonLabRouter,
   collegeAdmin: collegeAdminRouter,
 });
 

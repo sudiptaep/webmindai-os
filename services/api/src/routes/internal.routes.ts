@@ -28,6 +28,16 @@ const callbackSchema = z.object({
   page_count: z.number().int().positive().optional(),
   slide_count: z.number().int().positive().optional(),
   duration_seconds: z.number().positive().optional(),
+  // F-18-A: multi-signal quality scoring
+  signal_breakdown: z.object({
+    density: z.number(),
+    ocr_confidence: z.number(),
+    structural_integrity: z.number(),
+    vocab_validity: z.number(),
+    boilerplate_penalty: z.number(),
+  }).optional(),
+  quality_formula_version: z.number().int().optional(),
+  extraction_artifacts_cached: z.boolean().optional(),
 });
 
 const internalRoutesPlugin: FastifyPluginAsync = async (fastify: FastifyInstance) => {
@@ -78,6 +88,9 @@ const internalRoutesPlugin: FastifyPluginAsync = async (fastify: FastifyInstance
         if (payload.page_count)       completedFields.page_count       = payload.page_count;
         if (payload.slide_count)      completedFields.slide_count      = payload.slide_count;
         if (payload.duration_seconds) completedFields.duration_seconds = payload.duration_seconds;
+        if (payload.signal_breakdown)          completedFields.signal_breakdown          = payload.signal_breakdown;
+        if (payload.quality_formula_version)   completedFields.quality_formula_version   = payload.quality_formula_version;
+        if (payload.extraction_artifacts_cached !== undefined) completedFields.extraction_artifacts_cached = payload.extraction_artifacts_cached;
 
         await Document.findByIdAndUpdate(docId, { $set: completedFields });
 

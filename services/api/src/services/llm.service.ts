@@ -7,6 +7,8 @@ export interface LLMStreamResult {
   tokenStream: AsyncGenerator<string, void, unknown>;
   /** Resolves after stream ends with total tokens consumed */
   getUsage: () => Promise<number>;
+  /** Resolves after stream ends with the Anthropic stop_reason (F-18-D truncation detection) */
+  getStopReason: () => Promise<string | null>;
 }
 
 export interface LLMMeteringContext {
@@ -29,19 +31,22 @@ export async function streamChatResponse(
   messages: Array<{ role: "user" | "assistant"; content: string }>,
   model: string = LLM_MODEL_CHAT,
   metering?: LLMMeteringContext,
+  maxTokens: number = LLM_MAX_TOKENS,
 ): Promise<LLMStreamResult> {
   const client = getClient();
 
   const stream = client.messages.stream({
     model,
-    max_tokens: LLM_MAX_TOKENS,
+    max_tokens: maxTokens,
     system: systemPrompt,
     messages,
   });
 
   let tokensUsed = 0;
   const streamStart = Date.now();
-  const usagePromise = stream.finalMessage().then(async (msg) => {
+  const finalMessagePromise = stream.finalMessage();
+  const stopReasonPromise = finalMessagePromise.then((msg) => msg.stop_reason);
+  const usagePromise = finalMessagePromise.then(async (msg) => {
     tokensUsed = msg.usage.input_tokens + msg.usage.output_tokens;
     const latencyMs = Date.now() - streamStart;
     updateAnthropicMetrics(msg.usage.input_tokens, msg.usage.output_tokens, latencyMs, true);
@@ -84,6 +89,7 @@ export async function streamChatResponse(
   return {
     tokenStream: tokenGenerator(),
     getUsage: () => usagePromise,
+    getStopReason: () => stopReasonPromise,
   };
 }
 

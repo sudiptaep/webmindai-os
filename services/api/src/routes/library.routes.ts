@@ -914,6 +914,7 @@ const libraryRoutesPlugin: FastifyPluginAsync = async (fastify: FastifyInstance)
           sessionMessages,
           mode: (session.chat_mode ?? "answer") as "answer" | "socratic",
           allChapters: chapterMap.chapters as Parameters<typeof runChapterRAG>[0]["allChapters"],
+          metering: { deptId: doc.dept_id, studentId: student.sub, sessionId: session._id },
         })) {
           sendSSE(event);
           if (event.type === "token") fullResponse += event.content;

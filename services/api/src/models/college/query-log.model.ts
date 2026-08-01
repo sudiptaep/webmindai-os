@@ -16,6 +16,22 @@ const QueryLogSchema = new Schema<QueryLog>(
     flagged_to_admin: { type: Boolean, default: false },
     response_time_ms: { type: Number, default: 0 },
     tokens_used: { type: Number, default: 0 },
+    // F-18-B: retrieval telemetry
+    retrieved_chunk_ids: { type: [String], default: undefined },
+    cited_chunk_ids: { type: [String], default: undefined },
+    retrieval_precision: { type: Number },
+    query_complexity: { type: String, enum: ["simple", "multi_part", "case_based"] },
+    top_k_used: { type: Number },
+    mmr_applied: { type: Boolean },
+    query_rewritten_text: { type: String },
+    // F-18-C: rerank monitoring
+    rerank_top_score: { type: Number },
+    rerank_score_spread: { type: Number },
+    rerank_candidate_count: { type: Number },
+    // F-18-D: truncation telemetry
+    stop_reason: { type: String },
+    was_truncated: { type: Boolean },
+    was_truncated_and_continued: { type: Boolean },
   },
   { _id: false, timestamps: { createdAt: "created_at" }, versionKey: false },
 );

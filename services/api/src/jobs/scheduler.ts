@@ -16,6 +16,7 @@ import { runPineconeProbe } from "./probes/pinecone.probe";
 import { runRedisProbe } from "./probes/redis.probe";
 import { runDiskProbe } from "./probes/disk.probe";
 import { runRebuildDailyRollups } from "./rebuildDailyRollups";
+import { runComparisonLabNightly } from "./comparisonLabNightly";
 
 const PLATFORM_JOBS_QUEUE = "platform_jobs";
 
@@ -108,6 +109,13 @@ export async function startScheduler(): Promise<void> {
     { repeat: { pattern: "0 1 * * *" }, removeOnComplete: { count: 7 }, removeOnFail: { count: 5 } }
   );
 
+  // F-18-E: Comparison Lab nightly regression run — 2 AM UTC daily
+  await queue.add(
+    "comparison-lab-nightly",
+    {},
+    { repeat: { pattern: "0 2 * * *" }, removeOnComplete: { count: 7 }, removeOnFail: { count: 5 } }
+  );
+
   const worker = new Worker(
     PLATFORM_JOBS_QUEUE,
     async (job) => {
@@ -148,6 +156,9 @@ export async function startScheduler(): Promise<void> {
           break;
         case "telemetry-rollup":
           await runRebuildDailyRollups();
+          break;
+        case "comparison-lab-nightly":
+          await runComparisonLabNightly();
           break;
         default:
           throw new Error(`Unknown job: ${job.name}`);

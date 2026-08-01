@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, FormEvent, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { loginStudent } from '@/lib/auth';
 import { useAuthStore } from '@/store/auth.store';
@@ -16,13 +16,27 @@ interface College {
 const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const collegeSlug = useCollegeSlug();
+  // ?college=<slug> in the URL takes over from the dropdown, same as a domain-derived
+  // slug — e.g. https://student.medimindai.in/login?college=scmch. Header-derived slug
+  // (per-subdomain deployments) still wins if both are present.
+  const collegeParam = searchParams.get('college') ?? '';
+  const effectiveSlug = collegeSlug || collegeParam;
   const setAuth = useAuthStore((s) => s.setAuth);
 
   const [colleges, setColleges] = useState<College[]>([]);
-  const [collegesLoading, setCollegesLoading] = useState(!collegeSlug);
-  const [slug, setSlug] = useState(collegeSlug);
+  const [collegesLoading, setCollegesLoading] = useState(!effectiveSlug);
+  const [slug, setSlug] = useState(effectiveSlug);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -30,7 +44,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (collegeSlug) return;
+    if (effectiveSlug) { setSlug(effectiveSlug); return; }
     fetch(`${API}/api/v1/auth/colleges`)
       .then((r) => r.json())
       .then((data) => {
@@ -41,7 +55,7 @@ export default function LoginPage() {
       })
       .catch(() => {})
       .finally(() => setCollegesLoading(false));
-  }, [collegeSlug]);
+  }, [effectiveSlug]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -65,8 +79,8 @@ export default function LoginPage() {
         <h1 className="text-2xl font-bold mb-6 text-center">Student Login</h1>
         <form onSubmit={handleSubmit} className="space-y-4">
 
-          {/* College dropdown — only when slug not set by domain context */}
-          {!collegeSlug && (
+          {/* College dropdown — only when slug not set by domain context or ?college= param */}
+          {!effectiveSlug && (
             <div>
               <label className="block text-sm mb-1 text-gray-400">College</label>
               {collegesLoading ? (
@@ -110,7 +124,7 @@ export default function LoginPage() {
           {error && <p className="text-red-400 text-sm">{error}</p>}
           <button
             type="submit"
-            disabled={loading || (!collegeSlug && !slug)}
+            disabled={loading || !slug}
             className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded py-2 text-sm font-medium transition-colors"
           >
             {loading ? 'Signing in…' : 'Sign in'}

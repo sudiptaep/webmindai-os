@@ -93,7 +93,31 @@ const chatRoutePlugin: FastifyPluginAsync = async (fastify: FastifyInstance) => 
 
         const startTime = Date.now();
         let fullResponse = "";
-        let ragDone: { sources: unknown[]; confidence_score: number; answered: boolean; tokens_used: number } | null = null;
+        let ragDone: {
+          sources: unknown[];
+          confidence_score: number;
+          answered: boolean;
+          tokens_used: number;
+          retrieval?: {
+            retrieved_chunk_ids: string[];
+            cited_chunk_ids: string[];
+            retrieval_precision: number;
+            query_complexity: string;
+            top_k_used: number;
+            mmr_applied: boolean;
+            query_rewritten_text: string;
+          };
+          rerank?: {
+            rerank_top_score: number;
+            rerank_score_spread: number;
+            rerank_candidate_count: number;
+          };
+          truncation?: {
+            stop_reason: string | null;
+            was_truncated: boolean;
+            was_truncated_and_continued: boolean;
+          };
+        } | null = null;
 
         // Resolve doc IDs scoped to student's year of study (no dept_id dependency)
         const Document = getDocumentModel(conn);
@@ -131,6 +155,7 @@ const chatRoutePlugin: FastifyPluginAsync = async (fastify: FastifyInstance) => 
           cacheScope,
           namespacedDocs,
           sessionMessages,
+          metering: { deptId: user.effective_dept_id, studentId: user.sub, sessionId: session._id },
         })) {
           sendSSE(reply, event);
 
@@ -144,7 +169,7 @@ const chatRoutePlugin: FastifyPluginAsync = async (fastify: FastifyInstance) => 
         }
 
         const responseTimeMs = Date.now() - startTime;
-        const { sources = [], confidence_score = 0, answered = false, tokens_used = 0 } = ragDone ?? {};
+        const { sources = [], confidence_score = 0, answered = false, tokens_used = 0, retrieval, rerank, truncation } = ragDone ?? {};
 
         // Append messages to session
         await Session.findByIdAndUpdate(session._id, {
@@ -179,6 +204,25 @@ const chatRoutePlugin: FastifyPluginAsync = async (fastify: FastifyInstance) => 
           flagged_to_admin: !answered,
           response_time_ms: responseTimeMs,
           tokens_used,
+          ...(retrieval && {
+            retrieved_chunk_ids: retrieval.retrieved_chunk_ids,
+            cited_chunk_ids: retrieval.cited_chunk_ids,
+            retrieval_precision: retrieval.retrieval_precision,
+            query_complexity: retrieval.query_complexity,
+            top_k_used: retrieval.top_k_used,
+            mmr_applied: retrieval.mmr_applied,
+            query_rewritten_text: retrieval.query_rewritten_text,
+          }),
+          ...(rerank && {
+            rerank_top_score: rerank.rerank_top_score,
+            rerank_score_spread: rerank.rerank_score_spread,
+            rerank_candidate_count: rerank.rerank_candidate_count,
+          }),
+          ...(truncation && {
+            stop_reason: truncation.stop_reason ?? undefined,
+            was_truncated: truncation.was_truncated,
+            was_truncated_and_continued: truncation.was_truncated_and_continued,
+          }),
         });
 
         // Update college monthly token counter (fire-and-forget)

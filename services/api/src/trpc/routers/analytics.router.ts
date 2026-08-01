@@ -155,6 +155,63 @@ export const analyticsRouter = router({
       return { ok: true };
     }),
 
+  // F-18-B: weekly retrieval precision (chunks retrieved but never used in the
+  // final answer may indicate over-broad topK or a chunking problem)
+  retrievalPrecision: deptAdminProcedure
+    .input(z.object({
+      dept_id: z.string().optional(),
+      days: z.number().int().min(1).max(90).default(7),
+    }))
+    .query(async ({ ctx, input }) => {
+      const collegeId = ctx.user.college_id;
+      if (input.dept_id && input.dept_id !== ctx.user.dept_id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Dept scope not permitted" });
+      }
+
+      const since = new Date();
+      since.setDate(since.getDate() - input.days);
+
+      const conn = await getCollegeDb(collegeId);
+      const QueryLog = getQueryLogModel(conn);
+
+      const matchStage: Record<string, unknown> = {
+        college_id: collegeId,
+        dept_id: ctx.user.dept_id,
+        created_at: { $gte: since },
+        retrieval_precision: { $exists: true },
+      };
+
+      const [overall] = await QueryLog.aggregate([
+        { $match: matchStage },
+        {
+          $group: {
+            _id: null,
+            avg_precision: { $avg: "$retrieval_precision" },
+            query_count: { $sum: 1 },
+          },
+        },
+      ]);
+
+      const byComplexity = await QueryLog.aggregate([
+        { $match: matchStage },
+        {
+          $group: {
+            _id: "$query_complexity",
+            avg_precision: { $avg: "$retrieval_precision" },
+            avg_top_k: { $avg: "$top_k_used" },
+            query_count: { $sum: 1 },
+          },
+        },
+        { $project: { _id: 0, query_complexity: "$_id", avg_precision: 1, avg_top_k: 1, query_count: 1 } },
+      ]);
+
+      return {
+        weekly_precision_pct: overall ? Math.round(overall.avg_precision * 1000) / 10 : null,
+        query_count: overall?.query_count ?? 0,
+        by_complexity: byComplexity as Array<{ query_complexity: string; avg_precision: number; avg_top_k: number; query_count: number }>,
+      };
+    }),
+
   // Super admin: college-level stats
   collegeStats: superAdminProcedure
     .input(z.object({ college_id: z.string() }))

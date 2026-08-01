@@ -3,6 +3,15 @@ export type IngestionStatus = "pending" | "processing" | "completed" | "failed";
 export type LibraryAction = "download" | "extract_text" | "extract_pages" | "ai_summary" | "stream" | "preview";
 export type ExtractionJobStatus = "pending" | "processing" | "completed" | "failed" | "cleaned";
 
+// F-18-A: multi-signal quality breakdown — replaces the flat 0.85 OCR penalty
+export interface QualitySignalBreakdown {
+  density: number;
+  ocr_confidence: number;
+  structural_integrity: number;
+  vocab_validity: number;
+  boilerplate_penalty: number;
+}
+
 export interface Document {
   _id: string;
   dept_id: string;
@@ -18,6 +27,11 @@ export interface Document {
   chunk_count: number;
   ocr_used: boolean;
   quality_score: number;
+  // F-18-A: multi-signal quality scoring
+  signal_breakdown?: QualitySignalBreakdown;
+  quality_formula_version?: number;      // 2 = new multi-signal formula; 1/undefined = legacy
+  quality_rescoring_needed?: boolean;    // true if legacy doc lacks cached artifacts for re-scoring
+  extraction_artifacts_cached?: boolean; // whether per-page OCR confidence data is retained for re-scoring
   page_count?: number;              // PDF/PPTX total pages
   slide_count?: number;             // PPTX only
   duration_seconds?: number;        // MP4/MP3/M4A only
@@ -125,6 +139,10 @@ export interface IngestionCallbackPayload {
   slide_count?: number;
   duration_seconds?: number;
   transcript_path?: string;
+  // F-18-A additions — multi-signal quality scoring
+  signal_breakdown?: QualitySignalBreakdown;
+  quality_formula_version?: number;
+  extraction_artifacts_cached?: boolean;
 }
 
 // ── F-13: Book Intelligence System ────────────────────────────────────────────

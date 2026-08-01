@@ -11,9 +11,17 @@ export const RAG_TOP_K_RETRIEVE = 10;
 export const RAG_TOP_K_RERANK = 5;
 export const RAG_CONVERSATION_TURNS = 6;
 
+// F-18-B: adaptive top-K by query complexity — replaces the fixed RAG_TOP_K_RERANK
+export const RAG_ADAPTIVE_TOPK_SIMPLE = 3;
+export const RAG_ADAPTIVE_TOPK_MULTIPART = 6;
+export const RAG_ADAPTIVE_TOPK_CASE = 8;
+export const RAG_MMR_LAMBDA = 0.7; // relevance vs diversity balance (1.0 = pure relevance)
+
 export const LLM_MODEL_CHAT = "claude-haiku-4-5-20251001";
 export const LLM_MODEL_EXAM = "claude-sonnet-4-6";
-export const LLM_MAX_TOKENS = 1048;
+export const LLM_MAX_TOKENS = 2048; // F-18-D: raised from 1048 — was truncating clinical-case answers mid-sentence
+export const LLM_CONTINUATION_MAX_TOKENS = 1024;
+export const LLM_TRUNCATION_ALERT_THRESHOLD_PCT = 5;
 
 export const ACCESS_TOKEN_TTL = "1h";
 export const REFRESH_TOKEN_TTL = "7d";

@@ -7,6 +7,7 @@ export interface PineconeChunk {
   score: number;
   text: string;
   metadata: Record<string, unknown>;
+  values?: number[]; // only populated when includeValues is requested (F-18-B MMR)
 }
 
 let _client: Pinecone | null = null;
@@ -26,6 +27,7 @@ export async function queryNamespace(
   vector: number[],
   topK: number = RAG_TOP_K_RETRIEVE,
   allowedDocIds?: string[],
+  includeValues = false,
 ): Promise<PineconeChunk[]> {
   if (allowedDocIds !== undefined && allowedDocIds.length === 0) return [];
 
@@ -37,7 +39,7 @@ export async function queryNamespace(
     topK,
     filter,
     includeMetadata: true,
-    includeValues: false,
+    includeValues,
   });
   updatePineconeMetrics(Date.now() - queryStart, topK, 0);
 
@@ -46,6 +48,7 @@ export async function queryNamespace(
     score: m.score ?? 0,
     text: (m.metadata?.text as string) ?? "",
     metadata: (m.metadata as Record<string, unknown>) ?? {},
+    values: m.values && m.values.length > 0 ? m.values : undefined,
   }));
 }
 
@@ -80,13 +83,14 @@ export async function queryMultiNamespace(
   namespacedDocs: Array<{ deptId: string; docIds: string[] }>,
   vector: number[],
   topK: number = RAG_TOP_K_RETRIEVE,
+  includeValues = false,
 ): Promise<PineconeChunk[]> {
   if (namespacedDocs.length === 0) return [];
 
   const results = await Promise.all(
     namespacedDocs
       .filter((n) => n.docIds.length > 0)
-      .map(({ deptId, docIds }) => queryNamespace(collegeId, deptId, vector, topK, docIds)),
+      .map(({ deptId, docIds }) => queryNamespace(collegeId, deptId, vector, topK, docIds, includeValues)),
   );
 
   return results.flat().sort((a, b) => b.score - a.score).slice(0, topK);
@@ -178,6 +182,7 @@ export async function queryChapterScoped(
   endPage: number,
   vector: number[],
   topK = 10,
+  includeValues = false,
 ): Promise<PineconeChunk[]> {
   const namespace = buildPineconeNamespace(collegeId, deptId);
   // Existing vectors store section_index (0-based). New vectors also have page_num (1-based).
@@ -190,7 +195,7 @@ export async function queryChapterScoped(
       section_index: { $gte: startPage - 1, $lte: endPage - 1 },
     },
     includeMetadata: true,
-    includeValues: false,
+    includeValues,
   });
 
   return (result.matches ?? []).map((m) => ({
@@ -198,6 +203,7 @@ export async function queryChapterScoped(
     score: m.score ?? 0,
     text: (m.metadata?.text as string) ?? "",
     metadata: (m.metadata as Record<string, unknown>) ?? {},
+    values: m.values && m.values.length > 0 ? m.values : undefined,
   }));
 }
 
