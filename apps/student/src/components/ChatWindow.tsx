@@ -36,7 +36,7 @@ export function ChatWindow({ initialSessionId, subjects = [] }: ChatWindowProps)
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const { messages, isStreaming, sessionId, addMessage, appendToken, finalizeMessage, setMessageError, setStreaming, setSessionId } =
+  const { messages, isStreaming, sessionId, addMessage, setStatusMessage, appendToken, finalizeMessage, setMessageError, setStreaming, setSessionId } =
     useChatStore();
   const { token, user, refreshToken, clearAuth } = useAuthStore();
 
@@ -135,6 +135,7 @@ export function ChatWindow({ initialSessionId, subjects = [] }: ChatWindowProps)
           let event: {
             type: string;
             content?: string;
+            message?: string;
             sources?: SourceCitation[];
             images?: ChatImage[];
             confidence_score?: number;
@@ -143,7 +144,9 @@ export function ChatWindow({ initialSessionId, subjects = [] }: ChatWindowProps)
           };
           try { event = JSON.parse(json); } catch { continue; }
 
-          if (event.type === 'token' && event.content) {
+          if (event.type === 'status' && event.message) {
+            setStatusMessage(assistantMsgId, event.message);
+          } else if (event.type === 'token' && event.content) {
             appendToken(assistantMsgId, event.content);
           } else if (event.type === 'done') {
             finalizeMessage(assistantMsgId, event.sources ?? [], event.confidence_score ?? 0, event.answered ?? false, event.images ?? []);

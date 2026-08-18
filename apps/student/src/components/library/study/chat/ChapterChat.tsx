@@ -20,6 +20,8 @@ interface ChatMessage {
   isFallback?: boolean;
   suggestionChapterIndex?: number;
   suggestionChapterTitle?: string;
+  /** Progress label shown before the first token arrives — cleared once real content starts. */
+  statusMessage?: string;
 }
 
 interface Props {
@@ -136,9 +138,14 @@ export function ChapterChat({ chapter, docId, collegeId, onSwitchChapter }: Prop
               suggestion_chapter_title?: string;
             };
 
-            if (evt.type === 'token' && evt.content) {
+            if (evt.type === 'status' && evt.message) {
               setMessages(m => m.map(msg =>
-                msg.id === assistantId ? { ...msg, content: msg.content + evt.content! } : msg,
+                msg.id === assistantId ? { ...msg, statusMessage: evt.message } : msg,
+              ));
+            } else if (evt.type === 'token' && evt.content) {
+              setMessages(m => m.map(msg =>
+                // First real token clears the status label — content is starting now.
+                msg.id === assistantId ? { ...msg, content: msg.content + evt.content!, statusMessage: undefined } : msg,
               ));
             } else if (evt.type === 'fallback') {
               isFallback = true;
@@ -229,11 +236,17 @@ export function ChapterChat({ chapter, docId, collegeId, onSwitchChapter }: Prop
                 }`}
             >
               {msg.content || (streaming && msg.role === 'assistant' ? (
-                <span className="inline-flex gap-1">
-                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                </span>
+                msg.statusMessage ? (
+                  <span className="inline-block bg-gradient-to-r from-gray-500 via-gray-100 to-gray-500 bg-[length:200%_100%] bg-clip-text text-transparent animate-[shimmer_1.6s_linear_infinite]">
+                    {msg.statusMessage}
+                  </span>
+                ) : (
+                  <span className="inline-flex gap-1">
+                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </span>
+                )
               ) : null)}
 
               {/* Chapter suggestion link */}

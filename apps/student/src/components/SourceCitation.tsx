@@ -18,7 +18,7 @@ export function SourceCitation({ source }: { source: Source }) {
   const content = (
     <>
       <span className="text-blue-300">—</span>
-      <span>{source.title || 'Document'}</span>
+      <span>{source.filename || 'Document'}</span>
       {label && <span className="text-gray-400">[{label}]</span>}
     </>
   );

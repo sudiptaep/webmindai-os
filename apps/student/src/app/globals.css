@@ -1,3 +1,11 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Shimmering status text (e.g. "Searching your course materials…") while a
+   chat response is still being retrieved/generated, before the first token
+   arrives — used by MessageBubble.tsx. */
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}

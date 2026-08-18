@@ -32,11 +32,14 @@ import { getCollegeDb } from "../db/college.db";
 import { getImageAssetModel } from "../models/college/image-asset.model";
 import { getParentChunkModel } from "../models/college/parent-chunk.model";
 import { getDepartmentModel } from "../models/college/department.model";
+import { getDocumentModel } from "../models/college/document.model";
+import { getSubjectModel } from "../models/college/subject.model";
 import { generateFileToken, TOKEN_TTL } from "./file-token.service";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export type RAGEvent =
+  | { type: "status"; message: string }
   | { type: "token"; content: string }
   | {
       type: "done";
@@ -538,13 +541,15 @@ export function isExamRequest(query: string): boolean {
 
 /**
  * Strips markdown the student UI renders as literal characters instead of
- * formatting — bold markers and heading hashes. The system prompt also tells
- * the model not to use these, but this is the guarantee, not the request.
+ * formatting (bold markers, heading hashes) and em dashes (a stylistic tic
+ * that reads as stiff/AI-written). The system prompt also asks the model not
+ * to use these, but this is the guarantee, not the request.
  */
 function stripMarkdownArtifacts(text: string): string {
   return text
     .replace(/\*\*/g, "")
-    .replace(/^#{1,6}\s+/gm, "");
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/\s*—\s*/g, ", ");
 }
 
 function buildChatSystemPrompt(chunks: PineconeChunk[]): string {
@@ -562,7 +567,7 @@ Follow these rules:
 5. If the information is genuinely not in the context, say so clearly and do not guess.
 6. IMPORTANT: This platform automatically surfaces relevant diagrams and images from the course material alongside your text response. Do NOT say you cannot show images — the UI handles image display separately. If diagrams are listed below under "Relevant diagrams", reference them naturally (e.g. "as shown in the diagram above").
 7. Never end mid-sentence or mid-explanation — if you're running long, prioritise finishing your current thought and citing your source over adding more detail.
-8. Formatting: write in plain paragraphs. Do NOT use bold markdown (**text**) or heading markers (##, ###) — the student UI renders these as literal characters, not formatting. A short bullet or numbered list is fine when you're genuinely listing discrete items (e.g. steps, causes), but don't default to headings or a rigid report structure — most answers should just read like a well-explained paragraph or two.
+8. Formatting: write in plain paragraphs. Do NOT use bold markdown (**text**), heading markers (##, ###), or em dashes (—) — the student UI renders bold/headings as literal characters, and em dashes read as stiff/AI-written. Use commas, periods, or parentheses instead. A short bullet or numbered list is fine when you're genuinely listing discrete items (e.g. steps, causes), but don't default to headings or a rigid report structure — most answers should just read like a well-explained paragraph or two.
 
 CONTEXT:
 ${context}`;
@@ -663,18 +668,26 @@ function buildImageCaptionContext(images: ImageToken[]): string {
 
 // ─── Source extraction ────────────────────────────────────────────────────────
 
-function extractSources(chunks: PineconeChunk[]): SourceCitation[] {
+/**
+ * Resolves real book/document names and subject names from Mongo rather than
+ * Pinecone metadata — chunk metadata was never given an original_filename
+ * field at ingestion (only doc_id/subject_id), so filename always came back
+ * empty and subject was a raw subject_id UUID, not a name. The frontend
+ * showed the empty filename's "Document" fallback with that UUID printed
+ * next to it. Works retroactively for already-ingested content — no
+ * re-ingestion needed, since this reads Document/Subject records directly.
+ */
+async function extractSources(collegeId: string, chunks: PineconeChunk[]): Promise<SourceCitation[]> {
   const seen = new Set<string>();
-  const sources: SourceCitation[] = [];
+  const entries: Array<{ docId: string; page?: number; subjectId?: string; chunkPreview: string }> = [];
 
   for (const chunk of chunks) {
     const docId = chunk.metadata.doc_id as string | undefined;
     if (!docId || seen.has(docId)) continue;
     seen.add(docId);
 
-    sources.push({
-      doc_id: docId,
-      filename: (chunk.metadata.original_filename as string) ?? "",
+    entries.push({
+      docId,
       // page_num is what F-19-B hierarchical chunks (and expanded parents) carry;
       // section_index is the legacy field from pre-F-19-B ingestion.
       page: chunk.metadata.page_num != null
@@ -682,10 +695,33 @@ function extractSources(chunks: PineconeChunk[]): SourceCitation[] {
         : chunk.metadata.section_index != null
           ? (chunk.metadata.section_index as number) + 1
           : undefined,
-      subject: chunk.metadata.subject_id as string | undefined,
-      chunk_preview: chunk.text.slice(0, 120),
+      subjectId: chunk.metadata.subject_id as string | undefined,
+      chunkPreview: chunk.text.slice(0, 120),
     });
   }
+
+  if (entries.length === 0) return [];
+
+  const conn = await getCollegeDb(collegeId);
+  const docIds = entries.map((e) => e.docId);
+  const subjectIds = [...new Set(entries.map((e) => e.subjectId).filter((s): s is string => !!s))];
+
+  const [docs, subjects] = await Promise.all([
+    getDocumentModel(conn).find({ _id: { $in: docIds } }, { original_filename: 1 }).lean(),
+    subjectIds.length > 0
+      ? getSubjectModel(conn).find({ _id: { $in: subjectIds } }, { name: 1 }).lean()
+      : Promise.resolve([]),
+  ]);
+  const filenameById = new Map(docs.map((d) => [String(d._id), d.original_filename]));
+  const subjectNameById = new Map(subjects.map((s) => [String(s._id), s.name]));
+
+  const sources: SourceCitation[] = entries.map((e) => ({
+    doc_id: e.docId,
+    filename: filenameById.get(e.docId) ?? "",
+    page: e.page,
+    subject: e.subjectId ? subjectNameById.get(e.subjectId) : undefined,
+    chunk_preview: e.chunkPreview,
+  }));
 
   return sources;
 }
@@ -712,6 +748,8 @@ export async function* runRAG(params: RAGParams): AsyncGenerator<RAGEvent> {
     }
   }
 
+  yield { type: "status", message: "Reading your question…" };
+
   const embeddingMetering = metering
     ? { collegeId, deptId: metering.deptId, actionType: "query_embedding" as const, studentId: metering.studentId }
     : undefined;
@@ -727,6 +765,8 @@ export async function* runRAG(params: RAGParams): AsyncGenerator<RAGEvent> {
     metering ? { collegeId, deptId: metering.deptId, studentId: metering.studentId, sessionId: metering.sessionId } : undefined,
   );
   const queryVector = await embedQuery(rewrite.rewritten_query, embeddingMetering);
+
+  yield { type: "status", message: "Searching your course materials…" };
 
   // Step 3: Dense retrieval — metadata pre-filtering cascade (F-19-D) tries the
   // tightest doc scope first and widens only if it comes up short; images use
@@ -788,6 +828,8 @@ export async function* runRAG(params: RAGParams): AsyncGenerator<RAGEvent> {
       created_at:        new Date(),
     });
   }
+
+  yield { type: "status", message: "Reviewing the most relevant sources…" };
 
   // Step 3b: Cohere cross-encoder rerank (F-18-C) on a capped candidate pool —
   // reorders by true relevance rather than the hybrid fusion / BM25 blend alone.
@@ -879,6 +921,7 @@ export async function* runRAG(params: RAGParams): AsyncGenerator<RAGEvent> {
 
   // Exam mode — non-streaming structured JSON response
   if (isExamRequest(query)) {
+    yield { type: "status", message: "Generating your questions…" };
     const systemPrompt = buildExamSystemPrompt(context) + (confidenceBand === "hedged" ? HEDGE_SYSTEM_PROMPT_ADDITION : "");
     const userMsg = buildExamUserMessage(query);
     const json = await generateExamQuestions(systemPrompt, userMsg, llmMetering);
@@ -886,7 +929,7 @@ export async function* runRAG(params: RAGParams): AsyncGenerator<RAGEvent> {
     yield { type: "token", content: json };
     yield {
       type: "done",
-      sources: extractSources(context),
+      sources: await extractSources(collegeId, context),
       confidence_score: maxScore,
       answered: true,
       tokens_used: 0,
@@ -902,6 +945,8 @@ export async function* runRAG(params: RAGParams): AsyncGenerator<RAGEvent> {
     ...historyWindow,
     { role: "user", content: query },
   ];
+
+  yield { type: "status", message: "Writing your answer…" };
 
   // Step 7: Stream response — image captions are added to context so the LLM can
   // reference "as shown in the diagram"; the image itself is never sent to the LLM.
@@ -947,7 +992,7 @@ export async function* runRAG(params: RAGParams): AsyncGenerator<RAGEvent> {
   }
 
   // Step 8: Post-process
-  const sources = extractSources(context);
+  const sources = await extractSources(collegeId, context);
 
   // Populate semantic cache for future identical queries
   await setCachedResponse(query, cacheScope, {
@@ -997,6 +1042,7 @@ const SOCRATIC_HINT_AFTER  = Number(process.env.SOCRATIC_HINT_AFTER_EXCHANGES  ?
 const SOCRATIC_REVEAL_AFTER = Number(process.env.SOCRATIC_REVEAL_AFTER_EXCHANGES ?? 5);
 
 export type ChapterRAGEvent =
+  | { type: "status"; message: string }
   | { type: "token"; content: string }
   | {
       type: "done";
@@ -1034,9 +1080,9 @@ export interface ChapterRAGParams {
 function buildChapterSystemPrompt(chapter: Chapter, mode: "answer" | "socratic"): string {
   const base = `You are a study assistant helping a student understand Chapter ${chapter.chapter_index}: "${chapter.title}". Talk to them like you're actually explaining it in a conversation, not writing a textbook entry — plain paragraphs, not a formatted document.
 Answer ONLY from the provided context chunks, which are excerpts from pages ${chapter.start_page}–${chapter.end_page}.
-Always cite the page number at the end of each relevant point: "— Page X".
+Always cite the page number at the end of each relevant point like this: "(Page X)".
 If the student asks about a topic not covered in these pages, say: "That topic isn't in this chapter."
-Do NOT use bold markdown (**text**) or heading markers (##, ###) — the student UI renders these as literal characters, not formatting.`;
+Do NOT use bold markdown (**text**), heading markers (##, ###), or em dashes (—) — the student UI renders bold/headings as literal characters, and em dashes read as stiff/AI-written. Use commas, periods, or parentheses instead.`;
 
   if (mode === "socratic") {
     return `${base}
@@ -1069,6 +1115,8 @@ function findChapterForPage(allChapters: Chapter[], pageNum: number): Chapter | 
 export async function* runChapterRAG(params: ChapterRAGParams): AsyncGenerator<ChapterRAGEvent> {
   const { query, collegeId, deptId, docId, chapter, sessionMessages, mode, allChapters, metering } = params;
 
+  yield { type: "status", message: "Reading your question…" };
+
   const embeddingMetering = metering
     ? { collegeId, deptId, actionType: "query_embedding" as const, studentId: metering.studentId }
     : undefined;
@@ -1084,6 +1132,8 @@ export async function* runChapterRAG(params: ChapterRAGParams): AsyncGenerator<C
     metering ? { collegeId, deptId, studentId: metering.studentId, sessionId: metering.sessionId } : undefined,
   );
   const queryVector = await embedQuery(rewrite.rewritten_query, embeddingMetering);
+
+  yield { type: "status", message: `Searching Chapter ${chapter.chapter_index}…` };
 
   // 2. Retrieve — scoped to chapter page range, widened pool + embeddings for MMR (F-18-C)
   const retrieved = await queryChapterScoped(
@@ -1188,6 +1238,8 @@ export async function* runChapterRAG(params: ChapterRAGParams): AsyncGenerator<C
     ? { collegeId, deptId, studentId: metering.studentId, sessionId: metering.sessionId, actionType: "chat_message" as const }
     : undefined;
 
+  yield { type: "status", message: "Writing your answer…" };
+
   // 6. Build messages + stream, with truncation detection + auto-continuation (F-18-D)
   const systemPrompt = buildChapterSystemPrompt(chapter, mode) + (confidenceBand === "hedged" ? HEDGE_SYSTEM_PROMPT_ADDITION : "");
   const messages = buildChapterContextPrompt(query, reranked, sessionMessages);
@@ -1228,7 +1280,7 @@ export async function* runChapterRAG(params: ChapterRAGParams): AsyncGenerator<C
     wasTruncatedAndContinued = true;
   }
 
-  const sources = extractSources(reranked);
+  const sources = await extractSources(collegeId, reranked);
 
   yield {
     type: "done",

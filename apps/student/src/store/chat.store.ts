@@ -2,7 +2,7 @@ import { create } from 'zustand';
 
 export interface SourceCitation {
   doc_id: string;
-  title: string;
+  filename: string;
   page?: number;
   subject?: string;
   chunk_index?: number;
@@ -34,6 +34,8 @@ export interface Message {
   confidence_score?: number;
   answered?: boolean;
   streaming?: boolean;
+  /** Progress label shown before the first token arrives (e.g. "Searching your course materials…") — cleared once real content starts. */
+  statusMessage?: string;
   errorType?: ChatErrorType;
   errorMessage?: string;
 }
@@ -44,6 +46,7 @@ interface ChatState {
   isStreaming: boolean;
   setSessionId: (id: string) => void;
   addMessage: (msg: Message) => void;
+  setStatusMessage: (id: string, statusMessage: string) => void;
   appendToken: (id: string, token: string) => void;
   finalizeMessage: (id: string, sources: SourceCitation[], confidence: number, answered: boolean, images?: ChatImage[]) => void;
   setMessageError: (id: string, errorType: ChatErrorType, errorMessage: string) => void;
@@ -61,10 +64,18 @@ export const useChatStore = create<ChatState>((set) => ({
   addMessage: (msg) =>
     set((s) => ({ messages: [...s.messages, msg] })),
 
+  setStatusMessage: (id, statusMessage) =>
+    set((s) => ({
+      messages: s.messages.map((m) =>
+        m.id === id ? { ...m, statusMessage } : m
+      ),
+    })),
+
   appendToken: (id, token) =>
     set((s) => ({
       messages: s.messages.map((m) =>
-        m.id === id ? { ...m, content: m.content + token } : m
+        // First real token clears the status label — content is starting now.
+        m.id === id ? { ...m, content: m.content + token, statusMessage: undefined } : m
       ),
     })),
 
@@ -72,7 +83,7 @@ export const useChatStore = create<ChatState>((set) => ({
     set((s) => ({
       messages: s.messages.map((m) =>
         m.id === id
-          ? { ...m, sources, confidence_score, answered, images, streaming: false }
+          ? { ...m, sources, confidence_score, answered, images, streaming: false, statusMessage: undefined }
           : m
       ),
     })),
@@ -80,7 +91,7 @@ export const useChatStore = create<ChatState>((set) => ({
   setMessageError: (id, errorType, errorMessage) =>
     set((s) => ({
       messages: s.messages.map((m) =>
-        m.id === id ? { ...m, errorType, errorMessage, streaming: false } : m
+        m.id === id ? { ...m, errorType, errorMessage, streaming: false, statusMessage: undefined } : m
       ),
     })),
 
