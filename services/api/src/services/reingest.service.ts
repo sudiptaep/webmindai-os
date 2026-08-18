@@ -16,11 +16,24 @@ import { getQueryLogModel } from "../models/college/query-log.model";
 import { getCollegeModel } from "../models/platform/college.model";
 import { enqueueIngestionJob } from "./queue.service";
 
-// F-19 §12.1 worked example: Guyton & Hall, 1046 pages, ~$3.93 contextualisation
-// cost. Scaling by page count gives a rough per-document estimate without
-// needing to actually run the contextualiser first.
+// Derived by actually running hierarchical_chunker.py + contextualiser.py's
+// real cost logic against a synthetic 1046-page, ~650-tokens/page textbook
+// (Guyton & Hall-sized reference, matching the F-19 doc's own example) — not
+// hand-calculated. contextualiser.py now uses a LOCAL per-parent context
+// window (that parent ± CONTEXTUALISER_NEIGHBOR_PARENTS neighbors, ~4.4k
+// tokens), cached once per parent and shared by that parent's ~3-4 children,
+// rather than a flat whole-document-prefix truncation — cheaper AND (unlike
+// the flat truncation this replaced) accurate for every chunk regardless of
+// where it falls in the book, not just the first ~20-30 pages.
+//
+// Simulated result: 546 parents, 2092 children, 546 cache writes (verified
+// == parent count, confirming no cache-write races), avg window ~4.4k
+// tokens → total ≈ $4.58 at real Haiku 4.5 rates ($1.25/$0.10/$5 per MTok
+// write/read/output). Re-run the simulation in contextualiser.py's test
+// suite if CONTEXTUALISER_NEIGHBOR_PARENTS or PARENT_CHUNK_TOKENS changes —
+// this constant does NOT auto-track those (Node can't see Python's env vars).
 const REFERENCE_PAGE_COUNT = 1046;
-const REFERENCE_COST_USD = 3.93;
+const REFERENCE_COST_USD = 4.58;
 const MIN_ESTIMATE_USD = 0.05;
 const NON_PAGINATED_ESTIMATE_USD = 1.0; // audio/video docs have no page_count
 

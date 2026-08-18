@@ -161,13 +161,13 @@ def run_pipeline(job_data: dict) -> dict:
     if not chunks:
         raise ValueError("No chunks produced after splitting")
 
-    # 4. Contextual enrichment (F-19-A) — situates each child within the
-    # document before embedding. embedding_text (prefix + text) is what gets
+    # 4. Contextual enrichment (F-19-A) — situates each child within its
+    # PARENT's local neighborhood before embedding (not the whole document —
+    # see contextualiser.py). embedding_text (prefix + text) is what gets
     # embedded; original_text (unprefixed) is what the LLM sees at generation.
-    whole_document_text = "\n\n".join(sections)
     chunks, contextualiser_cost_usd = contextualise_children(
         chunks,
-        whole_document_text=whole_document_text,
+        parents=parents,
         file_type=file_type,
         dept_name=job_data.get("dept_name") or "",
         college_type=job_data.get("college_type") or "",
