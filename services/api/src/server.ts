@@ -113,6 +113,19 @@ async function bootstrap() {
   server.log.info(`API server listening on port ${port}`);
 }
 
+// Safety net: an unhandled rejection ANYWHERE (a scheduled job, a fire-and-
+// forget cost-event write, an Anthropic/OpenAI/Pinecone call somewhere that
+// isn't wrapped in try/catch) crashes the entire Node process by default on
+// modern Node — taking down every in-flight student request, not just the
+// one that triggered it. Log and keep serving instead. This does not fix
+// whatever threw — it stops one bad background call from being a full outage.
+process.on("unhandledRejection", (reason) => {
+  server.log.error({ err: reason }, "Unhandled promise rejection — process staying alive");
+});
+process.on("uncaughtException", (err) => {
+  server.log.error({ err }, "Uncaught exception — process staying alive");
+});
+
 bootstrap().catch((err) => {
   console.error(err);
   process.exit(1);
