@@ -536,23 +536,33 @@ export function isExamRequest(query: string): boolean {
 
 // ─── Prompts ──────────────────────────────────────────────────────────────────
 
+/**
+ * Strips markdown the student UI renders as literal characters instead of
+ * formatting — bold markers and heading hashes. The system prompt also tells
+ * the model not to use these, but this is the guarantee, not the request.
+ */
+function stripMarkdownArtifacts(text: string): string {
+  return text
+    .replace(/\*\*/g, "")
+    .replace(/^#{1,6}\s+/gm, "");
+}
+
 function buildChatSystemPrompt(chunks: PineconeChunk[]): string {
   const context = chunks
     .map((c, i) => `[${i + 1}] ${c.text}`)
     .join("\n\n");
 
-  return `You are an expert academic tutor helping students deeply understand their course material.
+  return `You are an expert academic tutor helping students deeply understand their course material. You're talking to the student directly, like a knowledgeable senior explaining something in a conversation — not writing a report or a textbook entry.
 
-Your goal is to give thorough, exam-ready answers. Follow these rules:
+Follow these rules:
 1. Answer ONLY from the context chunks below — never fabricate or guess facts not present in the material.
-2. Be comprehensive: explain concepts fully, include definitions, mechanisms, causes, effects, classifications, and clinical/practical significance where applicable.
-3. Use structure: headings (##), bullet points, numbered steps, or tables where they aid clarity.
-4. Explain the "why" and "how", not just the "what" — build conceptual understanding, not just recall.
-5. If the context contains multiple relevant chunks, synthesise them into one coherent answer.
-6. End with a short "Key Takeaway" summary in 1–2 sentences.
-7. If the information is genuinely not in the context, say so clearly and do not guess.
-8. IMPORTANT: This platform automatically surfaces relevant diagrams and images from the course material alongside your text response. Do NOT say you cannot show images — the UI handles image display separately. If diagrams are listed below under "Relevant diagrams", reference them naturally (e.g. "as shown in the diagram above").
-9. Structure your answer as: (1) a direct, complete answer to the core question in 3-5 sentences, (2) supporting mechanism/detail if space allows, (3) always end with your source citation even if it means being slightly more concise in section 2. Never end mid-sentence or mid-explanation — if you are running long, prioritise finishing your current thought and citing your source over adding additional detail.
+2. Be thorough: explain concepts fully, including definitions, mechanisms, causes, effects, and clinical/practical significance where applicable — but write it as connected prose, the way you'd actually explain it out loud, not as a list of labelled facts.
+3. Explain the "why" and "how", not just the "what" — build conceptual understanding, not just recall.
+4. If the context contains multiple relevant chunks, synthesise them into one coherent answer.
+5. If the information is genuinely not in the context, say so clearly and do not guess.
+6. IMPORTANT: This platform automatically surfaces relevant diagrams and images from the course material alongside your text response. Do NOT say you cannot show images — the UI handles image display separately. If diagrams are listed below under "Relevant diagrams", reference them naturally (e.g. "as shown in the diagram above").
+7. Never end mid-sentence or mid-explanation — if you're running long, prioritise finishing your current thought and citing your source over adding more detail.
+8. Formatting: write in plain paragraphs. Do NOT use bold markdown (**text**) or heading markers (##, ###) — the student UI renders these as literal characters, not formatting. A short bullet or numbered list is fine when you're genuinely listing discrete items (e.g. steps, causes), but don't default to headings or a rigid report structure — most answers should just read like a well-explained paragraph or two.
 
 CONTEXT:
 ${context}`;
@@ -901,8 +911,9 @@ export async function* runRAG(params: RAGParams): AsyncGenerator<RAGEvent> {
 
   let fullResponse = "";
   for await (const token of tokenStream) {
-    fullResponse += token;
-    yield { type: "token", content: token };
+    const clean = stripMarkdownArtifacts(token);
+    fullResponse += clean;
+    yield { type: "token", content: clean };
   }
 
   let tokensUsed = await getUsage();
@@ -927,8 +938,9 @@ export async function* runRAG(params: RAGParams): AsyncGenerator<RAGEvent> {
     );
 
     for await (const token of continuation.tokenStream) {
-      fullResponse += token;
-      yield { type: "token", content: token };
+      const clean = stripMarkdownArtifacts(token);
+      fullResponse += clean;
+      yield { type: "token", content: clean };
     }
     tokensUsed += await continuation.getUsage();
     wasTruncatedAndContinued = true;
@@ -1020,10 +1032,11 @@ export interface ChapterRAGParams {
 }
 
 function buildChapterSystemPrompt(chapter: Chapter, mode: "answer" | "socratic"): string {
-  const base = `You are a study assistant helping a student understand Chapter ${chapter.chapter_index}: "${chapter.title}".
+  const base = `You are a study assistant helping a student understand Chapter ${chapter.chapter_index}: "${chapter.title}". Talk to them like you're actually explaining it in a conversation, not writing a textbook entry — plain paragraphs, not a formatted document.
 Answer ONLY from the provided context chunks, which are excerpts from pages ${chapter.start_page}–${chapter.end_page}.
 Always cite the page number at the end of each relevant point: "— Page X".
-If the student asks about a topic not covered in these pages, say: "That topic isn't in this chapter."`;
+If the student asks about a topic not covered in these pages, say: "That topic isn't in this chapter."
+Do NOT use bold markdown (**text**) or heading markers (##, ###) — the student UI renders these as literal characters, not formatting.`;
 
   if (mode === "socratic") {
     return `${base}
@@ -1183,8 +1196,9 @@ export async function* runChapterRAG(params: ChapterRAGParams): AsyncGenerator<C
 
   let fullResponse = "";
   for await (const token of tokenStream) {
-    fullResponse += token;
-    yield { type: "token", content: token };
+    const clean = stripMarkdownArtifacts(token);
+    fullResponse += clean;
+    yield { type: "token", content: clean };
   }
 
   let tokensUsed = await getUsage();
@@ -1206,8 +1220,9 @@ export async function* runChapterRAG(params: ChapterRAGParams): AsyncGenerator<C
     );
 
     for await (const token of continuation.tokenStream) {
-      fullResponse += token;
-      yield { type: "token", content: token };
+      const clean = stripMarkdownArtifacts(token);
+      fullResponse += clean;
+      yield { type: "token", content: clean };
     }
     tokensUsed += await continuation.getUsage();
     wasTruncatedAndContinued = true;
