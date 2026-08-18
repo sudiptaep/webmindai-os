@@ -182,15 +182,28 @@ def contextualise_children(
     results: list[dict | None] = [None] * len(children)
     total_cost = 0.0
 
-    with ThreadPoolExecutor(max_workers=CONTEXTUALISER_BATCH_SIZE) as pool:
-        future_to_idx = {
-            pool.submit(_contextualise_one, doc_context, child, doc_type, dept_name, college_type): i
-            for i, child in enumerate(children)
-        }
-        for future in as_completed(future_to_idx):
-            idx = future_to_idx[future]
-            result = future.result()
-            results[idx] = result
-            total_cost += result["contextualiser_cost_usd"]
+    # Prime the cache with ONE synchronous call before fanning out. Anthropic's
+    # prompt cache is only populated once a cache-writing response completes —
+    # firing all N chunks concurrently from the start means the first wave (up
+    # to CONTEXTUALISER_BATCH_SIZE of them) all race to write the same ~100k-
+    # token document context instead of 1 write + (N-1) cheap reads. This is
+    # what the "1 write, then reads" cost math in the module docstring assumes;
+    # without priming, actual spend can run many times the ~$4/textbook estimate.
+    first_result = _contextualise_one(doc_context, children[0], doc_type, dept_name, college_type)
+    results[0] = first_result
+    total_cost += first_result["contextualiser_cost_usd"]
+
+    remaining = children[1:]
+    if remaining:
+        with ThreadPoolExecutor(max_workers=CONTEXTUALISER_BATCH_SIZE) as pool:
+            future_to_idx = {
+                pool.submit(_contextualise_one, doc_context, child, doc_type, dept_name, college_type): i + 1
+                for i, child in enumerate(remaining)
+            }
+            for future in as_completed(future_to_idx):
+                idx = future_to_idx[future]
+                result = future.result()
+                results[idx] = result
+                total_cost += result["contextualiser_cost_usd"]
 
     return results, round(total_cost, 6)  # type: ignore[return-value]
