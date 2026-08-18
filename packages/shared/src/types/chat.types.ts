@@ -59,6 +59,13 @@ export interface QueryLog {
   top_k_used?: number;
   mmr_applied?: boolean;
   query_rewritten_text?: string;
+  // F-19-C: conversational query rewriting
+  rewrite_applied?: boolean;
+  resolved_entities?: string[];
+  // F-19-D: metadata pre-filtering — 1 = tightest tier used, higher = fell back further
+  retrieval_tier?: number;
+  // F-19-E: rerank-score three-band threshold gate
+  answer_confidence_band?: "confident" | "hedged" | "refused";
   // F-18-C: rerank monitoring
   rerank_top_score?: number;
   rerank_score_spread?: number;
@@ -67,6 +74,10 @@ export interface QueryLog {
   stop_reason?: string;
   was_truncated?: boolean;
   was_truncated_and_continued?: boolean;
+  // F-19-B: small-to-big expansion telemetry
+  child_chunks_retrieved?: number;
+  parent_chunks_used?: number;
+  parent_expansion_ratio?: number;
 }
 
 export interface SSETokenEvent {

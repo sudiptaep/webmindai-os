@@ -1,4 +1,11 @@
 export const CONFIDENCE_THRESHOLD = 0.60;
+
+// F-19-E: rerank-score three-band thresholds — replaces the single cosine gate above.
+// A cross-encoder rerank score is a calibrated relevance judgment; a bi-encoder cosine
+// score is not comparable across queries, which is why the old single 0.60 cutoff on
+// cosine similarity produced both false refusals and false confident answers.
+export const RAG_RERANK_ANSWER_THRESHOLD = 0.35;    // below this → refuse, log as content gap
+export const RAG_RERANK_CONFIDENT_THRESHOLD = 0.60; // below this (but above answer) → answer with hedge
 export const IMAGE_CONFIDENCE_THRESHOLD = 0.45;
 export const IMAGE_TOP_K = 5;
 

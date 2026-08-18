@@ -106,28 +106,3 @@ def semantic_chunk(page_text: str, target_size: int = CHUNK_SIZE_TOKENS, overlap
         overlapped.append(f"{prefix} {raw_chunks[i]}".strip() if prefix else raw_chunks[i])
 
     return overlapped
-
-
-def chunk_texts(texts: list[str], base_metadata: dict) -> list[dict]:
-    """
-    Split list of text sections into semantically-bounded chunks with metadata.
-    Returns list of {"text": str, "metadata": dict}.
-    """
-    chunks: list[dict] = []
-    for section_idx, text in enumerate(texts):
-        if not text.strip():
-            continue
-        parts = semantic_chunk(text)
-        for chunk_idx, part in enumerate(parts):
-            if not part.strip():
-                continue
-            chunks.append({
-                "text": part,
-                "metadata": {
-                    **base_metadata,
-                    "section_index": section_idx,
-                    "page_num":      section_idx + 1,  # 1-based, matches chapter start/end_page
-                    "chunk_index":   chunk_idx,
-                },
-            })
-    return chunks

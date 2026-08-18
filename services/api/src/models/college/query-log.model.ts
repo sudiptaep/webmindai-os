@@ -24,6 +24,13 @@ const QueryLogSchema = new Schema<QueryLog>(
     top_k_used: { type: Number },
     mmr_applied: { type: Boolean },
     query_rewritten_text: { type: String },
+    // F-19-C: conversational query rewriting
+    rewrite_applied: { type: Boolean },
+    resolved_entities: { type: [String], default: undefined },
+    // F-19-D: metadata pre-filtering
+    retrieval_tier: { type: Number },
+    // F-19-E: rerank-score three-band threshold gate
+    answer_confidence_band: { type: String, enum: ["confident", "hedged", "refused"] },
     // F-18-C: rerank monitoring
     rerank_top_score: { type: Number },
     rerank_score_spread: { type: Number },
@@ -32,6 +39,10 @@ const QueryLogSchema = new Schema<QueryLog>(
     stop_reason: { type: String },
     was_truncated: { type: Boolean },
     was_truncated_and_continued: { type: Boolean },
+    // F-19-B: small-to-big expansion telemetry
+    child_chunks_retrieved: { type: Number },
+    parent_chunks_used: { type: Number },
+    parent_expansion_ratio: { type: Number },
   },
   { _id: false, timestamps: { createdAt: "created_at" }, versionKey: false },
 );

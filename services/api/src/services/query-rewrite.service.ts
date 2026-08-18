@@ -16,25 +16,78 @@ export interface QueryRewriteMeteringContext {
   sessionId?: string | null;
 }
 
+export interface RewriteResult {
+  rewritten_query: string;
+  original_query: string;
+  rewrite_applied: boolean;
+  resolved_entities: string[];
+}
+
+const QUERY_REWRITE_HISTORY_TURNS = Number(process.env.QUERY_REWRITE_HISTORY_TURNS ?? 4);
+
+// Cheap heuristic — skips the LLM call entirely for queries that plainly don't
+// depend on prior turns. Pronouns/follow-up openers are the tell that a query
+// can't be embedded standalone.
+const PRONOUN_RE = /\b(it|its|it's|that|this|these|those|them|they|the same|above)\b/i;
+const FOLLOWUP_RE = /^(what about|and\s|also\s|how about|why\b|then\s)/i;
+
+function isSelfContained(query: string): boolean {
+  return !PRONOUN_RE.test(query) && !FOLLOWUP_RE.test(query);
+}
+
+function passthrough(rawQuery: string): RewriteResult {
+  return { rewritten_query: rawQuery, original_query: rawQuery, rewrite_applied: false, resolved_entities: [] };
+}
+
 /**
- * F-18-B: rewrites a colloquial student question into precise academic
- * phrasing before it's embedded for retrieval. The rewritten text is used
- * ONLY for the embedding/Pinecone lookup — the original query still goes to
- * the final LLM prompt and UI, so the answer still responds naturally to how
- * the student actually asked.
+ * F-19-C: rewrites a student's follow-up question into a standalone query
+ * before it's embedded for retrieval — resolving pronouns ("its", "that") and
+ * carrying forward the topic from recent turns. This is the gap F-18-B's
+ * formalisation-only rewrite missed: "what about its side effects?" embeds as
+ * near-noise without knowing "it" is metformin.
+ *
+ * The rewritten text is used ONLY for the embedding/Pinecone lookup — the
+ * original query still goes to the final LLM prompt and UI, so the answer
+ * responds naturally to how the student actually asked.
  */
-export async function rewriteQueryForRetrieval(rawQuery: string, metering?: QueryRewriteMeteringContext): Promise<string> {
-  if (process.env.RAG_QUERY_REWRITE_ENABLED === "false") return rawQuery;
+export async function rewriteQueryForRetrieval(
+  rawQuery: string,
+  conversationHistory: Array<{ role: "user" | "assistant"; content: string }>,
+  context?: { deptName?: string; subjectName?: string | null },
+  metering?: QueryRewriteMeteringContext,
+): Promise<RewriteResult> {
+  if (process.env.RAG_QUERY_REWRITE_ENABLED === "false") return passthrough(rawQuery);
+
+  const recentTurns = conversationHistory.slice(-QUERY_REWRITE_HISTORY_TURNS);
+
+  // Fast path: no history, and the query is already self-contained
+  if (recentTurns.length === 0 && isSelfContained(rawQuery)) return passthrough(rawQuery);
 
   try {
     const response = await getClient().messages.create({
       model: LLM_MODEL_CHAT,
-      max_tokens: 100,
+      max_tokens: 150,
       messages: [{
         role: "user",
-        content: `Rewrite this student question into precise, formal academic phrasing suitable for matching against textbook prose. Keep the same meaning and intent. Return ONLY the rewritten question, nothing else.
+        content: `You are rewriting a student's follow-up question so it can be
+understood standalone by a search system.
 
-Student question: "${rawQuery}"`,
+Department: ${context?.deptName ?? "the department"}${context?.subjectName ? ` · Subject: ${context.subjectName}` : ""}
+
+Recent conversation:
+${recentTurns.map((t) => `${t.role}: ${t.content.slice(0, 300)}`).join("\n") || "(none)"}
+
+Student's new question: "${rawQuery}"
+
+Rewrite this question to be fully self-contained:
+- Resolve all pronouns ("it", "its", "that", "this") to the actual entity
+- Carry forward the topic being discussed if the question is a follow-up
+- Use precise academic terminology suited to textbook prose
+- Do NOT answer the question, only rewrite it
+- If the question is already fully self-contained, return it unchanged
+
+Return JSON only:
+{"rewritten": "...", "resolved_entities": ["..."]}`,
       }],
     });
 
@@ -62,10 +115,18 @@ Student question: "${rawQuery}"`,
     }
 
     const block = response.content[0];
-    const rewritten = block.type === "text" ? block.text.trim() : "";
-    return rewritten || rawQuery;
+    const rawText = (block.type === "text" ? block.text : "").trim().replace(/```json|```/g, "").trim();
+    const parsed = JSON.parse(rawText) as { rewritten?: string; resolved_entities?: string[] };
+
+    const rewritten = parsed.rewritten?.trim() || rawQuery;
+    return {
+      rewritten_query: rewritten,
+      original_query: rawQuery,
+      rewrite_applied: rewritten !== rawQuery,
+      resolved_entities: Array.isArray(parsed.resolved_entities) ? parsed.resolved_entities : [],
+    };
   } catch {
     // Retrieval must never fail because the rewrite step failed.
-    return rawQuery;
+    return passthrough(rawQuery);
   }
 }

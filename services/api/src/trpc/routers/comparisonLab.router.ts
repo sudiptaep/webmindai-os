@@ -6,6 +6,7 @@ import { getGoldenQuestionModel } from "../../models/college/golden-question.mod
 import { getComparisonRunModel } from "../../models/college/comparison-run.model";
 import { getDocumentModel } from "../../models/college/document.model";
 import { runComparison } from "../../services/comparison-lab.service";
+import { runGoldenSetBatch, getBatchMetrics, compareBatches } from "../../services/eval-batch.service";
 import { isDeptAdmin, isSuperAdmin, type DeptAdminJWTPayload, type AnyJWTPayload } from "@college-chatbot/shared";
 
 function requireAdminRole(user: AnyJWTPayload | null | undefined): asserts user is AnyJWTPayload {
@@ -164,6 +165,45 @@ export const comparisonLabRouter = router({
       );
       if (!updated) throw new TRPCError({ code: "NOT_FOUND", message: "Comparison run not found" });
       return updated;
+    }),
+
+  // ── F-19 Step 10: golden-set batch evaluation ─────────────────────────────
+
+  runGoldenSetBatch: protectedProcedure
+    .input(z.object({
+      college_id: z.string(),
+      dept_id: z.string(),
+      subject_id: z.string().optional(),
+      batch_label: z.string().min(1),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      requireAdminRole(ctx.user);
+      if (isDeptAdmin(ctx.user)) checkDeptScope(ctx.user, input.dept_id);
+
+      return runGoldenSetBatch(input.college_id, input.dept_id, input.batch_label, input.subject_id);
+    }),
+
+  getBatchMetrics: protectedProcedure
+    .input(z.object({ college_id: z.string(), dept_id: z.string(), batch_label: z.string() }))
+    .query(async ({ ctx, input }) => {
+      requireAdminRole(ctx.user);
+      if (isDeptAdmin(ctx.user)) checkDeptScope(ctx.user, input.dept_id);
+
+      return getBatchMetrics(input.college_id, input.dept_id, input.batch_label);
+    }),
+
+  compareBatches: protectedProcedure
+    .input(z.object({
+      college_id: z.string(),
+      dept_id: z.string(),
+      baseline_label: z.string(),
+      current_label: z.string(),
+    }))
+    .query(async ({ ctx, input }) => {
+      requireAdminRole(ctx.user);
+      if (isDeptAdmin(ctx.user)) checkDeptScope(ctx.user, input.dept_id);
+
+      return compareBatches(input.college_id, input.dept_id, input.baseline_label, input.current_label);
     }),
 
   // ── Regression dashboard ──────────────────────────────────────────────────

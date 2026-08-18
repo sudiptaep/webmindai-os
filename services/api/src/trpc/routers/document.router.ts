@@ -5,6 +5,8 @@ import { getCollegeDb } from "../../db/college.db";
 import { getDocumentModel } from "../../models/college/document.model";
 import { getDownloadLogModel } from "../../models/college/download-log.model";
 import { getImageAssetModel } from "../../models/college/image-asset.model";
+import { getDepartmentModel } from "../../models/college/department.model";
+import { getCollegeModel } from "../../models/platform/college.model";
 import { deleteFile, resolveLocalPath } from "../../services/storage.service";
 import { enqueueIngestionJob, enqueueChapterExtractionJob, removeIngestionJob } from "../../services/queue.service";
 import { deleteDocVectors } from "../../services/pinecone.service";
@@ -267,6 +269,18 @@ export const documentRouter = router({
 
       const apiBase = process.env.API_BASE_URL ?? `http://localhost:${process.env.PORT ?? 3000}`;
       const callbackUrl = `${apiBase}/api/v1/internal/ingest/${input.doc_id}/webhook`;
+      const bulkSaveUrl = `${apiBase}/api/v1/internal/ingest/${input.doc_id}/parents/bulk-save`;
+
+      // F-19-A/B: contextualiser prompt + parent_chunks persistence both need
+      // these — without dept_name/college_type the prompt just degrades to
+      // generic phrasing, but without bulk_save_url the pipeline builds
+      // parent_chunk_id-linked children whose parents never reach Mongo,
+      // and expandToParents silently empties the context on every query.
+      const [dept, college] = await Promise.all([
+        getDepartmentModel(conn).findById(doc.dept_id).lean(),
+        getCollegeModel().findById(input.college_id).lean(),
+      ]);
+
       // Remove any prior completed/failed job with this static jobId first; otherwise
       // BullMQ dedups the add() and the rebuild never runs — leaving the document with
       // vectors already deleted above and nothing to restore them.
@@ -283,6 +297,9 @@ export const documentRouter = router({
         academic_year: doc.academic_year,
         job_type: "ingest",
         callback_url: callbackUrl,
+        bulk_save_url: bulkSaveUrl,
+        dept_name: dept?.name,
+        college_type: college?.type,
       });
 
       return { doc_id: input.doc_id, status: "pending" };

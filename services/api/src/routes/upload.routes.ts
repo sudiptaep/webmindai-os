@@ -17,8 +17,11 @@ import { requireRole } from "../middleware/checkRole";
 import { requireDeptScope } from "../middleware/checkDeptScope";
 import { getCollegeDb } from "../db/college.db";
 import { getDocumentModel } from "../models/college/document.model";
+import { getDepartmentModel } from "../models/college/department.model";
+import { getCollegeModel } from "../models/platform/college.model";
 import { buildDocumentKey, uploadFile, resolveLocalPath } from "../services/storage.service";
 import { enqueueIngestionJob } from "../services/queue.service";
+import { fitBM25ForDepartment } from "../services/bm25.service";
 
 const FILE_SIZE_LIMITS: Record<FileType, number> = {
   pdf: MAX_FILE_SIZE_PDF,
@@ -130,9 +133,16 @@ const uploadRoutesPlugin: FastifyPluginAsync = async (fastify: FastifyInstance) 
           : (fileType === "pdf" || fileType === "pptx"),
       });
 
+      // F-19-A: dept name + college type feed the contextualiser prompt
+      const [dept, college] = await Promise.all([
+        getDepartmentModel(conn).findById(deptId).lean(),
+        getCollegeModel().findById(collegeId).lean(),
+      ]);
+
       // Enqueue ingestion job
       const apiBase = process.env.API_BASE_URL ?? `http://localhost:${process.env.PORT ?? 3000}`;
       const callbackUrl = `${apiBase}/api/v1/internal/ingest/${docId}/webhook`;
+      const bulkSaveUrl = `${apiBase}/api/v1/internal/ingest/${docId}/parents/bulk-save`;
       await enqueueIngestionJob({
         job_id: docId,
         doc_id: docId,
@@ -144,10 +154,43 @@ const uploadRoutesPlugin: FastifyPluginAsync = async (fastify: FastifyInstance) 
         file_type: fileType,
         academic_year: academicYear,
         callback_url: callbackUrl,
+        bulk_save_url: bulkSaveUrl,
+        dept_name: dept?.name,
+        college_type: college?.type,
         job_type: "ingest",
       });
 
       return reply.status(202).send({ doc_id: docId, status: "pending" });
+    },
+  );
+
+  // F-19-F: admin-triggered BM25 encoder fit — corpus-wide, so it can't run
+  // as part of per-document ingestion. Re-run after adding enough new docs
+  // to a department (BM25_ENCODER_REFIT_THRESHOLD) to keep the sparse index
+  // representative; existing vectors keep their old encoder's term mapping
+  // until re-ingested, so a refit alone doesn't retroactively fix old vectors.
+  fastify.post(
+    "/college/:collegeId/admin/departments/:deptId/bm25/fit",
+    {
+      preHandler: [
+        verifyJWT,
+        resolveCollege,
+        requireRole("dept_admin", "super_admin"),
+        requireDeptScope((req) => (req.params as { deptId: string }).deptId),
+      ],
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const { collegeId, deptId } = request.params as { collegeId: string; deptId: string };
+      try {
+        const result = await fitBM25ForDepartment(collegeId, deptId);
+        return reply.status(200).send({ ok: true, ...result });
+      } catch (err) {
+        return reply.status(500).send({
+          statusCode: 500,
+          error: "Internal Server Error",
+          message: err instanceof Error ? err.message : "BM25 fit failed",
+        });
+      }
     },
   );
 }

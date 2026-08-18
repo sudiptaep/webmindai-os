@@ -37,6 +37,15 @@ export interface ComparisonRun {
   question_text: string;
   dept_id: string;
   college_id: string;
+  // F-19 Step 10: tags a run as part of a named batch (e.g. "baseline-2026-05",
+  // "post-f19-2026-08") so the same golden question set run at two points in
+  // time can be diffed into a before/after report.
+  eval_batch_label?: string;
+  // Ground truth check against the golden question's expected_source_doc_id/
+  // page — undefined when the golden question has no ground truth set,
+  // otherwise true/false. This IS doc §15.1's "retrieval failure rate" signal;
+  // faithfulness_score/citation_accuracy below are judge opinions, not this.
+  retrieval_hit?: boolean;
 
   grounded_response_text: string;
   grounded_sources: ComparisonRunSource[];

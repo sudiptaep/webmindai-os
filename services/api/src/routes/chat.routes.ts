@@ -98,6 +98,7 @@ const chatRoutePlugin: FastifyPluginAsync = async (fastify: FastifyInstance) => 
           confidence_score: number;
           answered: boolean;
           tokens_used: number;
+          answer_confidence_band?: "confident" | "hedged" | "refused";
           retrieval?: {
             retrieved_chunk_ids: string[];
             cited_chunk_ids: string[];
@@ -106,6 +107,12 @@ const chatRoutePlugin: FastifyPluginAsync = async (fastify: FastifyInstance) => 
             top_k_used: number;
             mmr_applied: boolean;
             query_rewritten_text: string;
+            rewrite_applied: boolean;
+            resolved_entities: string[];
+            retrieval_tier: number;
+            child_chunks_retrieved: number;
+            parent_chunks_used: number;
+            parent_expansion_ratio: number;
           };
           rerank?: {
             rerank_top_score: number;
@@ -119,41 +126,55 @@ const chatRoutePlugin: FastifyPluginAsync = async (fastify: FastifyInstance) => 
           };
         } | null = null;
 
-        // Resolve doc IDs scoped to student's year of study (no dept_id dependency)
+        // F-19-D: metadata pre-filtering cascade — resolve doc IDs at three
+        // widening scopes so retrieval can start tight (current semester's
+        // subjects) and fall back only if that tier comes up short, rather
+        // than fixing every query to one scope regardless of how sparse it is.
         const Document = getDocumentModel(conn);
         const Subject  = getSubjectModel(conn);
         const studentYear = deriveStudentYear(user.semester, user.college_type);
-        const yearSubjects = await Subject.find({ year: studentYear }, { _id: 1 }).lean();
+
+        const [semesterSubjects, yearSubjects] = await Promise.all([
+          Subject.find({ year: studentYear, semester: { $lte: user.semester } }, { _id: 1 }).lean(),
+          Subject.find({ year: studentYear }, { _id: 1 }).lean(),
+        ]);
+        const semesterSubjectIds = semesterSubjects.map((s) => String(s._id));
         const yearSubjectIds = yearSubjects.map((s) => String(s._id));
 
-        const yearDocs = await Document.find(
-          {
-            is_visible_to_students: { $ne: false },
-            ingestion_status: "completed",
-            $or: [
-              { subject_id: { $in: yearSubjectIds } },
-              { subject_id: null },
-              { subject_id: { $exists: false } },
-            ],
-          },
-          { _id: 1, dept_id: 1 },
-        ).lean();
+        const visibleDocFilter = { is_visible_to_students: { $ne: false }, ingestion_status: "completed" as const };
+        const [semesterDocs, yearDocs, allDocs] = await Promise.all([
+          Document.find(
+            { ...visibleDocFilter, $or: [{ subject_id: { $in: semesterSubjectIds } }, { subject_id: null }, { subject_id: { $exists: false } }] },
+            { _id: 1, dept_id: 1 },
+          ).lean(),
+          Document.find(
+            { ...visibleDocFilter, $or: [{ subject_id: { $in: yearSubjectIds } }, { subject_id: null }, { subject_id: { $exists: false } }] },
+            { _id: 1, dept_id: 1 },
+          ).lean(),
+          Document.find(visibleDocFilter, { _id: 1, dept_id: 1 }).lean(),
+        ]);
 
-        // Group by actual dept_id so each Pinecone namespace gets the right filter
-        const deptDocMap = new Map<string, string[]>();
-        for (const d of yearDocs) {
-          const key = d.dept_id as string;
-          if (!deptDocMap.has(key)) deptDocMap.set(key, []);
-          deptDocMap.get(key)!.push(String(d._id));
+        function groupByDept(docs: Array<{ _id: unknown; dept_id: string }>): Array<{ deptId: string; docIds: string[] }> {
+          const deptDocMap = new Map<string, string[]>();
+          for (const d of docs) {
+            const key = d.dept_id;
+            if (!deptDocMap.has(key)) deptDocMap.set(key, []);
+            deptDocMap.get(key)!.push(String(d._id));
+          }
+          return Array.from(deptDocMap.entries()).map(([deptId, docIds]) => ({ deptId, docIds }));
         }
-        const namespacedDocs = Array.from(deptDocMap.entries()).map(([deptId, docIds]) => ({ deptId, docIds }));
+
+        // Tier 3 (dept-wide, ignoring subject/year) is a strict superset of the
+        // narrower tiers by construction, so it always has at least as many
+        // matches — the cascade can never dead-end.
+        const tieredNamespacedDocs = [groupByDept(semesterDocs), groupByDept(yearDocs), groupByDept(allDocs)];
         const cacheScope = `${collegeId}:year${studentYear}`;
 
         for await (const event of runRAG({
           query: message,
           collegeId,
           cacheScope,
-          namespacedDocs,
+          tieredNamespacedDocs,
           sessionMessages,
           metering: { deptId: user.effective_dept_id, studentId: user.sub, sessionId: session._id },
         })) {
@@ -169,7 +190,7 @@ const chatRoutePlugin: FastifyPluginAsync = async (fastify: FastifyInstance) => 
         }
 
         const responseTimeMs = Date.now() - startTime;
-        const { sources = [], confidence_score = 0, answered = false, tokens_used = 0, retrieval, rerank, truncation } = ragDone ?? {};
+        const { sources = [], confidence_score = 0, answered = false, tokens_used = 0, answer_confidence_band, retrieval, rerank, truncation } = ragDone ?? {};
 
         // Append messages to session
         await Session.findByIdAndUpdate(session._id, {
@@ -201,7 +222,10 @@ const chatRoutePlugin: FastifyPluginAsync = async (fastify: FastifyInstance) => 
           answered,
           confidence_score,
           sources_used: (sources as Array<{ doc_id?: string }>).map((s) => s.doc_id ?? "").filter(Boolean),
-          flagged_to_admin: !answered,
+          // F-19-E: hedged answers are partial content gaps too — faculty should
+          // still see them, not just outright refusals.
+          flagged_to_admin: !answered || answer_confidence_band === "hedged",
+          answer_confidence_band,
           response_time_ms: responseTimeMs,
           tokens_used,
           ...(retrieval && {
@@ -212,6 +236,12 @@ const chatRoutePlugin: FastifyPluginAsync = async (fastify: FastifyInstance) => 
             top_k_used: retrieval.top_k_used,
             mmr_applied: retrieval.mmr_applied,
             query_rewritten_text: retrieval.query_rewritten_text,
+            rewrite_applied: retrieval.rewrite_applied,
+            resolved_entities: retrieval.resolved_entities,
+            retrieval_tier: retrieval.retrieval_tier,
+            child_chunks_retrieved: retrieval.child_chunks_retrieved,
+            parent_chunks_used: retrieval.parent_chunks_used,
+            parent_expansion_ratio: retrieval.parent_expansion_ratio,
           }),
           ...(rerank && {
             rerank_top_score: rerank.rerank_top_score,

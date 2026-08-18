@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import type { FastifyInstance, FastifyPluginAsync, FastifyRequest, FastifyReply } from "fastify";
 import { z } from "zod";
-import type { IngestionCallbackPayload, ChapterMapCallbackPayload, PYQIngestionCallbackPayload } from "@college-chatbot/shared";
+import type { IngestionCallbackPayload, ChapterMapCallbackPayload, PYQIngestionCallbackPayload, ParentChunk } from "@college-chatbot/shared";
 import { getCollegeDb } from "../db/college.db";
 import { getDocumentModel } from "../models/college/document.model";
 import { getExtractionJobModel } from "../models/college/extraction-job.model";
@@ -12,6 +12,7 @@ import { getPYQPaperModel } from "../models/college/pyq-paper.model";
 import { getPYQQuestionModel } from "../models/college/pyq-question.model";
 import { getSubjectModel } from "../models/college/subject.model";
 import { getImageAssetModel } from "../models/college/image-asset.model";
+import { getParentChunkModel } from "../models/college/parent-chunk.model";
 import { enqueueChapterExtractionJob, enqueueImageIngestionJob } from "../services/queue.service";
 import { recordCostEvent, getBillingMonth, getBillingDay } from "../services/metering.service";
 
@@ -38,6 +39,13 @@ const callbackSchema = z.object({
   }).optional(),
   quality_formula_version: z.number().int().optional(),
   extraction_artifacts_cached: z.boolean().optional(),
+  // F-19-B: hierarchical (small-to-big) chunking
+  parent_chunk_count: z.number().int().nonnegative().optional(),
+  child_chunk_count: z.number().int().nonnegative().optional(),
+  // F-19-A: contextual chunk enrichment
+  contextualised: z.boolean().optional(),
+  contextualiser_version: z.number().int().optional(),
+  contextualiser_cost_usd: z.number().nonnegative().optional(),
 });
 
 const internalRoutesPlugin: FastifyPluginAsync = async (fastify: FastifyInstance) => {
@@ -91,8 +99,42 @@ const internalRoutesPlugin: FastifyPluginAsync = async (fastify: FastifyInstance
         if (payload.signal_breakdown)          completedFields.signal_breakdown          = payload.signal_breakdown;
         if (payload.quality_formula_version)   completedFields.quality_formula_version   = payload.quality_formula_version;
         if (payload.extraction_artifacts_cached !== undefined) completedFields.extraction_artifacts_cached = payload.extraction_artifacts_cached;
+        if (payload.parent_chunk_count !== undefined) completedFields.parent_chunk_count = payload.parent_chunk_count;
+        if (payload.child_chunk_count !== undefined)  completedFields.child_chunk_count  = payload.child_chunk_count;
+        if (payload.contextualised !== undefined)        completedFields.contextualised        = payload.contextualised;
+        if (payload.contextualiser_version !== undefined) completedFields.contextualiser_version = payload.contextualiser_version;
+        if (payload.contextualiser_cost_usd !== undefined) completedFields.contextualiser_cost_usd = payload.contextualiser_cost_usd;
+        // F-19 Step 9: any doc completing ingestion today ran the F-19 pipeline
+        // (hierarchical chunking + contextual enrichment) — marks it done for
+        // the re-ingestion backlog, whether this was a first ingest or a re-ingest.
+        completedFields.pipeline_version = 2;
 
         await Document.findByIdAndUpdate(docId, { $set: completedFields });
+
+        // F-19-B: clean up stale parent_chunks left over from a previous
+        // pipeline version (e.g. old chunker produced more/fewer parents).
+        // Safe to run now — the worker POSTs the new parents via bulk-save
+        // BEFORE this webhook fires, so "new" parents are already confirmed
+        // in Mongo; this only removes IDs the new pass didn't produce.
+        if (payload.parent_chunk_count !== undefined) {
+          const ParentChunk = getParentChunkModel(conn);
+          const expectedIds = Array.from({ length: payload.parent_chunk_count }, (_, i) => `${docId}_p${i}`);
+          await ParentChunk.deleteMany({ doc_id: docId, _id: { $nin: expectedIds } });
+        }
+
+        if (payload.contextualiser_cost_usd && payload.contextualiser_cost_usd > 0) {
+          recordCostEvent({
+            college_id: collegeId,
+            dept_id: doc.dept_id,
+            action_type: "contextualisation",
+            service: "anthropic",
+            model: process.env.CONTEXTUALISER_MODEL ?? "claude-haiku-4-5-20251001",
+            cost_usd: payload.contextualiser_cost_usd,
+            billing_month: getBillingMonth(),
+            billing_day: getBillingDay(),
+            created_at: new Date(),
+          });
+        }
 
         // F-13: enqueue chapter extraction for PDF docs that have a local file path
         if (doc.file_type === "pdf" && doc.file_path) {
@@ -538,6 +580,42 @@ const internalRoutesPlugin: FastifyPluginAsync = async (fastify: FastifyInstance
       });
 
       return reply.status(201).send({ ok: true, count: body.images.length });
+    },
+  );
+
+  // ── Parent chunk bulk-save (F-19-B, called by hierarchical_chunker via ingest_document.py) ──
+  fastify.post(
+    "/ingest/:docId/parents/bulk-save",
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const secret = request.headers["x-internal-secret"];
+      if (!secret || secret !== process.env.API_INTERNAL_SECRET) {
+        return reply.status(401).send({ statusCode: 401, error: "Unauthorized" });
+      }
+
+      const collegeId = request.headers["x-college-id"] as string | undefined;
+      if (!collegeId) {
+        return reply.status(400).send({ statusCode: 400, error: "Bad Request", message: "x-college-id header required" });
+      }
+
+      const body = request.body as { parents?: unknown[] } | null;
+      if (!body?.parents?.length) return reply.status(400).send({ error: "parents required" });
+
+      const conn = await getCollegeDb(collegeId);
+      const ParentChunk = getParentChunkModel(conn);
+
+      // Batches are re-POSTed on worker retry — upsert by _id rather than insertMany
+      // so a retried batch doesn't fail on duplicate keys.
+      await ParentChunk.bulkWrite(
+        (body.parents as Array<Record<string, unknown> & { _id: string }>).map((p) => ({
+          replaceOne: {
+            filter: { _id: p._id },
+            replacement: { ...p, created_at: p.created_at ?? new Date() } as ParentChunk,
+            upsert: true,
+          },
+        })),
+      );
+
+      return reply.status(201).send({ ok: true, count: body.parents.length });
     },
   );
 }

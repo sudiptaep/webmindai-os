@@ -17,7 +17,7 @@ from bullmq import Worker
 
 load_dotenv()
 
-from jobs.ingest_document import run_pipeline, post_callback
+from jobs.ingest_document import run_pipeline, post_callback, post_parents_bulk_save
 from jobs.extract_pages import run_extract_pages, post_extraction_callback
 from jobs.extract_chapters import run_extract_chapters, post_chapter_failure
 from jobs.ingest_pyq import run_ingest_pyq, post_pyq_failure
@@ -29,11 +29,18 @@ QUEUE_NAME = "ingestion_jobs"
 
 
 async def _handle_ingest(job_data: dict, job) -> dict:
-    callback_url: str = job_data["callback_url"]
-    college_id:   str = job_data["college_id"]
+    callback_url:  str = job_data["callback_url"]
+    college_id:    str = job_data["college_id"]
+    bulk_save_url: str | None = job_data.get("bulk_save_url")
 
     try:
         result = await asyncio.to_thread(run_pipeline, job_data)
+
+        # F-19-B: persist parent_chunks before reporting completion, so a document
+        # never shows "completed" while its parents are still missing from Mongo.
+        parents = result.get("parents") or []
+        if parents and bulk_save_url:
+            await post_parents_bulk_save(bulk_save_url, parents, college_id)
 
         payload: dict = {
             "status":        "completed",
@@ -45,6 +52,8 @@ async def _handle_ingest(job_data: dict, job) -> dict:
             "text_cache_path", "thumbnail_path", "transcript_path",
             "page_count", "slide_count", "duration_seconds",
             "signal_breakdown", "quality_formula_version", "extraction_artifacts_cached",
+            "parent_chunk_count", "child_chunk_count",
+            "contextualised", "contextualiser_version", "contextualiser_cost_usd",
         ):
             if result.get(key) is not None:
                 payload[key] = result[key]

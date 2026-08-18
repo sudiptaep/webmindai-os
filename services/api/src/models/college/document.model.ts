@@ -59,6 +59,12 @@ const DocumentSchema = new Schema<ChatDocument>(
     },
     image_ingestion_cost_usd: { type: Number },
     images_enabled: { type: Boolean, default: true },
+    parent_chunk_count: { type: Number },
+    child_chunk_count: { type: Number },
+    contextualised: { type: Boolean },
+    contextualiser_version: { type: Number },
+    contextualiser_cost_usd: { type: Number },
+    pipeline_version: { type: Number },
   },
   { _id: false, timestamps: { createdAt: "created_at", updatedAt: "updated_at" }, versionKey: false },
 );
@@ -66,6 +72,7 @@ const DocumentSchema = new Schema<ChatDocument>(
 DocumentSchema.index({ dept_id: 1, ingestion_status: 1 });
 DocumentSchema.index({ dept_id: 1, is_visible_to_students: 1, ingestion_status: 1 });
 DocumentSchema.index({ dept_id: 1, subject_id: 1, file_type: 1 });
+DocumentSchema.index({ dept_id: 1, pipeline_version: 1, ingestion_status: 1 });
 
 export function getDocumentModel(conn: Connection): Model<ChatDocument> {
   return (

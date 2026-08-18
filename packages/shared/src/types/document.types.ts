@@ -53,6 +53,15 @@ export interface Document {
   image_ingestion_status?: ImageIngestionStatus;
   image_ingestion_cost_usd?: number;
   images_enabled?: boolean;
+  // F-19-B: hierarchical (small-to-big) chunking
+  parent_chunk_count?: number;
+  child_chunk_count?: number;
+  // F-19-A: contextual chunk enrichment
+  contextualised?: boolean;
+  contextualiser_version?: number;
+  contextualiser_cost_usd?: number;
+  // F-19 Step 9: undefined/1 = pre-F-19 pipeline (needs re-ingestion), 2 = F-19 pipeline
+  pipeline_version?: number;
   created_at: Date;
   updated_at: Date;
 }
@@ -111,6 +120,9 @@ export interface IngestionJobPayload {
   file_type: FileType;
   academic_year: string;
   callback_url: string;
+  bulk_save_url?: string;  // F-19-B: POST target for parent_chunks bulk-save
+  dept_name?: string;      // F-19-A: contextualiser prompt — dept the doc belongs to
+  college_type?: string;   // F-19-A: contextualiser prompt — "engineering" | "medical" | "other"
   job_type?: "ingest";  // discriminator; absent = "ingest" (backward compat)
 }
 
@@ -143,6 +155,29 @@ export interface IngestionCallbackPayload {
   signal_breakdown?: QualitySignalBreakdown;
   quality_formula_version?: number;
   extraction_artifacts_cached?: boolean;
+  // F-19-B additions — hierarchical (small-to-big) chunking
+  parent_chunk_count?: number;
+  child_chunk_count?: number;
+  // F-19-A additions — contextual chunk enrichment
+  contextualised?: boolean;
+  contextualiser_version?: number;
+  contextualiser_cost_usd?: number;
+}
+
+// ── F-19-B: Small-to-Big Retrieval ────────────────────────────────────────────
+
+export interface ParentChunk {
+  _id: string;
+  doc_id: string;
+  college_id: string;
+  dept_id: string;
+  subject_id?: string;
+  text: string;               // full parent text (~1400 tokens) — never embedded
+  token_count: number;
+  page_start: number;
+  page_end: number;
+  child_chunk_count: number;
+  created_at: Date;
 }
 
 // ── F-13: Book Intelligence System ────────────────────────────────────────────

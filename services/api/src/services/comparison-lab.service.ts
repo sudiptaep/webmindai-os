@@ -4,6 +4,7 @@ import { LLM_MODEL_CHAT, type ComparisonRun, type ComparisonFailureSignature, ty
 import { getCollegeDb } from "../db/college.db";
 import { getDocumentModel } from "../models/college/document.model";
 import { getComparisonRunModel } from "../models/college/comparison-run.model";
+import { getGoldenQuestionModel } from "../models/college/golden-question.model";
 import { runRAG } from "./rag.service";
 
 const FRONTIER_MODEL = process.env.COMPARISON_LAB_FRONTIER_MODEL ?? "claude-opus-4-8";
@@ -70,7 +71,9 @@ async function runGroundedPath(params: {
     query: params.questionText,
     collegeId: params.collegeId,
     cacheScope: `comparison-lab:${randomUUID()}`,
-    namespacedDocs,
+    // Single tier — the lab targets a specific dept/subject for controlled
+    // comparison, so metadata pre-filtering's fallback cascade doesn't apply.
+    tieredNamespacedDocs: [namespacedDocs],
     sessionMessages: [],
     metering: { deptId: params.deptId },
   })) {
@@ -142,6 +145,32 @@ Score on three dimensions (JSON only, no markdown):
   }
 }
 
+// F-19-B expanded parent chunks span a page range but SourceCitation only
+// records page_start, so an exact-page check would false-negative on a
+// correct hit that landed a few pages into the parent. A small tolerance
+// window is a closer match to what "was the right region retrieved" means
+// once retrieval works in parent-sized units rather than single pages.
+const RETRIEVAL_HIT_PAGE_TOLERANCE = 3;
+
+/**
+ * F-19 Step 10 ground truth check — doc §15.1's "retrieval failure rate" is
+ * this, not the LLM-judge faithfulness score. Returns undefined when the
+ * golden question has no expected_source_doc_id (nothing to check against).
+ */
+function computeRetrievalHit(
+  sources: ComparisonRunSource[],
+  expectedDocId: string | undefined,
+  expectedPage: number | undefined,
+): boolean | undefined {
+  if (!expectedDocId) return undefined;
+
+  return sources.some((s) => {
+    if (s.doc_id !== expectedDocId) return false;
+    if (expectedPage == null || s.page == null) return true; // doc-level match is enough when no page is specified
+    return Math.abs(s.page - expectedPage) <= RETRIEVAL_HIT_PAGE_TOLERANCE;
+  });
+}
+
 function classifyFailure(judge: JudgeResult, frontier: FrontierResult): ComparisonFailureSignature {
   if (judge.faithfulness >= 0.8 && judge.citationAccurate) return "none";
   if (judge.faithfulness < 0.5 && frontier.text.length > 100) return "extraction_failure";
@@ -155,8 +184,12 @@ export async function runComparison(params: {
   collegeId: string;
   subjectId?: string;
   goldenQuestionId?: string;
+  /** F-19 Step 10: tags this run for later before/after aggregation (see eval-batch.service.ts). */
+  evalBatchLabel?: string;
 }): Promise<ComparisonRun> {
-  const [grounded, frontier] = await Promise.all([
+  const conn = await getCollegeDb(params.collegeId);
+
+  const [grounded, frontier, goldenQuestion] = await Promise.all([
     runGroundedPath({
       questionText: params.questionText,
       collegeId: params.collegeId,
@@ -164,17 +197,26 @@ export async function runComparison(params: {
       subjectId: params.subjectId,
     }),
     runFrontierPath(params.questionText),
+    params.goldenQuestionId
+      ? getGoldenQuestionModel(conn).findById(params.goldenQuestionId).lean()
+      : Promise.resolve(null),
   ]);
 
   const judge = await runFaithfulnessJudge(grounded, params.questionText);
   const failureSignature = classifyFailure(judge, frontier);
+  const retrievalHit = computeRetrievalHit(
+    grounded.sources,
+    goldenQuestion?.expected_source_doc_id,
+    goldenQuestion?.expected_source_page,
+  );
 
-  const conn = await getCollegeDb(params.collegeId);
   const ComparisonRunModel = getComparisonRunModel(conn);
 
   const run = await ComparisonRunModel.create({
     _id: randomUUID(),
     golden_question_id: params.goldenQuestionId,
+    eval_batch_label: params.evalBatchLabel,
+    retrieval_hit: retrievalHit,
     question_text: params.questionText,
     dept_id: params.deptId,
     college_id: params.collegeId,

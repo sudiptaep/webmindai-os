@@ -123,7 +123,7 @@ export default function CollegeDetailPage({ params }: { params: { id: string } }
             >
               <option value="engineering">Engineering</option>
               <option value="medical">Medical</option>
-              <option value="general">General</option>
+              <option value="other">Other</option>
             </select>
             <button type="submit" className="text-xs bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded">
               Add

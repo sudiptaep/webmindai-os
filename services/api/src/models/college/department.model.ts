@@ -20,6 +20,15 @@ const DepartmentSchema = new Schema<Department>(
     doc_count: { type: Number, default: 0 },
     chunk_count: { type: Number, default: 0 },
     deleted: { type: Boolean, default: false },
+    // F-19-E: per-department rerank-score threshold calibration
+    rerank_answer_threshold: { type: Number },
+    rerank_confident_threshold: { type: Number },
+    threshold_calibrated_at: { type: Date },
+    threshold_calibration_sample_size: { type: Number },
+    // F-19-F: true hybrid search
+    bm25_encoder_path: { type: String },
+    bm25_fitted_at: { type: Date },
+    bm25_corpus_size: { type: Number },
   },
   { _id: false, timestamps: { createdAt: "created_at", updatedAt: "updated_at" }, versionKey: false },
 );

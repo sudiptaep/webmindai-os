@@ -18,6 +18,8 @@ const ComparisonRunSchema = new Schema<ComparisonRun>(
     question_text: { type: String, required: true },
     dept_id: { type: String, required: true },
     college_id: { type: String, required: true },
+    eval_batch_label: { type: String },
+    retrieval_hit: { type: Boolean },
 
     grounded_response_text: { type: String, default: "" },
     grounded_sources: { type: [ComparisonRunSourceSchema], default: [] },
@@ -52,6 +54,7 @@ const ComparisonRunSchema = new Schema<ComparisonRun>(
 ComparisonRunSchema.index({ dept_id: 1, created_at: -1 });
 ComparisonRunSchema.index({ golden_question_id: 1, created_at: -1 });
 ComparisonRunSchema.index({ failure_signature: 1 });
+ComparisonRunSchema.index({ dept_id: 1, eval_batch_label: 1 });
 
 export function getComparisonRunModel(conn: Connection): Model<ComparisonRun> {
   return (

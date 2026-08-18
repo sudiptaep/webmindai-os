@@ -163,11 +163,17 @@ def _populate_chunk_ids(chapters: list[dict], doc_id: str, college_id: str, dept
 
     for ch in chapters:
         try:
+            # Old (pre-F-19-B) vectors only have section_index (0-based). New
+            # hierarchical chunks (F-19-B) only have page_num (1-based) — must
+            # check both or every F-19-B document gets zero chunk_ids per chapter.
             result = index.query(
                 vector=zero_vec,
                 filter={
-                    "doc_id":        {"$eq": doc_id},
-                    "section_index": {"$gte": ch["start_page"] - 1, "$lte": ch["end_page"] - 1},
+                    "doc_id": {"$eq": doc_id},
+                    "$or": [
+                        {"page_num": {"$gte": ch["start_page"], "$lte": ch["end_page"]}},
+                        {"section_index": {"$gte": ch["start_page"] - 1, "$lte": ch["end_page"] - 1}},
+                    ],
                 },
                 top_k=PINECONE_BATCH,
                 namespace=namespace,

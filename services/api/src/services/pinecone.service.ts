@@ -96,6 +96,63 @@ export async function queryMultiNamespace(
   return results.flat().sort((a, b) => b.score - a.score).slice(0, topK);
 }
 
+/**
+ * F-19-F: sparse-only query (no dense vector) against a namespace. Requires
+ * the index to support sparse values (dotproduct-metric or dedicated sparse
+ * index) — a plain cosine dense index will reject this. Only called when
+ * HYBRID_SEARCH_ENABLED is on and the department has a fitted BM25 encoder.
+ */
+async function querySparseNamespace(
+  collegeId: string,
+  deptId: string,
+  sparseVector: { indices: number[]; values: number[] },
+  topK: number,
+  allowedDocIds: string[],
+): Promise<PineconeChunk[]> {
+  if (allowedDocIds.length === 0) return [];
+
+  const namespace = buildPineconeNamespace(collegeId, deptId);
+  const filter = { doc_id: { $in: allowedDocIds } };
+  const queryStart = Date.now();
+  // The SDK's QueryByVectorValues type requires `vector` even for a sparse-only
+  // query — a zero vector contributes nothing on the dense side (same trick
+  // used by fetchDocChunks/deleteDocVectors above for metadata-only queries).
+  const zero = new Array<number>(EMBEDDING_DIMS).fill(0);
+  const result = await getIndex().namespace(namespace).query({
+    vector: zero,
+    topK,
+    sparseVector,
+    filter,
+    includeMetadata: true,
+    includeValues: false,
+  });
+  updatePineconeMetrics(Date.now() - queryStart, topK, 0);
+
+  return (result.matches ?? []).map((m) => ({
+    id: m.id,
+    score: m.score ?? 0,
+    text: (m.metadata?.text as string) ?? "",
+    metadata: (m.metadata as Record<string, unknown>) ?? {},
+  }));
+}
+
+export async function queryMultiNamespaceSparse(
+  collegeId: string,
+  namespacedDocs: Array<{ deptId: string; docIds: string[] }>,
+  sparseVector: { indices: number[]; values: number[] },
+  topK: number,
+): Promise<PineconeChunk[]> {
+  if (namespacedDocs.length === 0) return [];
+
+  const results = await Promise.all(
+    namespacedDocs
+      .filter((n) => n.docIds.length > 0)
+      .map(({ deptId, docIds }) => querySparseNamespace(collegeId, deptId, sparseVector, topK, docIds)),
+  );
+
+  return results.flat().sort((a, b) => b.score - a.score).slice(0, topK);
+}
+
 /** Dedicated image-only query — uses chunk_type filter so image vectors never compete with text. */
 async function queryImageNamespace(
   collegeId: string,
@@ -185,14 +242,18 @@ export async function queryChapterScoped(
   includeValues = false,
 ): Promise<PineconeChunk[]> {
   const namespace = buildPineconeNamespace(collegeId, deptId);
-  // Existing vectors store section_index (0-based). New vectors also have page_num (1-based).
-  // Query section_index (always present) — convert 1-based chapter pages to 0-based.
+  // Old (pre-F-19-B) vectors only have section_index (0-based). New hierarchical
+  // chunks (F-19-B) only have page_num (1-based) — section_index is never set
+  // on them. Must check both or every F-19-B document returns zero matches here.
   const result = await getIndex().namespace(namespace).query({
     vector,
     topK,
     filter: {
-      doc_id:        { $eq: docId },
-      section_index: { $gte: startPage - 1, $lte: endPage - 1 },
+      doc_id: { $eq: docId },
+      $or: [
+        { page_num:      { $gte: startPage,     $lte: endPage     } },
+        { section_index: { $gte: startPage - 1, $lte: endPage - 1 } },
+      ],
     },
     includeMetadata: true,
     includeValues,

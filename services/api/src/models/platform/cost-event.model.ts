@@ -11,7 +11,8 @@ export type CostEventActionType =
   | "rerank"
   | "pinecone_write"
   | "pinecone_read"
-  | "image_ingestion";
+  | "image_ingestion"
+  | "contextualisation";
 
 export type CostEventService = "anthropic" | "openai_embeddings" | "cohere" | "pinecone" | "openai_vision";
 
@@ -46,7 +47,7 @@ const CostEventSchema = new Schema<CostEvent>(
     session_id: { type: String },
     action_type: {
       type: String,
-      enum: ["chat_message","ai_summary","exam_generation","doc_ingestion","query_embedding","query_rewrite","rerank","pinecone_write","pinecone_read","image_ingestion"],
+      enum: ["chat_message","ai_summary","exam_generation","doc_ingestion","query_embedding","query_rewrite","rerank","pinecone_write","pinecone_read","image_ingestion","contextualisation"],
       required: true,
     },
     service: { type: String, enum: ["anthropic","openai_embeddings","cohere","pinecone","openai_vision"], required: true },

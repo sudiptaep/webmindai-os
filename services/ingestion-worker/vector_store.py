@@ -2,6 +2,8 @@ import os
 from pinecone import Pinecone
 
 UPSERT_BATCH_SIZE = 100
+DELETE_BATCH_SIZE = 1000
+EMBEDDING_DIMS = 1536  # text-embedding-3-small
 
 _pc: Pinecone | None = None
 _index = None
@@ -47,9 +49,19 @@ def upsert_chunks(
         {
             "id": f"{doc_id}_{i}",
             "values": chunk["embedding"],
+            # F-19-F: present only when this department has a fitted BM25
+            # encoder (see bm25_encoder.py) — upserting sparse_values requires
+            # the Pinecone index to support them (dotproduct-metric/sparse
+            # index); omitted entirely otherwise so dense-only upserts are
+            # unaffected.
+            **({"sparse_values": chunk["sparse_values"]} if chunk.get("sparse_values") else {}),
             "metadata": {
                 **{k: v for k, v in chunk["metadata"].items()},
-                "text": chunk["text"],
+                # F-19-A: store the UNPREFIXED text — this is what the LLM sees
+                # at generation time. The embedding above was computed from
+                # embedding_text (prefix + text); the prefix itself is not
+                # persisted here, only context_prefix in metadata for debugging.
+                "text": chunk.get("original_text", chunk["text"]),
                 "doc_id": doc_id,
                 "college_id": college_id,
                 "dept_id": dept_id,
@@ -107,8 +119,43 @@ def upsert_image_vector(
 
 
 def delete_doc_vectors(college_id: str, dept_id: str, doc_id: str) -> None:
-    """Delete all vectors for a document (used during reingest)."""
+    """Delete ALL vectors for a document — used when a document is removed
+    entirely, not for re-ingestion (see delete_stale_doc_vectors for that)."""
     index = _get_index()
     namespace = build_namespace(college_id, dept_id)
-    # Pinecone delete by prefix filter (metadata filter on doc_id)
     index.delete(filter={"doc_id": {"$eq": doc_id}}, namespace=namespace)
+
+
+def get_doc_vector_ids(college_id: str, dept_id: str, doc_id: str) -> set[str]:
+    """All text-chunk vector IDs currently indexed for this document. Used by
+    re-ingestion (F-19 Step 9) to find vectors that existed under the OLD
+    pipeline (e.g. more chunks than the new hierarchical chunker produces)
+    and no longer have a corresponding new vector."""
+    index = _get_index()
+    namespace = build_namespace(college_id, dept_id)
+    zero = [0.0] * EMBEDDING_DIMS
+    ids: set[str] = set()
+    result = index.query(
+        vector=zero,
+        top_k=10_000,
+        filter={"doc_id": {"$eq": doc_id}, "chunk_type": {"$ne": "image"}},
+        include_values=False,
+        include_metadata=False,
+        namespace=namespace,
+    )
+    for match in getattr(result, "matches", None) or []:
+        ids.add(match.id if hasattr(match, "id") else match["id"])
+    return ids
+
+
+def delete_vector_ids(college_id: str, dept_id: str, ids: set[str]) -> None:
+    """Deletes specific vector IDs by id (not a metadata filter) — used to
+    clean up stale re-ingestion leftovers after the new vectors are confirmed
+    upserted, so retrieval is never briefly missing content mid-reingest."""
+    if not ids:
+        return
+    index = _get_index()
+    namespace = build_namespace(college_id, dept_id)
+    id_list = list(ids)
+    for i in range(0, len(id_list), DELETE_BATCH_SIZE):
+        index.delete(ids=id_list[i : i + DELETE_BATCH_SIZE], namespace=namespace)

@@ -19,6 +19,7 @@ import { diseaseRoutes } from "./routes/disease.routes";
 import { yearNavRoutes } from "./routes/year-nav.routes";
 import { superAdminCostRoutes } from "./routes/super-admin-cost.routes";
 import { observatoryRoutes } from "./routes/observatory.routes";
+import { reingestRoutes } from "./routes/reingest.routes";
 import { connectPlatformDb } from "./db/platform.db";
 import { appRouter } from "./trpc/router";
 import { createContext } from "./trpc/context";
@@ -81,6 +82,9 @@ async function bootstrap() {
 
   // F-15: Unified Usage Observatory
   await server.register(observatoryRoutes, { prefix: "/api/v1/super-admin" });
+
+  // F-19 Step 9: admin-triggered re-ingestion under the new retrieval pipeline
+  await server.register(reingestRoutes, { prefix: "/api/v1" });
 
   // tRPC — all admin CRUD
   await server.register(fastifyTRPCPlugin, {

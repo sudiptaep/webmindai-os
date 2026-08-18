@@ -17,9 +17,11 @@ import os
 
 import httpx
 
-from chunker import chunk_texts
+from hierarchical_chunker import build_hierarchical_chunks
+from contextualiser import contextualise_children, CONTEXTUALISER_ENABLED, CONTEXTUALISER_VERSION
 from embedder import embed_chunks
-from vector_store import upsert_chunks
+from bm25_encoder import has_encoder, encode_document
+from vector_store import upsert_chunks, get_doc_vector_ids, delete_vector_ids
 from parsers.pdf_parser import parse_pdf
 from parsers.pptx_parser import parse_pptx
 from parsers.docx_parser import parse_docx
@@ -75,6 +77,27 @@ async def post_callback(
         resp.raise_for_status()
 
 
+PARENT_BULK_SAVE_BATCH = 200
+
+
+async def post_parents_bulk_save(
+    bulk_save_url: str,
+    parents: list[dict],
+    college_id: str,
+) -> None:
+    """POSTs parent_chunks in batches — large textbooks can produce 1000+ parents."""
+    headers = {
+        "x-internal-secret": os.environ["API_INTERNAL_SECRET"],
+        "x-college-id": college_id,
+        "Content-Type": "application/json",
+    }
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        for i in range(0, len(parents), PARENT_BULK_SAVE_BATCH):
+            batch = parents[i : i + PARENT_BULK_SAVE_BATCH]
+            resp = await client.post(bulk_save_url, json={"parents": batch}, headers=headers)
+            resp.raise_for_status()
+
+
 def run_pipeline(job_data: dict) -> dict:
     """
     Execute full ingestion pipeline for one job.
@@ -120,7 +143,8 @@ def run_pipeline(job_data: dict) -> dict:
     quality_result = compute_document_quality(sections, ocr_used, page_ocr_data)
     sections = quality_result["cleaned_pages"]
 
-    # 3. Chunk
+    # 3. Hierarchical chunk (F-19-B) — parents (~1400 tok, stored in Mongo, never
+    # embedded) + children (~350 tok, embedded/upserted, linked via parent_chunk_id)
     base_metadata = {
         "doc_id": doc_id,
         "college_id": college_id,
@@ -129,19 +153,61 @@ def run_pipeline(job_data: dict) -> dict:
         "file_type": file_type,
         "academic_year": academic_year,
     }
-    chunks = chunk_texts(sections, base_metadata)
-    logger.info("Created %d chunks", len(chunks))
+    hierarchy = build_hierarchical_chunks(sections, base_metadata)
+    parents = hierarchy["parents"]
+    chunks = hierarchy["children"]
+    logger.info("Created %d parent chunks, %d child chunks", len(parents), len(chunks))
 
     if not chunks:
         raise ValueError("No chunks produced after splitting")
 
-    # 5. Embed
-    chunks = embed_chunks(chunks)
+    # 4. Contextual enrichment (F-19-A) — situates each child within the
+    # document before embedding. embedding_text (prefix + text) is what gets
+    # embedded; original_text (unprefixed) is what the LLM sees at generation.
+    whole_document_text = "\n\n".join(sections)
+    chunks, contextualiser_cost_usd = contextualise_children(
+        chunks,
+        whole_document_text=whole_document_text,
+        file_type=file_type,
+        dept_name=job_data.get("dept_name") or "",
+        college_type=job_data.get("college_type") or "",
+    )
+    logger.info(
+        "Contextualised %d chunks (enabled=%s, cost=$%.4f)",
+        len(chunks), CONTEXTUALISER_ENABLED, contextualiser_cost_usd,
+    )
+
+    # 5. Embed — embeds embedding_text (prefix + original), not raw chunk text
+    chunks = embed_chunks(chunks, text_key="embedding_text")
     logger.info("Embedded %d chunks", len(chunks))
 
-    # 6. Upsert to Pinecone
+    # 5b. Sparse-encode (F-19-F) — only if this department already has a fitted
+    # BM25 encoder (admin-triggered, corpus-wide fit; see bm25_encoder.py). A
+    # brand-new department has none yet, so chunks upsert dense-only until the
+    # first fit runs — hybrid search degrades gracefully, never blocks ingestion.
+    if has_encoder(college_id, dept_id):
+        for chunk in chunks:
+            sparse = encode_document(college_id, dept_id, chunk["embedding_text"])
+            if sparse:
+                chunk["sparse_values"] = sparse
+        logger.info("Sparse-encoded %d chunks", len(chunks))
+
+    # 6. Upsert to Pinecone. On a re-ingest (F-19 Step 9), the new pipeline can
+    # produce fewer chunks than whatever indexed this doc before (e.g. the old
+    # flat chunker vs. the new hierarchical one) — capture the pre-upsert ID
+    # set so any now-orphaned trailing vectors can be cleaned up AFTER the new
+    # ones are confirmed upserted, never before. Matching IDs (same doc_id,
+    # same chunk_index) are simply overwritten in place by the upsert itself,
+    # so there is no window where a chunk's content is missing.
+    pre_upsert_ids = get_doc_vector_ids(college_id, dept_id, doc_id)
     upserted = upsert_chunks(chunks, college_id, dept_id, doc_id)
     logger.info("Upserted %d vectors to Pinecone", upserted)
+
+    new_ids = {f"{doc_id}_{i}" for i in range(len(chunks))}
+    stale_ids = pre_upsert_ids - new_ids
+    if stale_ids:
+        delete_vector_ids(college_id, dept_id, stale_ids)
+        logger.info("Deleted %d stale vectors left over from a previous ingest", len(stale_ids))
 
     # 7a. Text cache — one entry per section (page / slide / segment).
     # Includes real per-page OCR confidence so a future re-score (§2.6) can
@@ -180,6 +246,9 @@ def run_pipeline(job_data: dict) -> dict:
 
     return {
         "chunk_count": len(chunks),
+        "parent_chunk_count": len(parents),
+        "child_chunk_count": len(chunks),
+        "parents": parents,
         "quality_score": quality_result["quality_score"],
         "signal_breakdown": quality_result["signal_breakdown"],
         "quality_formula_version": quality_result["quality_formula_version"],
@@ -191,4 +260,7 @@ def run_pipeline(job_data: dict) -> dict:
         "page_count": page_count,
         "slide_count": slide_count,
         "duration_seconds": duration_seconds,
+        "contextualised": CONTEXTUALISER_ENABLED,
+        "contextualiser_version": CONTEXTUALISER_VERSION,
+        "contextualiser_cost_usd": contextualiser_cost_usd,
     }
