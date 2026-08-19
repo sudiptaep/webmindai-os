@@ -17,6 +17,7 @@ import { runRedisProbe } from "./probes/redis.probe";
 import { runDiskProbe } from "./probes/disk.probe";
 import { runRebuildDailyRollups } from "./rebuildDailyRollups";
 import { runComparisonLabNightly } from "./comparisonLabNightly";
+import { runMisconceptionMiningAllColleges } from "./mineMisconceptions";
 
 const PLATFORM_JOBS_QUEUE = "platform_jobs";
 
@@ -116,6 +117,13 @@ export async function startScheduler(): Promise<void> {
     { repeat: { pattern: "0 2 * * *" }, removeOnComplete: { count: 7 }, removeOnFail: { count: 5 } }
   );
 
+  // F-20-B: misconception mining — 3 AM UTC daily (matches MISCONCEPTION_MINING_CRON default)
+  await queue.add(
+    "misconception-mining",
+    {},
+    { repeat: { pattern: "0 3 * * *" }, removeOnComplete: { count: 7 }, removeOnFail: { count: 5 } }
+  );
+
   const worker = new Worker(
     PLATFORM_JOBS_QUEUE,
     async (job) => {
@@ -159,6 +167,9 @@ export async function startScheduler(): Promise<void> {
           break;
         case "comparison-lab-nightly":
           await runComparisonLabNightly();
+          break;
+        case "misconception-mining":
+          await runMisconceptionMiningAllColleges();
           break;
         default:
           throw new Error(`Unknown job: ${job.name}`);

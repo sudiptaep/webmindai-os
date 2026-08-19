@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import type { FastifyInstance, FastifyPluginAsync, FastifyRequest, FastifyReply } from "fastify";
 import { z } from "zod";
-import type { IngestionCallbackPayload, ChapterMapCallbackPayload, PYQIngestionCallbackPayload, ParentChunk } from "@college-chatbot/shared";
+import type { IngestionCallbackPayload, ChapterMapCallbackPayload, PYQIngestionCallbackPayload, ParentChunk, ConceptGraphCallbackPayload } from "@college-chatbot/shared";
 import { getCollegeDb } from "../db/college.db";
 import { getDocumentModel } from "../models/college/document.model";
 import { getExtractionJobModel } from "../models/college/extraction-job.model";
@@ -13,7 +13,10 @@ import { getPYQQuestionModel } from "../models/college/pyq-question.model";
 import { getSubjectModel } from "../models/college/subject.model";
 import { getImageAssetModel } from "../models/college/image-asset.model";
 import { getParentChunkModel } from "../models/college/parent-chunk.model";
-import { enqueueChapterExtractionJob, enqueueImageIngestionJob } from "../services/queue.service";
+import { getConceptModel } from "../models/college/concept-graph.model";
+import { getCollegeModel } from "../models/platform/college.model";
+import { enqueueChapterExtractionJob, enqueueImageIngestionJob, enqueueConceptGraphExtractionJob } from "../services/queue.service";
+import { seedMisconceptionsForDocument } from "../services/misconception-seed.service";
 import { recordCostEvent, getBillingMonth, getBillingDay } from "../services/metering.service";
 
 const callbackSchema = z.object({
@@ -280,8 +283,105 @@ const internalRoutesPlugin: FastifyPluginAsync = async (fastify: FastifyInstance
             chapter_count: cb.chapter_count ?? cb.chapters.length,
           },
         });
+
+        // F-20-A: concept graph extraction runs once chapters are known — needs
+        // the ordered chapter/page-range list to constrain prerequisites to
+        // earlier chapters. Only for PDFs with a local file (same guard as
+        // chapter extraction itself).
+        if (doc.file_type === "pdf" && doc.file_path) {
+          const [dept, college] = await Promise.all([
+            getDepartmentModel(conn).findById(doc.dept_id).lean(),
+            getCollegeModel().findById(collegeId).lean(),
+          ]);
+          const apiBase = process.env.API_INTERNAL_BASE_URL ?? `http://localhost:${process.env.PORT ?? 3000}`;
+
+          await enqueueConceptGraphExtractionJob({
+            job_id:       `concept_graph_${docId}`,
+            doc_id:       docId,
+            college_id:   collegeId,
+            dept_id:      doc.dept_id,
+            subject_id:   doc.subject_id,
+            dept_name:    dept?.name ?? "",
+            college_type: college?.type ?? "",
+            file_path:    doc.file_path,
+            chapters:     cb.chapters,
+            job_type:     "extract_concept_graph",
+            callback_url: `${apiBase}/api/v1/internal/ingest/${docId}/concept-graph/webhook`,
+          }).catch((err) => {
+            fastify.log.warn({ err, docId }, "Failed to enqueue concept graph extraction — non-fatal");
+          });
+        }
       } else if (cb.status === "failed") {
         fastify.log.warn({ docId, error: cb.error }, "Chapter extraction failed");
+      }
+
+      return reply.status(200).send({ ok: true });
+    },
+  );
+
+  // ── Concept graph callback (from Python extract_concept_graph worker) ────
+  fastify.post(
+    "/ingest/:docId/concept-graph/webhook",
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      const secret = request.headers["x-internal-secret"];
+      if (!secret || secret !== process.env.API_INTERNAL_SECRET) {
+        return reply.status(401).send({ statusCode: 401, error: "Unauthorized" });
+      }
+
+      const collegeId = request.headers["x-college-id"] as string | undefined;
+      if (!collegeId) {
+        return reply.status(400).send({ statusCode: 400, error: "Bad Request", message: "x-college-id header required" });
+      }
+
+      const { docId } = request.params as { docId: string };
+      const cb = request.body as ConceptGraphCallbackPayload;
+      const conn = await getCollegeDb(collegeId);
+      const Document = getDocumentModel(conn);
+
+      if (cb.status === "completed" && cb.concepts) {
+        const Concept = getConceptModel(conn);
+
+        // Re-extraction replaces the prior graph for this doc rather than
+        // accumulating duplicates.
+        await Concept.deleteMany({ doc_id: docId });
+        if (cb.concepts.length > 0) {
+          await Concept.insertMany(cb.concepts, { ordered: false }).catch((err) => {
+            fastify.log.warn({ err, docId }, "Some concepts failed to insert");
+          });
+        }
+
+        const docForCost = await Document.findByIdAndUpdate(docId, {
+          $set: {
+            concept_graph_extracted: true,
+            concept_count: cb.concept_count ?? cb.concepts.length,
+            concept_graph_version: 1,
+          },
+        }).select("dept_id").lean();
+
+        if (cb.concept_graph_extraction_cost_usd && cb.concept_graph_extraction_cost_usd > 0 && docForCost) {
+          recordCostEvent({
+            college_id: collegeId,
+            dept_id: docForCost.dept_id,
+            action_type: "concept_graph_extraction",
+            service: "anthropic",
+            model: process.env.CONCEPT_GRAPH_MODEL ?? "claude-sonnet-4-6",
+            cost_usd: cb.concept_graph_extraction_cost_usd,
+            billing_month: getBillingMonth(),
+            billing_day: getBillingDay(),
+            created_at: new Date(),
+          });
+        }
+
+        // F-20-B: seed misconceptions for the freshly extracted concepts.
+        // Fire-and-forget — a large textbook's worth of LLM calls would
+        // otherwise hold this webhook response open for many minutes.
+        if (cb.concepts.length > 0) {
+          seedMisconceptionsForDocument(docId, collegeId, conn).catch((err) => {
+            fastify.log.warn({ err, docId }, "Misconception seeding failed — non-fatal");
+          });
+        }
+      } else if (cb.status === "failed") {
+        fastify.log.warn({ docId, error: cb.error }, "Concept graph extraction failed");
       }
 
       return reply.status(200).send({ ok: true });

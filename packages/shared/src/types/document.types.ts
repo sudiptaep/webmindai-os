@@ -1,3 +1,5 @@
+import type { Concept } from "./learning.types";
+
 export type FileType = "pdf" | "pptx" | "mp4" | "mkv" | "mp3" | "m4a" | "docx";
 export type IngestionStatus = "pending" | "processing" | "completed" | "failed";
 export type LibraryAction = "download" | "extract_text" | "extract_pages" | "ai_summary" | "stream" | "preview";
@@ -62,6 +64,13 @@ export interface Document {
   contextualiser_cost_usd?: number;
   // F-19 Step 9: undefined/1 = pre-F-19 pipeline (needs re-ingestion), 2 = F-19 pipeline
   pipeline_version?: number;
+  // F-20-A: concept graph
+  concept_graph_extracted?: boolean;
+  concept_count?: number;
+  concept_graph_version?: number;
+  // F-20-B: misconception library
+  misconceptions_seeded?: boolean;
+  misconception_count?: number;
   created_at: Date;
   updated_at: Date;
 }
@@ -339,6 +348,30 @@ export interface ChapterMapCallbackPayload {
   extraction_method?: ExtractionMethod;
   confidence_score?: number;
   chapters?: Chapter[];
+  error?: string;
+}
+
+// ── F-20-A: Concept graph extraction ────────────────────────────────────────
+
+export interface ConceptGraphExtractionJobPayload {
+  job_id: string;
+  doc_id: string;
+  college_id: string;
+  dept_id: string;
+  subject_id?: string;
+  dept_name: string;
+  college_type: string;
+  file_path: string;
+  chapters: Chapter[];
+  job_type: "extract_concept_graph";
+  callback_url: string;
+}
+
+export interface ConceptGraphCallbackPayload {
+  status: "completed" | "failed";
+  concept_count?: number;
+  concepts?: Concept[];
+  concept_graph_extraction_cost_usd?: number;
   error?: string;
 }
 

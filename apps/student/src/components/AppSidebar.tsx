@@ -50,6 +50,14 @@ export function IconLogout() {
   );
 }
 
+export function IconTeach() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+      <path d="M22 10 12 5 2 10l10 5 10-5Z" /><path d="M6 12v5c0 1.5 2.5 3 6 3s6-1.5 6-3v-5" />
+    </svg>
+  );
+}
+
 export function IconMenu() {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
@@ -241,6 +249,7 @@ interface AppSidebarProps {
 
 const NAV_ITEMS = [
   { label: 'Dashboard', icon: <IconHome />,   href: '/dashboard' },
+  { label: 'Teach me',  icon: <IconTeach />,  href: '/teaching' },
   { label: 'Review',    icon: <IconRepeat />, href: '/srs' },
   { label: 'Disease',   icon: <IconSearch />, href: '/disease' },
   { label: 'Chats',     icon: <IconClock />,  href: '/history' },

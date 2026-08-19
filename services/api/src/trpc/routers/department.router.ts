@@ -6,6 +6,7 @@ import { getCollegeDb } from "../../db/college.db";
 import { getDepartmentModel } from "../../models/college/department.model";
 import { getStudentModel } from "../../models/college/student.model";
 import { buildPineconeNamespace } from "@college-chatbot/shared";
+import { createDefaultTeachingProfile } from "../../services/teaching-profile.service";
 
 export const departmentRouter = router({
   // Super admin: create dept in a college
@@ -33,6 +34,11 @@ export const departmentRouter = router({
         is_generic: false, cannot_delete: false,
         pinecone_namespace: buildPineconeNamespace(college_id, deptId),
       });
+
+      // F-20-F: every dept gets a default teaching profile so the adaptive
+      // teaching engine works before any faculty configures it.
+      await createDefaultTeachingProfile(conn, college_id, deptId);
+
       return dept.toObject();
     }),
 

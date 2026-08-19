@@ -19,8 +19,20 @@ export default function DocumentDetailPage({ params }: { params: { id: string } 
     { enabled: !!collegeId && !!token }
   );
 
+  const { data: concepts, refetch: refetchConcepts } = trpc.conceptGraph.list.useQuery(
+    { doc_id: params.id },
+    { enabled: !!collegeId && !!token && !!doc?.has_chapter_map }
+  );
+  const { data: validation } = trpc.conceptGraph.validate.useQuery(
+    { doc_id: params.id },
+    { enabled: !!collegeId && !!token && !!concepts?.length }
+  );
+
   const reingest        = trpc.document.reingest.useMutation();
   const extractChapters = trpc.document.extractChapters.useMutation();
+  const extractConcepts = trpc.conceptGraph.extract.useMutation({
+    onSuccess: () => refetchConcepts(),
+  });
   const rescore         = trpc.document.rescore.useMutation({
     onSuccess: () => refetchQuality(),
   });
@@ -86,6 +98,64 @@ export default function DocumentDetailPage({ params }: { params: { id: string } 
         <p className="mt-4 text-xs text-amber-400">
           ⚠️ This document was ingested before the quality scoring update — re-ingest to get a full breakdown.
         </p>
+      )}
+
+      {(doc as { has_chapter_map?: boolean }).has_chapter_map && (
+        <div className="bg-gray-800 border border-gray-700 rounded-lg p-5 mt-4 text-sm">
+          <div className="flex items-center justify-between mb-3">
+            <span className="font-medium">
+              Concept graph {concepts ? `· ${concepts.length} concepts` : ''}
+            </span>
+            <button
+              onClick={() => extractConcepts.mutate({ doc_id: doc._id })}
+              disabled={extractConcepts.isPending}
+              className="text-xs bg-gray-700 hover:bg-gray-600 disabled:opacity-50 px-3 py-1 rounded"
+            >
+              {extractConcepts.isPending
+                ? 'Queuing…'
+                : concepts?.length
+                  ? 'Re-extract'
+                  : 'Extract concept graph'}
+            </button>
+          </div>
+
+          {extractConcepts.isError && (
+            <p className="text-xs text-red-400 mb-2">{extractConcepts.error.message}</p>
+          )}
+
+          {validation && (validation.cycles.length > 0 || validation.suspicious_edges.length > 0) && (
+            <div className="mb-3 text-xs text-amber-400 space-y-1">
+              {validation.cycles.map((cycle, i) => (
+                <p key={`cycle-${i}`}>⚠ Cycle detected: {cycle.join(' → ')}</p>
+              ))}
+              {validation.suspicious_edges.map((e, i) => (
+                <p key={`edge-${i}`}>
+                  ⚠ "{e.canonical_name}" depends on "{e.prerequisite_name}" from a later chapter — review suggested
+                </p>
+              ))}
+            </div>
+          )}
+
+          {concepts && concepts.length > 0 && (
+            <div className="max-h-80 overflow-y-auto space-y-1">
+              {concepts.map((c) => (
+                <div key={c._id} className="flex items-start gap-2 py-1 border-b border-gray-700/50 last:border-0">
+                  <span className="text-gray-500 text-xs w-10 shrink-0">Ch.{c.chapter_index}</span>
+                  <span className="flex-1">
+                    {c.canonical_name}
+                    {c.prerequisite_names.length > 0 && (
+                      <span className="text-gray-500 text-xs"> ← {c.prerequisite_names.join(', ')}</span>
+                    )}
+                  </span>
+                  <span className="text-gray-500 text-xs shrink-0">{c.concept_type}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {concepts && concepts.length === 0 && !extractConcepts.isPending && (
+            <p className="text-xs text-gray-500">No concepts extracted yet.</p>
+          )}
+        </div>
       )}
 
       {((doc as any).download_url) && (

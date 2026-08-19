@@ -1,6 +1,6 @@
 import { Queue } from "bullmq";
 import IORedis from "ioredis";
-import type { IngestionJobPayload, ExtractionJobPayload, ChapterExtractionJobPayload, PYQIngestionJobPayload, ImageIngestionJobPayload } from "@college-chatbot/shared";
+import type { IngestionJobPayload, ExtractionJobPayload, ChapterExtractionJobPayload, PYQIngestionJobPayload, ImageIngestionJobPayload, ConceptGraphExtractionJobPayload } from "@college-chatbot/shared";
 
 const QUEUE_NAME = "ingestion_jobs";
 
@@ -60,6 +60,19 @@ export async function enqueueChapterExtractionJob(payload: ChapterExtractionJobP
   const queue = getIngestionQueue();
   await queue.add(QUEUE_NAME, payload, {
     jobId: `chapter_${payload.doc_id}_${Date.now()}`,
+    attempts: 2,
+    backoff: { type: "exponential", delay: 5000 },
+    removeOnComplete: { count: 100 },
+    removeOnFail: { count: 50 },
+  });
+}
+
+export async function enqueueConceptGraphExtractionJob(payload: ConceptGraphExtractionJobPayload): Promise<void> {
+  const queue = getIngestionQueue();
+  // Timestamped jobId (like chapter/image jobs) so re-extraction always runs
+  // rather than being silently deduped against a prior completed job.
+  await queue.add(QUEUE_NAME, payload, {
+    jobId: `concept_graph_${payload.doc_id}_${Date.now()}`,
     attempts: 2,
     backoff: { type: "exponential", delay: 5000 },
     removeOnComplete: { count: 100 },

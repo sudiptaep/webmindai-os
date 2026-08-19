@@ -912,7 +912,13 @@ const libraryRoutesPlugin: FastifyPluginAsync = async (fastify: FastifyInstance)
           docId,
           chapter: chapter as Parameters<typeof runChapterRAG>[0]["chapter"],
           sessionMessages,
-          mode: (session.chat_mode ?? "answer") as "answer" | "socratic",
+          // F-20 Step 12: socratic mode is deprecated and has no remaining
+          // UI entry/exit point (SocraticToggle was removed) — always run
+          // "answer" mode here so a session that was left in socratic mode
+          // before this deploy isn't stuck giving evasive answers with no
+          // way for the student to escape it. The stored chat_mode value is
+          // left alone (harmless) rather than bulk-migrated.
+          mode: "answer",
           allChapters: chapterMap.chapters as Parameters<typeof runChapterRAG>[0]["allChapters"],
           metering: { deptId: doc.dept_id, studentId: student.sub, sessionId: session._id },
         })) {
@@ -953,6 +959,10 @@ const libraryRoutesPlugin: FastifyPluginAsync = async (fastify: FastifyInstance)
   );
 
   // ── F-13-G: Switch chat mode (answer ↔ socratic) ────────────────────────
+  // DEPRECATED (F-20 Step 12): no longer reachable from the chat UI — "Teach
+  // me" now opens a full F-20 adaptive teaching session instead. Route kept
+  // (not removed) so any session already in socratic mode keeps working.
+
   fastify.patch(
     "/college/:collegeId/student/library/:docId/chapters/:chapterIdx/chat/:sessionId/mode",
     { preHandler: PRE },

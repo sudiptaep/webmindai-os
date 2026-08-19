@@ -1,16 +1,14 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/auth.store';
 import {
   type Chapter,
-  type ChatMode,
   type ChapterChatSession,
   createChapterChatSession,
-  setChapterChatMode,
   chapterChatMessageUrl,
 } from '@/lib/library';
-import { SocraticToggle } from './SocraticToggle';
 import { SaveResponseButton } from './SaveResponseButton';
 
 interface ChatMessage {
@@ -33,6 +31,7 @@ interface Props {
 
 export function ChapterChat({ chapter, docId, collegeId, onSwitchChapter }: Props) {
   const token = useAuthStore(s => s.token) ?? '';
+  const router = useRouter();
 
   const [session, setSession]       = useState<ChapterChatSession | null>(null);
   const [messages, setMessages]     = useState<ChatMessage[]>([]);
@@ -73,14 +72,6 @@ export function ChapterChat({ chapter, docId, collegeId, onSwitchChapter }: Prop
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
-
-  const switchMode = useCallback(async (mode: ChatMode) => {
-    if (!session) return;
-    try {
-      await setChapterChatMode(collegeId, docId, chapter.chapter_index, session.session_id, mode, token);
-      setSession(s => s ? { ...s, chat_mode: mode } : s);
-    } catch { /* non-fatal */ }
-  }, [session, collegeId, docId, chapter.chapter_index, token]);
 
   const sendMessage = useCallback(async () => {
     if (!session || !input.trim() || streaming) return;
@@ -197,20 +188,21 @@ export function ChapterChat({ chapter, docId, collegeId, onSwitchChapter }: Prop
 
   return (
     <div className="flex flex-col h-full">
-      {/* Mode toggle bar */}
+      {/* Scope + teach-me entry point. The old in-chat Socratic toggle
+          (F-13-G) is retired — "Teach me" now opens a full F-20 adaptive
+          teaching session (concept graph, misconception handling, spaced
+          checks) instead of a single system-prompt flag on this chat. */}
       <div className="flex items-center justify-between px-4 py-2 border-b border-gray-800 shrink-0">
         <span className="text-xs text-gray-500">
           Scoped to pages {chapter.start_page}–{chapter.end_page}
         </span>
-        <SocraticToggle mode={session.chat_mode} onSwitch={switchMode} />
+        <button
+          onClick={() => router.push(`/teaching?doc_id=${docId}&chapter_index=${chapter.chapter_index}`)}
+          className="text-xs bg-teal-800/60 hover:bg-teal-700/60 border border-teal-700/60 text-teal-200 rounded-lg px-2.5 py-1 transition-colors"
+        >
+          🎓 Teach me this chapter
+        </button>
       </div>
-
-      {/* Socratic mode banner */}
-      {session.chat_mode === 'socratic' && (
-        <div className="px-4 py-2 bg-violet-900/20 border-b border-violet-800/40 text-xs text-violet-300 shrink-0">
-          Socratic mode — AI will guide you to the answer, not give it directly.
-        </div>
-      )}
 
       {/* Message list */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">

@@ -12,6 +12,7 @@ const NAV = [
   { href: '/dashboard/pyq',       label: 'PYQ Papers' },
   { href: '/dashboard/subjects',  label: 'Subjects' },
   { href: '/dashboard/students',  label: 'Students' },
+  { href: '/dashboard/teaching',  label: 'Teaching' },
   { href: '/dashboard/analytics', label: 'Analytics' },
   { href: '/dashboard/comparison-lab', label: 'Comparison Lab' },
 ];

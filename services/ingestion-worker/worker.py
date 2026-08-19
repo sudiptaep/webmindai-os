@@ -22,6 +22,7 @@ from jobs.extract_pages import run_extract_pages, post_extraction_callback
 from jobs.extract_chapters import run_extract_chapters, post_chapter_failure
 from jobs.ingest_pyq import run_ingest_pyq, post_pyq_failure
 from jobs.image_ingestion import handle_image_ingestion, post_image_callback, post_image_failure
+from jobs.extract_concept_graph import run_extract_concept_graph, post_concept_graph_failure
 
 logger = logging.getLogger(__name__)
 
@@ -144,6 +145,21 @@ async def _handle_image_ingestion_job(job_data: dict) -> dict:
         raise
 
 
+async def _handle_extract_concept_graph(job_data: dict) -> dict:
+    callback_url: str = job_data["callback_url"]
+    college_id:   str = job_data["college_id"]
+    doc_id:       str = job_data["doc_id"]
+
+    try:
+        await run_extract_concept_graph(job_data)
+        return {"status": "completed", "doc_id": doc_id}
+
+    except Exception as exc:
+        logger.exception("Concept graph extraction failed: doc_id=%s", doc_id)
+        await post_concept_graph_failure(callback_url, college_id, str(exc))
+        raise
+
+
 async def process_job(job, job_token: str) -> dict:
     job_data: dict = job.data
     job_type: str  = job_data.get("job_type", "ingest")
@@ -156,6 +172,8 @@ async def process_job(job, job_token: str) -> dict:
         return await _handle_ingest_pyq(job_data)
     elif job_type == "image_ingestion":
         return await _handle_image_ingestion_job(job_data)
+    elif job_type == "extract_concept_graph":
+        return await _handle_extract_concept_graph(job_data)
     else:
         return await _handle_ingest(job_data, job)
 

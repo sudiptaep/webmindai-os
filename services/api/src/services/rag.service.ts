@@ -1077,6 +1077,10 @@ export interface ChapterRAGParams {
   metering?: RAGMeteringContext;
 }
 
+// F-13-G's "socratic" branch is DEPRECATED as of F-20 Step 12 — the chat UI
+// no longer offers a way to switch into it (see ChapterChat.tsx). Kept
+// functional, not removed, so any session already in socratic mode still
+// works; new sessions can only reach it via the deprecated PATCH .../mode route.
 function buildChapterSystemPrompt(chapter: Chapter, mode: "answer" | "socratic"): string {
   const base = `You are a study assistant helping a student understand Chapter ${chapter.chapter_index}: "${chapter.title}". Talk to them like you're actually explaining it in a conversation, not writing a textbook entry — plain paragraphs, not a formatted document.
 Answer ONLY from the provided context chunks, which are excerpts from pages ${chapter.start_page}–${chapter.end_page}.

@@ -39,6 +39,8 @@ const SrsCardSchema = new Schema<SrsCard>(
       enum: ["active", "suspended", "graduated"] as SrsCardStatus[],
       default: "active",
     },
+    origin: { type: String, enum: ["teaching_session", "teaching_session_misconception"] },
+    origin_session_id: { type: String },
   },
   { _id: false, timestamps: { createdAt: "created_at", updatedAt: "updated_at" }, versionKey: false },
 );
