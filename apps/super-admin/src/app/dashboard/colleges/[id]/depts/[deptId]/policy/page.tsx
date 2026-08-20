@@ -107,7 +107,7 @@ export default function DeptPolicyPage() {
     <div className="space-y-6 max-w-2xl">
       {/* Header */}
       <div className="flex items-center gap-3 flex-wrap">
-        <Link href={`/dashboard/colleges/${collegeId}/depts/${deptId}/costs`} className="text-muted-foreground hover:text-white text-sm transition-colors">
+        <Link href={`/dashboard/colleges/${collegeId}/depts/${deptId}/costs`} className="text-muted-foreground hover:text-foreground text-sm transition-colors">
           ← {deptId} costs
         </Link>
         <span className="text-muted-foreground">/</span>

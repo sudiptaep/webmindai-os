@@ -50,7 +50,7 @@ export default function AlertsPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <div className="flex items-center gap-3">
-            <Link href="/dashboard" className="text-muted-foreground hover:text-white text-sm transition-colors">← Platform Overview</Link>
+            <Link href="/dashboard" className="text-muted-foreground hover:text-foreground text-sm transition-colors">← Platform Overview</Link>
             <span className="text-muted-foreground">/</span>
             <h1 className="text-xl font-bold text-white">Alerts</h1>
           </div>
@@ -129,7 +129,7 @@ function AlertCard({ alert, onResolve, resolving }: { alert: Alert; onResolve: (
           <button
             onClick={onResolve}
             disabled={resolving}
-            className="shrink-0 text-xs text-muted-foreground hover:text-white disabled:opacity-50 border border-border hover:border-gray-500 rounded-lg px-2.5 py-1 transition-colors"
+            className="shrink-0 text-xs text-muted-foreground hover:text-foreground disabled:opacity-50 border border-border hover:border-gray-500 rounded-lg px-2.5 py-1 transition-colors"
           >
             {resolving ? '…' : 'Resolve'}
           </button>

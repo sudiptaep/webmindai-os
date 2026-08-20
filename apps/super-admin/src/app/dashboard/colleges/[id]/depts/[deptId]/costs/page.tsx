@@ -100,9 +100,9 @@ export default function DeptCostPage() {
     <div className="space-y-6">
       {/* Breadcrumb */}
       <div className="flex items-center gap-3 flex-wrap">
-        <Link href="/dashboard" className="text-muted-foreground hover:text-white text-sm transition-colors">← Platform</Link>
+        <Link href="/dashboard" className="text-muted-foreground hover:text-foreground text-sm transition-colors">← Platform</Link>
         <span className="text-muted-foreground">/</span>
-        <Link href={`/dashboard/colleges/${collegeId}/costs?month=${month}`} className="text-muted-foreground hover:text-white text-sm transition-colors truncate max-w-[140px]">{collegeId}</Link>
+        <Link href={`/dashboard/colleges/${collegeId}/costs?month=${month}`} className="text-muted-foreground hover:text-foreground text-sm transition-colors truncate max-w-[140px]">{collegeId}</Link>
         <span className="text-muted-foreground">/</span>
         <h1 className="text-xl font-bold text-white truncate">{deptId} — Dept Detail</h1>
         <div className="ml-auto flex items-center gap-2">

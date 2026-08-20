@@ -96,7 +96,7 @@ export default function StudentObservatoryPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3 flex-wrap">
-        <Link href={`/dashboard/observatory/college/${collegeId}`} className="text-muted-foreground hover:text-white text-sm">
+        <Link href={`/dashboard/observatory/college/${collegeId}`} className="text-muted-foreground hover:text-foreground text-sm">
           ← College Detail
         </Link>
         <span className="text-muted-foreground">/</span>
@@ -211,7 +211,7 @@ export default function StudentObservatoryPage() {
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page <= 1}
-              className="text-xs text-muted-foreground hover:text-white disabled:opacity-30 transition-colors"
+              className="text-xs text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
             >
               ← Prev
             </button>
@@ -219,7 +219,7 @@ export default function StudentObservatoryPage() {
             <button
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page >= totalPages}
-              className="text-xs text-muted-foreground hover:text-white disabled:opacity-30 transition-colors"
+              className="text-xs text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
             >
               Next →
             </button>

@@ -62,7 +62,7 @@ export function BookStudyWorkspace({ collegeId, docId, onClose }: Props) {
       <header className="flex items-center gap-3 px-4 py-2.5 border-b border-border shrink-0">
         <button
           onClick={onClose}
-          className="text-xs text-muted-foreground hover:text-white transition-colors flex items-center gap-1"
+          className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
         >
           ← Library
         </button>

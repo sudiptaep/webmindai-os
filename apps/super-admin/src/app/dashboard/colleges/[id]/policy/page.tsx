@@ -113,7 +113,7 @@ export default function CollegePolicyPage() {
     <div className="space-y-6 max-w-2xl">
       {/* Header */}
       <div className="flex items-center gap-3 flex-wrap">
-        <Link href={`/dashboard/colleges/${collegeId}/costs`} className="text-muted-foreground hover:text-white text-sm transition-colors">← {collegeId} costs</Link>
+        <Link href={`/dashboard/colleges/${collegeId}/costs`} className="text-muted-foreground hover:text-foreground text-sm transition-colors">← {collegeId} costs</Link>
         <span className="text-muted-foreground">/</span>
         <h1 className="text-xl font-bold text-white">College Policy</h1>
       </div>
@@ -189,7 +189,7 @@ export default function CollegePolicyPage() {
                   onChange={() => toggleModel(m)}
                   className="accent-blue-500"
                 />
-                <span className="text-sm text-foreground group-hover:text-white transition-colors font-mono">{m}</span>
+                <span className="text-sm text-foreground group-hover:text-foreground transition-colors font-mono">{m}</span>
               </label>
             ))}
             {fields.allowed_llm_models.length === 0 && (

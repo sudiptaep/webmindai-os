@@ -54,7 +54,7 @@ export function LibraryLayout({ initialDocId, initialPage }: Props) {
     <div className="h-screen flex flex-col bg-background">
       {/* Top nav */}
       <header className="flex items-center gap-4 px-5 py-3 border-b border-border shrink-0">
-        <button onClick={() => router.push('/chat')} className="text-muted-foreground hover:text-white text-sm">
+        <button onClick={() => router.push('/chat')} className="text-muted-foreground hover:text-foreground text-sm">
           ← Chat
         </button>
         <h1 className="text-sm font-semibold text-foreground">Document Library</h1>

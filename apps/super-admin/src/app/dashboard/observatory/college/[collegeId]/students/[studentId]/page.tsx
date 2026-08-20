@@ -73,7 +73,7 @@ export default function StudentProfilePage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3 flex-wrap">
-        <Link href={`/dashboard/observatory/college/${collegeId}/students`} className="text-muted-foreground hover:text-white text-sm">
+        <Link href={`/dashboard/observatory/college/${collegeId}/students`} className="text-muted-foreground hover:text-foreground text-sm">
           ← Students
         </Link>
         <span className="text-muted-foreground">/</span>

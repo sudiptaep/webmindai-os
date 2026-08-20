@@ -98,7 +98,7 @@ export default function GlobalPolicyPage() {
   return (
     <div className="space-y-6 max-w-2xl">
       <div className="flex items-center gap-3">
-        <Link href="/dashboard" className="text-muted-foreground hover:text-white text-sm transition-colors">← Platform Overview</Link>
+        <Link href="/dashboard" className="text-muted-foreground hover:text-foreground text-sm transition-colors">← Platform Overview</Link>
         <span className="text-muted-foreground">/</span>
         <h1 className="text-xl font-bold text-white">Global Policy</h1>
       </div>
@@ -130,7 +130,7 @@ export default function GlobalPolicyPage() {
             {KNOWN_MODELS.map(m => (
               <label key={m} className="flex items-center gap-2 cursor-pointer group">
                 <input type="checkbox" checked={fields.allowed_llm_models.includes(m)} onChange={() => toggleModel(m)} className="accent-blue-500" />
-                <span className="text-sm text-foreground group-hover:text-white transition-colors font-mono">{m}</span>
+                <span className="text-sm text-foreground group-hover:text-foreground transition-colors font-mono">{m}</span>
               </label>
             ))}
           </div>

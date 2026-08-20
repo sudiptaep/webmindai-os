@@ -47,7 +47,7 @@ export function SubjectSidebar({ subjects, params, studentYear, onChange }: Prop
             className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
               !params.study_year
                 ? 'bg-teal-600 border-teal-500 text-white'
-                : 'border-border text-muted-foreground hover:text-white'
+                : 'border-border text-muted-foreground hover:text-foreground'
             }`}
           >
             My Year {studentYear}
@@ -59,7 +59,7 @@ export function SubjectSidebar({ subjects, params, studentYear, onChange }: Prop
               className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
                 params.study_year === String(y)
                   ? 'bg-teal-600 border-teal-500 text-white'
-                  : 'border-border text-muted-foreground hover:text-white'
+                  : 'border-border text-muted-foreground hover:text-foreground'
               }`}
             >
               Year {y}
@@ -78,7 +78,7 @@ export function SubjectSidebar({ subjects, params, studentYear, onChange }: Prop
               className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
                 (params.type ?? 'all') === t
                   ? 'bg-teal-600 border-teal-500 text-white'
-                  : 'border-border text-muted-foreground hover:text-white'
+                  : 'border-border text-muted-foreground hover:text-foreground'
               }`}
             >
               {t.toUpperCase()}

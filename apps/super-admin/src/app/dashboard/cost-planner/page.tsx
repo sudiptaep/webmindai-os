@@ -87,7 +87,7 @@ export default function CostPlannerPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Link href="/dashboard" className="text-muted-foreground hover:text-white text-sm transition-colors">← Platform Overview</Link>
+        <Link href="/dashboard" className="text-muted-foreground hover:text-foreground text-sm transition-colors">← Platform Overview</Link>
         <span className="text-muted-foreground">/</span>
         <h1 className="text-xl font-bold text-white">Cost Plan Builder</h1>
       </div>

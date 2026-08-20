@@ -67,7 +67,7 @@ export function DocumentViewer({ collegeId, docId, initialPage, onClose }: Props
       <div className="fixed inset-y-0 right-0 z-40 w-full max-w-5xl flex flex-col bg-card shadow-2xl">
         {/* Header */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-border shrink-0">
-          <button onClick={onClose} className="text-muted-foreground hover:text-white text-xl leading-none">✕</button>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground text-xl leading-none">✕</button>
           <h2 className="flex-1 text-sm font-semibold text-foreground truncate">
             {doc?.original_filename ?? '…'}
           </h2>

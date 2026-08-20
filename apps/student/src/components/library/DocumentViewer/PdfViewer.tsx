@@ -23,7 +23,44 @@ function Spinner() {
   );
 }
 
-const BTN = 'px-2 py-1 rounded bg-accent hover:bg-accent disabled:opacity-30 text-white transition-colors';
+function ChevronLeftIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="15 18 9 12 15 6" />
+    </svg>
+  );
+}
+
+function ChevronRightIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="9 18 15 12 9 6" />
+    </svg>
+  );
+}
+
+function ChevronsLeftIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="11 17 6 12 11 7" />
+      <polyline points="18 17 13 12 18 7" />
+    </svg>
+  );
+}
+
+function ChevronsRightIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="13 17 18 12 13 7" />
+      <polyline points="6 17 11 12 6 7" />
+    </svg>
+  );
+}
+
+const BTN =
+  'flex items-center justify-center w-8 h-8 rounded-md border border-border bg-card text-foreground ' +
+  'hover:bg-accent hover:text-white disabled:opacity-30 disabled:hover:bg-card disabled:hover:text-foreground ' +
+  'disabled:cursor-not-allowed transition-colors';
 
 export function PdfViewer({ tokenUrl, initialPage = 1 }: Props) {
   const [numPages, setNumPages]     = useState(0);
@@ -60,13 +97,17 @@ export function PdfViewer({ tokenUrl, initialPage = 1 }: Props) {
   return (
     <div className="flex flex-col h-full bg-background">
       {/* Toolbar */}
-      <div className="flex items-center gap-2 px-4 py-2 bg-card border-b border-border shrink-0 text-xs text-muted-foreground flex-wrap">
+      <div className="flex items-center justify-center gap-2 px-4 py-2 bg-card border-b border-border shrink-0 text-sm text-muted-foreground">
         {/* First / prev */}
-        <button onClick={() => goTo(1)}        disabled={page <= 1}        className={BTN} title="First page">«</button>
-        <button onClick={() => goTo(page - 1)} disabled={page <= 1}        className={BTN} title="Previous page">‹</button>
+        <button onClick={() => goTo(1)} disabled={page <= 1} className={BTN} title="First page">
+          <ChevronsLeftIcon />
+        </button>
+        <button onClick={() => goTo(page - 1)} disabled={page <= 1} className={BTN} title="Previous page">
+          <ChevronLeftIcon />
+        </button>
 
         {/* Page input */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-2 mx-1">
           <span>Page</span>
           <input
             type="number"
@@ -76,14 +117,18 @@ export function PdfViewer({ tokenUrl, initialPage = 1 }: Props) {
             onChange={(e) => setPageInput(e.target.value)}
             onKeyDown={handleInputKey}
             onBlur={commitInput}
-            className="w-16 bg-muted border border-border rounded px-2 py-0.5 text-white text-center focus:outline-none focus:border-teal-500"
+            className="w-14 h-8 bg-muted border border-border rounded-md px-2 text-white text-center focus:outline-none focus:border-teal-500"
           />
           <span>of {numPages || '…'}</span>
         </div>
 
         {/* Next / last */}
-        <button onClick={() => goTo(page + 1)}  disabled={page >= numPages} className={BTN} title="Next page">›</button>
-        <button onClick={() => goTo(numPages)}  disabled={page >= numPages} className={BTN} title="Last page">»</button>
+        <button onClick={() => goTo(page + 1)} disabled={page >= numPages} className={BTN} title="Next page">
+          <ChevronRightIcon />
+        </button>
+        <button onClick={() => goTo(numPages)} disabled={page >= numPages} className={BTN} title="Last page">
+          <ChevronsRightIcon />
+        </button>
       </div>
 
       {/* Canvas */}

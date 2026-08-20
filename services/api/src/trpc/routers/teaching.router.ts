@@ -20,10 +20,12 @@ export const teachingRouter = router({
     .mutation(async ({ ctx, input }) => {
       const conn = await ctx.getCollegeDb();
       const Concept = getConceptModel(conn);
-      // Scoped to the student's accessible dept, same as the concepts browse
-      // query — findById alone would let a student start a session on a
-      // concept from a department outside their access.
-      const concept = await Concept.findOne({ _id: input.concept_id, dept_id: ctx.user.effective_dept_id }).lean();
+      // No dept_id filter here, matching the `concepts` browse query above:
+      // concept_graph rows are keyed by the owning document's dept_id, which
+      // can differ from the student's effective_dept_id when the doc was
+      // reached via the library's cross-dept access. Filtering on dept_id
+      // here 404s a concept the student was just shown in the browser.
+      const concept = await Concept.findById(input.concept_id).lean();
       if (!concept) throw new TRPCError({ code: "NOT_FOUND", message: "Concept not found" });
 
       const session = await createTeachingSession(conn, {

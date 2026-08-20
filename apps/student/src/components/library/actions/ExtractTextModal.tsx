@@ -69,7 +69,7 @@ export function ExtractTextModal({ collegeId, docId, filename, totalPages, onClo
             >
               ↓ .txt
             </a>
-            <button onClick={onClose} className="text-muted-foreground hover:text-white ml-1">✕</button>
+            <button onClick={onClose} className="text-muted-foreground hover:text-foreground ml-1">✕</button>
           </div>
         </div>
 
@@ -77,14 +77,14 @@ export function ExtractTextModal({ collegeId, docId, filename, totalPages, onClo
         <div className="flex items-center gap-3 px-5 py-2 border-b border-border">
           <button
             onClick={() => setTab('full')}
-            className={`text-xs px-3 py-1 rounded-full ${tab === 'full' ? 'bg-teal-600 text-white' : 'text-muted-foreground hover:text-white'}`}
+            className={`text-xs px-3 py-1 rounded-full ${tab === 'full' ? 'bg-teal-600 text-white' : 'text-muted-foreground hover:text-foreground'}`}
           >
             Full Text
           </button>
           {totalPages && totalPages > 1 && (
             <button
               onClick={() => setTab('page')}
-              className={`text-xs px-3 py-1 rounded-full ${tab === 'page' ? 'bg-teal-600 text-white' : 'text-muted-foreground hover:text-white'}`}
+              className={`text-xs px-3 py-1 rounded-full ${tab === 'page' ? 'bg-teal-600 text-white' : 'text-muted-foreground hover:text-foreground'}`}
             >
               By Page
             </button>

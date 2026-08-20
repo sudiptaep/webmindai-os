@@ -33,7 +33,7 @@ export function ExtractPagesModal({ collegeId, docId, filename, maxPages, onClos
       >
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-semibold text-foreground">Extract Pages</h2>
-          <button onClick={handleClose} className="text-muted-foreground hover:text-white">✕</button>
+          <button onClick={handleClose} className="text-muted-foreground hover:text-foreground">✕</button>
         </div>
 
         <p className="text-xs text-muted-foreground mb-4 truncate">{filename}</p>
@@ -99,7 +99,7 @@ export function ExtractPagesModal({ collegeId, docId, filename, maxPages, onClos
                 Link expires {new Date(expiresAt).toLocaleTimeString()}
               </p>
             )}
-            <button onClick={reset} className="block mx-auto mt-3 text-xs text-muted-foreground hover:text-white">
+            <button onClick={reset} className="block mx-auto mt-3 text-xs text-muted-foreground hover:text-foreground">
               Extract different pages
             </button>
           </div>

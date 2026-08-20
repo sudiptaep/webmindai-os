@@ -52,7 +52,7 @@ export default function CollegeObservatoryPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3 flex-wrap">
-        <Link href="/dashboard/observatory" className="text-muted-foreground hover:text-white text-sm">← Observatory</Link>
+        <Link href="/dashboard/observatory" className="text-muted-foreground hover:text-foreground text-sm">← Observatory</Link>
         <span className="text-muted-foreground">/</span>
         <h1 className="text-xl font-bold text-white truncate">{collegeId} — College Detail</h1>
         <div className="ml-auto flex gap-2">

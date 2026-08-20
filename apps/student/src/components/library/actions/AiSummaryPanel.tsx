@@ -48,7 +48,7 @@ export function AiSummaryPanel({ collegeId, docId, filename, fileType, pageCount
           <h2 className="font-semibold text-sm text-foreground truncate max-w-xs">
             AI Summary — {filename}
           </h2>
-          <button onClick={onClose} className="text-muted-foreground hover:text-white">✕</button>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">✕</button>
         </div>
 
         {/* Mode selector */}
@@ -58,7 +58,7 @@ export function AiSummaryPanel({ collegeId, docId, filename, fileType, pageCount
               key={m.id}
               onClick={() => { setMode(m.id); reset(); }}
               className={`text-xs px-3 py-1.5 rounded-full transition-colors ${
-                mode === m.id ? 'bg-teal-600 text-white' : 'bg-muted text-muted-foreground hover:text-white'
+                mode === m.id ? 'bg-teal-600 text-white' : 'bg-muted text-muted-foreground hover:text-foreground'
               }`}
             >
               {m.label}
