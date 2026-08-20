@@ -56,7 +56,7 @@ async function recordTeachingCost(
 }
 
 function stripFences(raw: string): string {
-  return raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+  return raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
 }
 
 function buildTurnMessages(session: Pick<TeachingSession, "turns">): Array<{ role: "user" | "assistant"; content: string }> {
