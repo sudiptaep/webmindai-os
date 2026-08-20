@@ -58,7 +58,7 @@ export default function HistoryPage() {
         {/* Sticky header */}
         <div className="px-8 pt-10 pb-6 shrink-0">
           <div className="flex items-center justify-between mb-6 max-w-4xl mx-auto">
-            <h1 className="text-3xl font-semibold text-gray-100">Chats</h1>
+            <h1 className="text-3xl font-semibold text-foreground">Chats</h1>
             <Link
               href="/chat"
               className="px-4 py-2 rounded-lg bg-white text-gray-900 text-sm font-semibold hover:bg-gray-100 transition-colors cursor-pointer"
@@ -77,7 +77,7 @@ export default function HistoryPage() {
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none"
+              className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none"
             >
               <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
@@ -86,7 +86,7 @@ export default function HistoryPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search chats..."
-              className="w-full bg-[#1c2030] border border-gray-700/40 rounded-xl pl-11 pr-4 py-3 text-sm text-gray-300 placeholder-gray-600 focus:outline-none focus:border-gray-600 transition-colors"
+              className="w-full bg-muted border border-border/40 rounded-xl pl-11 pr-4 py-3 text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:border-ring transition-colors"
             />
           </div>
         </div>
@@ -99,8 +99,8 @@ export default function HistoryPage() {
             {isLoading && (
               <div className="space-y-0">
                 {Array.from({ length: 8 }).map((_, i) => (
-                  <div key={i} className="py-5 border-b border-gray-800/40">
-                    <div className="h-4 bg-gray-800/60 rounded animate-pulse w-2/3" />
+                  <div key={i} className="py-5 border-b border-border/40">
+                    <div className="h-4 bg-muted/60 rounded animate-pulse w-2/3" />
                   </div>
                 ))}
               </div>
@@ -108,7 +108,7 @@ export default function HistoryPage() {
 
             {/* Empty */}
             {!isLoading && sessions.length === 0 && (
-              <p className="text-gray-500 text-sm text-center py-20">
+              <p className="text-muted-foreground text-sm text-center py-20">
                 {search ? 'No chats match your search.' : 'No conversations yet.'}
               </p>
             )}
@@ -125,17 +125,17 @@ export default function HistoryPage() {
               return (
                 <div
                   key={session._id}
-                  className="group flex items-center border-b border-gray-800/40 last:border-0 py-5 gap-3"
+                  className="group flex items-center border-b border-border/40 last:border-0 py-5 gap-3"
                 >
                   <Link
                     href={`/chat/${session._id}`}
                     className="flex-1 flex items-center gap-4 min-w-0"
                   >
-                    <span className="flex-1 text-sm font-medium text-gray-100 truncate">
+                    <span className="flex-1 text-sm font-medium text-foreground truncate">
                       {title}
                     </span>
                     {date && (
-                      <span className="shrink-0 text-xs text-gray-500">
+                      <span className="shrink-0 text-xs text-muted-foreground">
                         {timeAgo(date)}
                       </span>
                     )}

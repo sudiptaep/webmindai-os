@@ -192,7 +192,7 @@ export function ChatWindow({ initialSessionId, subjects = [] }: ChatWindowProps)
   const isEmpty = messages.length === 0;
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#0f1117]">
+    <div className="flex h-screen overflow-hidden bg-background">
 
       {/* Mobile overlay */}
       {sidebarOpen && (
@@ -216,15 +216,15 @@ export function ChatWindow({ initialSessionId, subjects = [] }: ChatWindowProps)
 
         {/* Mobile top bar */}
         {!isEmpty && (
-          <header className="flex items-center gap-3 px-4 py-3 border-b border-gray-800/60 shrink-0">
+          <header className="flex items-center gap-3 px-4 py-3 border-b border-border/60 shrink-0">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="lg:hidden text-gray-400 hover:text-gray-100 cursor-pointer transition-colors"
+              className="lg:hidden text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
               aria-label="Open sidebar"
             >
               <IconMenu />
             </button>
-            <h1 className="text-sm font-semibold text-gray-200 truncate">
+            <h1 className="text-sm font-semibold text-foreground truncate">
               {messages.find((m) => m.role === 'user')?.content?.slice(0, 60) ?? 'AI Assistant'}
             </h1>
           </header>
@@ -242,10 +242,10 @@ export function ChatWindow({ initialSessionId, subjects = [] }: ChatWindowProps)
             {/* Greeting */}
             <div className="flex items-center gap-3 mb-8">
               {/* Starburst */}
-              <svg viewBox="0 0 48 48" className="w-10 h-10 text-teal-400 shrink-0" fill="currentColor">
+              <svg viewBox="0 0 48 48" className="w-10 h-10 text-teal-700 dark:text-teal-400 shrink-0" fill="currentColor">
                 <path d="M24 2 L26.2 20.5 L43 12 L29.5 25.8 L48 24 L29.5 22.2 L43 36 L26.2 27.5 L24 46 L21.8 27.5 L5 36 L18.5 22.2 L0 24 L18.5 25.8 L5 12 L21.8 20.5 Z"/>
               </svg>
-              <h1 className="text-3xl sm:text-4xl font-semibold text-gray-100 tracking-tight">
+              <h1 className="text-3xl sm:text-4xl font-semibold text-foreground tracking-tight">
                 Hey there, {user?.name?.split(' ')[0] ?? 'there'}
               </h1>
             </div>
@@ -255,7 +255,7 @@ export function ChatWindow({ initialSessionId, subjects = [] }: ChatWindowProps)
               onSubmit={handleSubmit}
               className="w-full max-w-2xl"
             >
-              <div className="bg-[#1e2230] rounded-2xl p-4 shadow-xl">
+              <div className="bg-card rounded-2xl p-4 shadow-xl">
                 <textarea
                   ref={textareaRef}
                   value={input}
@@ -263,13 +263,13 @@ export function ChatWindow({ initialSessionId, subjects = [] }: ChatWindowProps)
                   onKeyDown={handleKeyDown}
                   rows={3}
                   placeholder="How can I help you today?"
-                  className="w-full bg-transparent text-base text-gray-100 placeholder-gray-600 resize-none focus:outline-none leading-relaxed"
+                  className="w-full bg-transparent text-base text-foreground placeholder-muted-foreground resize-none focus:outline-none leading-relaxed"
                   style={{ minHeight: '72px', maxHeight: '200px' }}
                 />
-                <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-700/40">
+                <div className="flex items-center justify-between mt-2 pt-2 border-t border-border/40">
                   <button
                     type="button"
-                    className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:text-gray-300 hover:bg-gray-700/40 transition-colors cursor-pointer"
+                    className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent/40 transition-colors cursor-pointer"
                     aria-label="Attach"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
@@ -292,7 +292,7 @@ export function ChatWindow({ initialSessionId, subjects = [] }: ChatWindowProps)
             <div className="flex items-center gap-2 mt-5 flex-wrap justify-center">
               <Link
                 href="/library"
-                className="flex items-center gap-2 px-4 py-2 rounded-full border border-gray-700/60 text-sm text-gray-400 hover:text-gray-100 hover:border-gray-600 transition-colors cursor-pointer"
+                className="flex items-center gap-2 px-4 py-2 rounded-full border border-border/60 text-sm text-muted-foreground hover:text-foreground hover:border-ring transition-colors cursor-pointer"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
                   <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
@@ -303,7 +303,7 @@ export function ChatWindow({ initialSessionId, subjects = [] }: ChatWindowProps)
                 <button
                   key={s.id}
                   onClick={() => handleSubjectChip(s)}
-                  className="px-4 py-2 rounded-full border border-gray-700/60 text-sm text-gray-400 hover:text-gray-100 hover:border-gray-600 transition-colors cursor-pointer"
+                  className="px-4 py-2 rounded-full border border-border/60 text-sm text-muted-foreground hover:text-foreground hover:border-ring transition-colors cursor-pointer"
                 >
                   {s.name}
                 </button>
@@ -322,9 +322,9 @@ export function ChatWindow({ initialSessionId, subjects = [] }: ChatWindowProps)
             </div>
 
             {/* Bottom input bar */}
-            <div className="shrink-0 px-4 pb-4 pt-2 border-t border-gray-800/60">
+            <div className="shrink-0 px-4 pb-4 pt-2 border-t border-border/60">
               <form onSubmit={handleSubmit} className="max-w-3xl mx-auto">
-                <div className="flex items-end gap-2 bg-gray-900 border border-gray-700/60 rounded-2xl px-4 py-2.5 focus-within:border-teal-600/50 transition-colors">
+                <div className="flex items-end gap-2 bg-card border border-border/60 rounded-2xl px-4 py-2.5 focus-within:border-teal-600/50 transition-colors">
                   <textarea
                     ref={textareaRef}
                     value={input}
@@ -332,7 +332,7 @@ export function ChatWindow({ initialSessionId, subjects = [] }: ChatWindowProps)
                     onKeyDown={handleKeyDown}
                     rows={1}
                     placeholder="Ask a question… (Shift+Enter for new line)"
-                    className="flex-1 bg-transparent text-sm text-gray-100 placeholder-gray-600 resize-none focus:outline-none leading-relaxed"
+                    className="flex-1 bg-transparent text-sm text-foreground placeholder-muted-foreground resize-none focus:outline-none leading-relaxed"
                     style={{ minHeight: '24px', maxHeight: '120px' }}
                   />
                   <button

@@ -46,7 +46,7 @@ export function DownloadButton({ collegeId, docId, filename, fileSizeBytes }: Pr
       <button
         onClick={handleDownload}
         disabled={loading}
-        className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg transition-colors"
+        className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 text-white rounded-lg transition-colors"
       >
         {loading ? (
           <span className="inline-block w-3 h-3 border border-white border-t-transparent rounded-full animate-spin" />
@@ -55,7 +55,7 @@ export function DownloadButton({ collegeId, docId, filename, fileSizeBytes }: Pr
         )}
         Download
       </button>
-      {error && <p className="mt-1 text-xs text-red-400">{error}</p>}
+      {error && <p className="mt-1 text-xs text-destructive">{error}</p>}
     </div>
   );
 }

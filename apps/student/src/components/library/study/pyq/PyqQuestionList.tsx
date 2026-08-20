@@ -38,18 +38,18 @@ export function PyqQuestionList({ collegeId, docId, chapterIndex, chapterTitle, 
     <div className="mt-3">
       {/* Header */}
       <div className="flex items-center justify-between mb-3">
-        <p className="text-xs font-semibold text-gray-300">
+        <p className="text-xs font-semibold text-foreground">
           Past Year Questions
         </p>
         <button
           onClick={onClose}
-          className="text-xs text-gray-600 hover:text-gray-400 transition-colors"
+          className="text-xs text-muted-foreground hover:text-muted-foreground transition-colors"
         >
           ✕ Close
         </button>
       </div>
 
-      <p className="text-xs text-gray-600 mb-3 leading-relaxed">{chapterTitle}</p>
+      <p className="text-xs text-muted-foreground mb-3 leading-relaxed">{chapterTitle}</p>
 
       {loading && (
         <div className="flex justify-center py-4">
@@ -57,7 +57,7 @@ export function PyqQuestionList({ collegeId, docId, chapterIndex, chapterTitle, 
         </div>
       )}
 
-      {error && <p className="text-xs text-red-400">{error}</p>}
+      {error && <p className="text-xs text-destructive">{error}</p>}
 
       {!loading && !error && data && (
         <>
@@ -68,8 +68,8 @@ export function PyqQuestionList({ collegeId, docId, chapterIndex, chapterTitle, 
                 onClick={() => setFilter('all')}
                 className={`text-xs px-2 py-0.5 rounded-full border transition-colors ${
                   filter === 'all'
-                    ? 'bg-amber-900/50 border-amber-700 text-amber-400'
-                    : 'border-gray-700 text-gray-500 hover:border-gray-600'
+                    ? 'bg-amber-100 dark:bg-amber-900/50 border-amber-700 text-amber-700 dark:text-amber-400'
+                    : 'border-border text-muted-foreground hover:border-ring'
                 }`}
               >
                 All ({data.total_count})
@@ -80,8 +80,8 @@ export function PyqQuestionList({ collegeId, docId, chapterIndex, chapterTitle, 
                   onClick={() => setFilter(y)}
                   className={`text-xs px-2 py-0.5 rounded-full border transition-colors ${
                     filter === y
-                      ? 'bg-amber-900/50 border-amber-700 text-amber-400'
-                      : 'border-gray-700 text-gray-500 hover:border-gray-600'
+                      ? 'bg-amber-100 dark:bg-amber-900/50 border-amber-700 text-amber-700 dark:text-amber-400'
+                      : 'border-border text-muted-foreground hover:border-ring'
                   }`}
                 >
                   {y}
@@ -91,7 +91,7 @@ export function PyqQuestionList({ collegeId, docId, chapterIndex, chapterTitle, 
           )}
 
           {filtered.length === 0 ? (
-            <p className="text-xs text-gray-600">No questions found.</p>
+            <p className="text-xs text-muted-foreground">No questions found.</p>
           ) : (
             <div className="max-h-72 overflow-y-auto pr-1 space-y-0">
               {filtered.map(q => (

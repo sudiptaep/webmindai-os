@@ -44,10 +44,10 @@ export function SaveResponseButton({ response, docId, collegeId, chapterIndex, s
 
   const label = status === 'saving' ? '…' : status === 'saved' ? 'Saved' : status === 'error' ? 'Error' : 'Save';
   const cls = status === 'saved'
-    ? 'text-teal-400'
+    ? 'text-teal-700 dark:text-teal-400'
     : status === 'error'
-      ? 'text-red-400'
-      : 'text-gray-500 hover:text-gray-300';
+      ? 'text-destructive'
+      : 'text-muted-foreground hover:text-foreground';
 
   return (
     <button

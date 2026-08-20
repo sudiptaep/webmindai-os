@@ -69,50 +69,50 @@ function CollegeAdminLoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-950">
+    <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold">College Administration Portal</h1>
-          <p className="text-gray-400 text-sm mt-2">Medimind AI</p>
+          <p className="text-muted-foreground text-sm mt-2">Medimind AI</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4 bg-gray-900 rounded-xl p-6 border border-gray-800">
+        <form onSubmit={handleSubmit} className="space-y-4 bg-card rounded-xl p-6 border border-border">
           {!effectiveSlug && (
             <div>
-              <label className="block text-sm text-gray-400 mb-1">College</label>
+              <label className="block text-sm text-muted-foreground mb-1">College</label>
               <select required value={slug} onChange={(e) => setSlug(e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm">
+                className="w-full bg-muted border border-border rounded px-3 py-2 text-sm">
                 <option value="">Select college…</option>
                 {colleges.map((c) => <option key={c._id} value={c.slug}>{c.name}</option>)}
               </select>
             </div>
           )}
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Email</label>
+            <label className="block text-sm text-muted-foreground mb-1">Email</label>
             <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm" />
+              className="w-full bg-muted border border-border rounded px-3 py-2 text-sm" />
           </div>
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Password</label>
+            <label className="block text-sm text-muted-foreground mb-1">Password</label>
             <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm" />
+              className="w-full bg-muted border border-border rounded px-3 py-2 text-sm" />
           </div>
 
-          {error && <p className="text-red-400 text-sm">{error}</p>}
+          {error && <p className="text-destructive text-sm">{error}</p>}
 
           <button type="submit" disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 rounded py-2.5 text-sm font-medium disabled:opacity-50">
+            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded py-2.5 text-sm font-medium disabled:opacity-50">
             {loading ? 'Signing in…' : 'Sign In'}
           </button>
 
-          <p className="text-center text-xs text-gray-600 mt-2">
+          <p className="text-center text-xs text-muted-foreground mt-2">
             Faculty login?{' '}
-            <Link href="/dept-admin/login" className="text-blue-400 hover:text-blue-300">Dept Admin Portal →</Link>
+            <Link href="/dept-admin/login" className="text-primary hover:text-blue-300">Dept Admin Portal →</Link>
           </p>
         </form>
 
-        <p className="text-center text-xs text-gray-600 mt-4">
-          <Link href="/college-admin/forgot-password" className="hover:text-gray-400">Forgot password?</Link>
+        <p className="text-center text-xs text-muted-foreground mt-4">
+          <Link href="/college-admin/forgot-password" className="hover:text-muted-foreground">Forgot password?</Link>
         </p>
       </div>
     </div>

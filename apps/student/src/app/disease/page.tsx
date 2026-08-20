@@ -64,8 +64,8 @@ function DiseaseSearchContent() {
     <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-5">
       {/* Header */}
       <div>
-        <h1 className="text-lg font-semibold text-gray-100">Disease Search</h1>
-        <p className="text-sm text-gray-500 mt-0.5">
+        <h1 className="text-lg font-semibold text-foreground">Disease Search</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">
           Cross-subject search — draws from all uploaded materials
         </p>
       </div>
@@ -77,7 +77,7 @@ function DiseaseSearchContent() {
           value={query}
           onChange={e => setQuery(e.target.value)}
           placeholder="Search any disease — e.g. Myocardial Infarction, Tuberculosis…"
-          className="flex-1 bg-[#151820] border border-gray-700/60 rounded-xl px-4 py-3 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-teal-600/60 transition-colors"
+          className="flex-1 bg-card border border-border/60 rounded-xl px-4 py-3 text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:border-teal-600/60 transition-colors"
         />
         <button
           type="submit"
@@ -103,20 +103,20 @@ function DiseaseSearchContent() {
 
       {/* Error */}
       {error && (
-        <div className="bg-[#151820] border border-red-800/40 rounded-xl p-4">
-          <p className="text-sm text-red-400">{error}</p>
+        <div className="bg-card border border-red-300 dark:border-red-800/40 rounded-xl p-4">
+          <p className="text-sm text-destructive">{error}</p>
         </div>
       )}
 
       {/* Loading skeleton */}
       {loading && (
-        <div className="bg-[#151820] border border-gray-800/60 rounded-xl p-6 space-y-3 animate-pulse">
-          <div className="h-4 bg-gray-800 rounded-lg w-1/3" />
-          <div className="h-3 bg-gray-800 rounded-lg w-1/5" />
-          <div className="h-px bg-gray-800 my-3" />
-          <div className="h-3 bg-gray-800 rounded-lg w-full" />
-          <div className="h-3 bg-gray-800 rounded-lg w-5/6" />
-          <div className="h-3 bg-gray-800 rounded-lg w-4/6" />
+        <div className="bg-card border border-border/60 rounded-xl p-6 space-y-3 animate-pulse">
+          <div className="h-4 bg-muted rounded-lg w-1/3" />
+          <div className="h-3 bg-muted rounded-lg w-1/5" />
+          <div className="h-px bg-muted my-3" />
+          <div className="h-3 bg-muted rounded-lg w-full" />
+          <div className="h-3 bg-muted rounded-lg w-5/6" />
+          <div className="h-3 bg-muted rounded-lg w-4/6" />
         </div>
       )}
 
@@ -128,7 +128,7 @@ function DiseaseSearchContent() {
       {/* Footer hint */}
       {result && suggestions && (
         <div className="pt-2">
-          <p className="text-xs text-gray-600 mb-2">Search another condition</p>
+          <p className="text-xs text-muted-foreground mb-2">Search another condition</p>
           <DiseaseSuggestionsPanel
             data={suggestions}
             onSelect={handleSuggestionClick}

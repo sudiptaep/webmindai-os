@@ -43,7 +43,7 @@ function SRSOverview() {
   if (error) {
     return (
       <div className="p-6">
-        <p className="text-sm text-red-400">{error}</p>
+        <p className="text-sm text-destructive">{error}</p>
       </div>
     );
   }
@@ -52,8 +52,8 @@ function SRSOverview() {
     <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-5">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-semibold text-gray-100">Spaced Repetition</h1>
-          <p className="text-sm text-gray-500 mt-0.5">SM-2 algorithm — review at optimal intervals</p>
+          <h1 className="text-lg font-semibold text-foreground">Spaced Repetition</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">SM-2 algorithm — review at optimal intervals</p>
         </div>
         {data && data.due_today > 0 && (
           <Link
@@ -72,12 +72,12 @@ function SRSOverview() {
       )}
 
       {data && data.due_today > 0 && (
-        <div className="bg-[#151820] border border-teal-800/40 rounded-xl p-4 flex items-center justify-between gap-4">
+        <div className="bg-card border border-teal-800/40 rounded-xl p-4 flex items-center justify-between gap-4">
           <div>
-            <p className="text-sm font-semibold text-gray-100">
+            <p className="text-sm font-semibold text-foreground">
               {data.due_today} card{data.due_today !== 1 ? 's' : ''} ready for review
             </p>
-            <p className="text-xs text-gray-500 mt-0.5">
+            <p className="text-xs text-muted-foreground mt-0.5">
               Reviewing regularly prevents forgetting — best done now
             </p>
           </div>

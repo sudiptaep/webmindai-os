@@ -37,16 +37,16 @@ interface StatCardProps {
 
 function StatCard({ label, value, unit, icon, sub, highlight, decimal }: StatCardProps) {
   return (
-    <div className="bg-[#151820] border border-gray-800/60 rounded-xl p-4 flex flex-col gap-2">
+    <div className="bg-card border border-border/60 rounded-xl p-4 flex flex-col gap-2">
       <div className="flex items-center gap-2">
         <span className="text-base">{icon}</span>
-        <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{label}</span>
+        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{label}</span>
       </div>
-      <p className={`text-2xl font-bold ${highlight ? 'text-teal-400' : 'text-gray-100'}`}>
+      <p className={`text-2xl font-bold ${highlight ? 'text-teal-700 dark:text-teal-400' : 'text-foreground'}`}>
         {decimal ? value.toFixed(2) : value}
-        {unit && <span className="text-sm font-normal text-gray-500 ml-1">{unit}</span>}
+        {unit && <span className="text-sm font-normal text-muted-foreground ml-1">{unit}</span>}
       </p>
-      <p className="text-xs text-gray-600">{sub}</p>
+      <p className="text-xs text-muted-foreground">{sub}</p>
     </div>
   );
 }

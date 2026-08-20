@@ -199,23 +199,35 @@ def _extract_chapter_concepts(
 
 def resolve_prerequisite_ids(concepts: list[dict]) -> list[dict]:
     """Resolve prerequisite name strings (verbatim or case-insensitive match
-    against canonical_name/aliases) to concept ids. Unresolvable names are
-    dropped rather than left dangling."""
+    against canonical_name/aliases) to concept ids. Only concepts appearing
+    EARLIER in the list (earlier chapters, or earlier within the same
+    chapter — concepts are already in chapter/extraction order) are eligible
+    matches: the lookup map is built incrementally in a single forward pass,
+    registering each concept only AFTER resolving its own prerequisites. The
+    previous two-pass approach (build the whole-list name map first, then
+    resolve everything against it) let a later chapter's same-named concept
+    silently overwrite an earlier chapter's map entry, so a concept's
+    prerequisite could resolve to a LATER chapter's node — exactly the
+    forward-reference the extraction prompt's rule is meant to forbid, and
+    cycle detection wouldn't necessarily catch it since it need not form a
+    cycle. Unresolvable names are dropped rather than left dangling."""
     by_name: dict[str, dict] = {}
     for c in concepts:
-        by_name[c["canonical_name"].lower()] = c
-        for alias in c["aliases"]:
-            by_name.setdefault(alias.lower(), c)
-
-    for c in concepts:
         ids, names = [], []
-        for raw_name in c.pop("prerequisite_names_raw", []):
+        for raw_name in c.get("prerequisite_names_raw", []):
             match = by_name.get(raw_name.lower())
             if match and match["_id"] != c["_id"]:
                 ids.append(match["_id"])
                 names.append(match["canonical_name"])
         c["prerequisite_ids"] = ids
         c["prerequisite_names"] = names
+        c.pop("prerequisite_names_raw", None)
+
+        # Register this concept for later concepts to reference, only now
+        # that its own prerequisites are already resolved.
+        by_name.setdefault(c["canonical_name"].lower(), c)
+        for alias in c["aliases"]:
+            by_name.setdefault(alias.lower(), c)
 
     return concepts
 
@@ -276,17 +288,18 @@ async def run_extract_concept_graph(job_data: dict) -> None:
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"Source PDF not found: {file_path}")
 
-    doc = fitz.open(file_path)
     all_concepts: list[dict] = []
     total_cost_usd = 0.0
 
-    for chapter in chapters:
-        chapter_text = _extract_chapter_text(doc, chapter["start_page"], chapter["end_page"])
-        chapter_concepts, chapter_cost = _extract_chapter_concepts(chapter, chapter_text, all_concepts, dept_name, college_type)
-        all_concepts.extend(chapter_concepts)
-        total_cost_usd += chapter_cost
-
-    doc.close()
+    # Context-managed so a page-level exception mid-loop (malformed/corrupt
+    # PDF) still closes the document instead of leaking the MuPDF file
+    # handle in this long-running worker process.
+    with fitz.open(file_path) as doc:
+        for chapter in chapters:
+            chapter_text = _extract_chapter_text(doc, chapter["start_page"], chapter["end_page"])
+            chapter_concepts, chapter_cost = _extract_chapter_concepts(chapter, chapter_text, all_concepts, dept_name, college_type)
+            all_concepts.extend(chapter_concepts)
+            total_cost_usd += chapter_cost
 
     all_concepts = resolve_prerequisite_ids(all_concepts)
 

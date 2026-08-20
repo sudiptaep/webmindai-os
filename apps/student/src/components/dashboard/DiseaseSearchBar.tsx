@@ -15,11 +15,11 @@ export function DiseaseSearchBar() {
   }
 
   return (
-    <div className="bg-[#151820] border border-gray-800/60 rounded-xl p-4">
+    <div className="bg-card border border-border/60 rounded-xl p-4">
       <div className="flex items-center gap-2 mb-3">
         <span className="text-base">🔬</span>
-        <span className="text-sm font-semibold text-gray-300">Disease Search</span>
-        <span className="text-xs text-gray-600 ml-1">— search across all your subjects</span>
+        <span className="text-sm font-semibold text-foreground">Disease Search</span>
+        <span className="text-xs text-muted-foreground ml-1">— search across all your subjects</span>
       </div>
       <form onSubmit={handleSubmit} className="flex gap-2">
         <input
@@ -27,7 +27,7 @@ export function DiseaseSearchBar() {
           value={query}
           onChange={e => setQuery(e.target.value)}
           placeholder="Search any disease — e.g. Myocardial Infarction, Tuberculosis…"
-          className="flex-1 bg-[#0f1117] border border-gray-700/60 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-teal-600/60 transition-colors"
+          className="flex-1 bg-muted border border-border/60 rounded-lg px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:border-teal-600/60 transition-colors"
         />
         <button
           type="submit"

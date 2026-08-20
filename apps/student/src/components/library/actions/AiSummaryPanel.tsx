@@ -40,25 +40,25 @@ export function AiSummaryPanel({ collegeId, docId, filename, fileType, pageCount
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" onClick={onClose}>
       <div
-        className="bg-gray-900 rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col overflow-hidden shadow-2xl"
+        className="bg-card rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col overflow-hidden shadow-2xl"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-gray-700">
-          <h2 className="font-semibold text-sm text-gray-100 truncate max-w-xs">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-border">
+          <h2 className="font-semibold text-sm text-foreground truncate max-w-xs">
             AI Summary — {filename}
           </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-white">✕</button>
+          <button onClick={onClose} className="text-muted-foreground hover:text-white">✕</button>
         </div>
 
         {/* Mode selector */}
-        <div className="flex items-center gap-2 px-5 py-3 border-b border-gray-800">
+        <div className="flex items-center gap-2 px-5 py-3 border-b border-border">
           {MODES.map(m => (
             <button
               key={m.id}
               onClick={() => { setMode(m.id); reset(); }}
               className={`text-xs px-3 py-1.5 rounded-full transition-colors ${
-                mode === m.id ? 'bg-teal-600 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'
+                mode === m.id ? 'bg-teal-600 text-white' : 'bg-muted text-muted-foreground hover:text-white'
               }`}
             >
               {m.label}
@@ -72,7 +72,7 @@ export function AiSummaryPanel({ collegeId, docId, filename, fileType, pageCount
             {status === 'idle' || status === 'done' || status === 'error' ? 'Generate' : 'Generating...'}
           </button>
           {status === 'streaming' && (
-            <button onClick={stop} className="text-xs px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded-full">
+            <button onClick={stop} className="text-xs px-3 py-1.5 bg-accent hover:bg-accent text-white rounded-full">
               Stop
             </button>
           )}
@@ -80,8 +80,8 @@ export function AiSummaryPanel({ collegeId, docId, filename, fileType, pageCount
 
         {/* Page range (PDF / PPTX only) */}
         {supportsPageRange && (
-          <div className="flex items-center gap-3 px-5 py-2.5 border-b border-gray-800 bg-gray-950/40">
-            <span className="text-xs text-gray-500 shrink-0">Page range</span>
+          <div className="flex items-center gap-3 px-5 py-2.5 border-b border-border bg-background/40">
+            <span className="text-xs text-muted-foreground shrink-0">Page range</span>
             <input
               type="number"
               min={1}
@@ -89,9 +89,9 @@ export function AiSummaryPanel({ collegeId, docId, filename, fileType, pageCount
               placeholder="From"
               value={pageFrom}
               onChange={e => setPageFrom(e.target.value)}
-              className="w-20 text-xs bg-gray-800 border border-gray-700 text-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:border-teal-500"
+              className="w-20 text-xs bg-muted border border-border text-foreground rounded-lg px-2 py-1 focus:outline-none focus:border-teal-500"
             />
-            <span className="text-xs text-gray-600">–</span>
+            <span className="text-xs text-muted-foreground">–</span>
             <input
               type="number"
               min={1}
@@ -99,12 +99,12 @@ export function AiSummaryPanel({ collegeId, docId, filename, fileType, pageCount
               placeholder={`To (max ${pageCount})`}
               value={pageTo}
               onChange={e => setPageTo(e.target.value)}
-              className="w-28 text-xs bg-gray-800 border border-gray-700 text-gray-200 rounded-lg px-2 py-1 focus:outline-none focus:border-teal-500"
+              className="w-28 text-xs bg-muted border border-border text-foreground rounded-lg px-2 py-1 focus:outline-none focus:border-teal-500"
             />
             {(pageFrom || pageTo) && (
               <button
                 onClick={() => { setPageFrom(''); setPageTo(''); }}
-                className="text-xs text-gray-500 hover:text-gray-300 ml-auto"
+                className="text-xs text-muted-foreground hover:text-foreground ml-auto"
               >
                 Clear
               </button>
@@ -115,13 +115,13 @@ export function AiSummaryPanel({ collegeId, docId, filename, fileType, pageCount
         {/* Content */}
         <div className="flex-1 overflow-y-auto px-5 py-4">
           {status === 'idle' && (
-            <p className="text-gray-500 text-sm text-center py-8">Select a mode and click Generate.</p>
+            <p className="text-muted-foreground text-sm text-center py-8">Select a mode and click Generate.</p>
           )}
           {error && (
-            <p className="text-red-400 text-sm text-center py-4">{error}</p>
+            <p className="text-destructive text-sm text-center py-4">{error}</p>
           )}
           {content && (
-            <div className="prose prose-invert prose-sm max-w-none text-gray-200 whitespace-pre-wrap leading-relaxed">
+            <div className="prose prose-invert prose-sm max-w-none text-foreground whitespace-pre-wrap leading-relaxed">
               {content}
               {status === 'streaming' && (
                 <span className="inline-block w-0.5 h-4 bg-teal-400 ml-0.5 animate-pulse align-text-bottom" />
@@ -132,12 +132,12 @@ export function AiSummaryPanel({ collegeId, docId, filename, fileType, pageCount
 
         {/* Footer */}
         {(status === 'done' || status === 'streaming') && content && (
-          <div className="flex items-center justify-between px-5 py-3 border-t border-gray-800">
-            <span className="text-xs text-gray-500">
+          <div className="flex items-center justify-between px-5 py-3 border-t border-border">
+            <span className="text-xs text-muted-foreground">
               {tokensUsed > 0 ? `${tokensUsed} tokens used` : ''}
             </span>
             <div className="flex gap-2">
-              <button onClick={handleCopy} className="text-xs px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg">
+              <button onClick={handleCopy} className="text-xs px-3 py-1.5 bg-accent hover:bg-accent text-white rounded-lg">
                 Copy
               </button>
             </div>

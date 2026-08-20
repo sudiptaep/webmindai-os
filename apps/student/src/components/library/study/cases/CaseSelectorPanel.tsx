@@ -74,7 +74,7 @@ export function CaseSelectorPanel({ collegeId, docId, chapterIdx }: CaseSelector
             historyCount={historyCount}
           />
           {error && (
-            <p className="mt-2 text-[10px] text-red-400 leading-snug">{error}</p>
+            <p className="mt-2 text-[10px] text-destructive leading-snug">{error}</p>
           )}
         </>
       )}

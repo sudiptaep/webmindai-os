@@ -4,7 +4,7 @@ import { getMisconceptionModel } from "../../models/college/misconception.model"
 import { recordCheckOutcome, markMisconceptionCorrected } from "../learner-model.service";
 import { getLearnerModelModel } from "../../models/college/learner-model.model";
 import { buildSessionContext, getConcept } from "./context";
-import { decideNextAction, type DecisionSessionState } from "./decision";
+import { decideNextAction, nextStepOrPhase, type DecisionSessionState } from "./decision";
 import { generatePhaseTurn, evaluateCheckResponse } from "./generate";
 import { createTeachingSession, loadSessionDoc } from "./session.service";
 import { createSRSCardsFromSession } from "./srs-handoff";
@@ -185,13 +185,37 @@ async function openNestedPrerequisiteSession(
   const maxDepth = (await buildSessionContext(conn, parentSession)).teachingProfile.max_backtrack_depth ?? MAX_BACKTRACK_DEPTH_FALLBACK;
   if (parentSession.backtracks_triggered >= maxDepth) {
     // Depth cap reached — accept current understanding and move on rather
-    // than backtrack again.
+    // than backtrack again. Must actually ADVANCE (step or phase), not just
+    // regenerate the same step at a lower difficulty: since backtrack_active
+    // never gets set true on this path, decideNextAction's 3-in-a-row check
+    // stays eligible to re-fire on the very next failure, and re-generating
+    // the same step in place (the previous behavior) meant the student could
+    // never leave it once every rung was exhausted.
     parentSession.current_difficulty_level = Math.max(0, parentSession.current_difficulty_level - 1);
     const ctx = await buildSessionContext(conn, parentSession);
+    const decision = nextStepOrPhase(toDecisionState(parentSession), ctx);
+    if (decision.action === "ADVANCE_STEP") {
+      parentSession.current_step_index += 1;
+      if (parentSession.current_phase === TeachingPhase.SEGMENT_BUILD) {
+        parentSession.build_steps_remaining = decision.setBuildStepsRemaining ?? Math.max(0, parentSession.build_steps_remaining - 1);
+      }
+    } else if (decision.action === "ADVANCE_PHASE") {
+      parentSession.current_phase = decision.nextPhase;
+      parentSession.current_step_index = 0;
+      parentSession.phase_turn_count = 0;
+      parentSession.strategies_failed = [];
+      parentSession.strategies_attempted = [];
+      parentSession.current_strategy = undefined;
+      if (decision.nextPhase === TeachingPhase.SEGMENT_BUILD) {
+        parentSession.build_steps_total = BUILD_STEPS_DEFAULT;
+        parentSession.build_steps_remaining = BUILD_STEPS_DEFAULT;
+      }
+    }
     const { turn, strategy, tokensUsed } = await generatePhaseTurn({ session: parentSession, ctx });
     parentSession.tokens_used += tokensUsed;
     parentSession.current_strategy = strategy;
-    parentSession.turns.push({ role: "assistant", phase: parentSession.current_phase, content: turn.content, strategy: turn.strategy, difficulty_level: turn.difficulty_level, created_at: new Date() });
+    if (!parentSession.strategies_attempted.includes(strategy)) parentSession.strategies_attempted.push(strategy);
+    parentSession.turns.push({ role: "assistant", phase: parentSession.current_phase, content: turn.content, strategy: turn.strategy, difficulty_level: turn.difficulty_level, image_asset_id: turn.image_asset_id, created_at: new Date() });
     parentSession.awaiting_check_response = turn.check !== null;
     parentSession.pending_check = turn.check;
     parentSession.turn_count += 1;
@@ -206,6 +230,10 @@ async function openNestedPrerequisiteSession(
   // parent should not come back expecting another answer to it once resumed.
   parentSession.awaiting_check_response = false;
   parentSession.pending_check = null;
+  // Also clear the strategy that just failed 3 checks in a row — otherwise
+  // generatePhaseTurn's `session.current_strategy ?? selectStrategy(...)`
+  // reuses it verbatim when the parent resumes after the backtrack closes.
+  parentSession.current_strategy = undefined;
 
   parentSession.backtrack_active = true;
   parentSession.backtracks_triggered += 1;
@@ -234,7 +262,7 @@ async function openNestedPrerequisiteSession(
   nestedSession.tokens_used += tokensUsed;
   nestedSession.current_strategy = strategy;
   nestedSession.strategies_attempted = [strategy];
-  nestedSession.turns.push({ role: "assistant", phase: nestedSession.current_phase, content: nestedTurn.content, strategy: nestedTurn.strategy, difficulty_level: nestedTurn.difficulty_level, created_at: new Date() });
+  nestedSession.turns.push({ role: "assistant", phase: nestedSession.current_phase, content: nestedTurn.content, strategy: nestedTurn.strategy, difficulty_level: nestedTurn.difficulty_level, image_asset_id: nestedTurn.image_asset_id, created_at: new Date() });
   nestedSession.awaiting_check_response = nestedTurn.check !== null;
   nestedSession.pending_check = nestedTurn.check;
   nestedSession.turn_count = 1;

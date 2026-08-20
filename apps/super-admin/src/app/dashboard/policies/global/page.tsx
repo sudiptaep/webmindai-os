@@ -93,22 +93,22 @@ export default function GlobalPolicyPage() {
     });
   }
 
-  if (isLoading) return <div className="flex items-center justify-center h-64 text-gray-400">Loading…</div>;
+  if (isLoading) return <div className="flex items-center justify-center h-64 text-muted-foreground">Loading…</div>;
 
   return (
     <div className="space-y-6 max-w-2xl">
       <div className="flex items-center gap-3">
-        <Link href="/dashboard" className="text-gray-500 hover:text-white text-sm transition-colors">← Platform Overview</Link>
-        <span className="text-gray-700">/</span>
+        <Link href="/dashboard" className="text-muted-foreground hover:text-white text-sm transition-colors">← Platform Overview</Link>
+        <span className="text-muted-foreground">/</span>
         <h1 className="text-xl font-bold text-white">Global Policy</h1>
       </div>
 
-      <div className="bg-yellow-950/20 border border-yellow-800/40 rounded-lg px-4 py-3 text-xs text-yellow-300">
+      <div className="bg-yellow-100 dark:bg-yellow-950/20 border border-yellow-300 dark:border-yellow-800/40 rounded-lg px-4 py-3 text-xs text-yellow-800 dark:text-yellow-300">
         Global policy is the <strong>fallback baseline</strong> for all colleges and departments. College/dept-specific overrides take precedence.
         Changing this affects every college that has no college-level override.
       </div>
 
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-5">
+      <div className="bg-card border border-border rounded-xl p-6 space-y-5">
         <Section title="Token Limits">
           <FieldRow label="Token limit / month" value={fields.llm_token_limit_per_month} onChange={v => set('llm_token_limit_per_month', v)} hint="Platform-wide default hard stop" />
           <FieldRow label="Soft warn threshold %" value={fields.llm_token_soft_warn_pct} onChange={v => set('llm_token_soft_warn_pct', v)} hint="Alert at this % of limit" />
@@ -130,7 +130,7 @@ export default function GlobalPolicyPage() {
             {KNOWN_MODELS.map(m => (
               <label key={m} className="flex items-center gap-2 cursor-pointer group">
                 <input type="checkbox" checked={fields.allowed_llm_models.includes(m)} onChange={() => toggleModel(m)} className="accent-blue-500" />
-                <span className="text-sm text-gray-300 group-hover:text-white transition-colors font-mono">{m}</span>
+                <span className="text-sm text-foreground group-hover:text-white transition-colors font-mono">{m}</span>
               </label>
             ))}
           </div>
@@ -146,17 +146,17 @@ export default function GlobalPolicyPage() {
             onChange={e => set('notes', e.target.value)}
             placeholder="Internal notes..."
             rows={2}
-            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-blue-500 resize-none"
+            className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm text-white placeholder-muted-foreground focus:outline-none focus:border-primary resize-none"
           />
         </Section>
 
-        {error && <p className="text-red-400 text-xs bg-red-950/30 border border-red-900 rounded px-3 py-2">{error}</p>}
+        {error && <p className="text-destructive text-xs bg-red-100 dark:bg-red-950/30 border border-red-300 dark:border-red-900 rounded px-3 py-2">{error}</p>}
 
         <div className="flex items-center gap-3 pt-2">
           <button
             onClick={handleSave}
             disabled={setPolicy.isPending}
-            className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-lg px-5 py-2 text-sm font-medium text-white transition-colors"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 rounded-lg px-5 py-2 text-sm font-medium text-white transition-colors"
           >
             {setPolicy.isPending ? 'Saving…' : saved ? '✓ Saved — all colleges updated' : 'Save Global Policy'}
           </button>
@@ -169,7 +169,7 @@ export default function GlobalPolicyPage() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">{title}</p>
+      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">{title}</p>
       <div className="space-y-3">{children}</div>
     </div>
   );
@@ -181,14 +181,14 @@ function FieldRow({ label, value, onChange, hint }: {
   return (
     <div className="grid grid-cols-2 gap-4 items-start">
       <div>
-        <p className="text-sm text-gray-300">{label}</p>
-        {hint && <p className="text-xs text-gray-600 mt-0.5">{hint}</p>}
+        <p className="text-sm text-foreground">{label}</p>
+        {hint && <p className="text-xs text-muted-foreground mt-0.5">{hint}</p>}
       </div>
       <input
         type="number"
         value={value}
         onChange={e => onChange(e.target.value)}
-        className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors"
+        className="bg-muted border border-border rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-primary transition-colors"
       />
     </div>
   );

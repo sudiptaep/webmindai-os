@@ -51,15 +51,15 @@ export function LibraryLayout({ initialDocId, initialPage }: Props) {
   const studentYear = data?.student_year ?? 1;
 
   return (
-    <div className="h-screen flex flex-col bg-gray-950">
+    <div className="h-screen flex flex-col bg-background">
       {/* Top nav */}
-      <header className="flex items-center gap-4 px-5 py-3 border-b border-gray-800 shrink-0">
-        <button onClick={() => router.push('/chat')} className="text-gray-400 hover:text-white text-sm">
+      <header className="flex items-center gap-4 px-5 py-3 border-b border-border shrink-0">
+        <button onClick={() => router.push('/chat')} className="text-muted-foreground hover:text-white text-sm">
           ← Chat
         </button>
-        <h1 className="text-sm font-semibold text-gray-100">Document Library</h1>
+        <h1 className="text-sm font-semibold text-foreground">Document Library</h1>
         {data && (
-          <span className="text-xs text-gray-500 ml-auto">{data.total_docs} documents</span>
+          <span className="text-xs text-muted-foreground ml-auto">{data.total_docs} documents</span>
         )}
       </header>
 
@@ -76,7 +76,7 @@ export function LibraryLayout({ initialDocId, initialPage }: Props) {
             </div>
           )}
           {error && (
-            <div className="flex items-center justify-center flex-1 text-red-400 text-sm">{error}</div>
+            <div className="flex items-center justify-center flex-1 text-destructive text-sm">{error}</div>
           )}
           {!loading && !error && (
             <DocumentGrid

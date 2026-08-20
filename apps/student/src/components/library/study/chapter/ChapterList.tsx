@@ -12,7 +12,7 @@ interface Props {
 export function ChapterList({ chapters, activeIndex, onSelect }: Props) {
   if (chapters.length === 0) {
     return (
-      <div className="p-4 text-xs text-gray-600 text-center">
+      <div className="p-4 text-xs text-muted-foreground text-center">
         No chapters found
       </div>
     );

@@ -18,14 +18,14 @@ export function DashboardKPICards({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
       {/* SRS due */}
-      <div className="bg-[#151820] border border-gray-800/60 rounded-xl p-4 flex flex-col gap-3">
+      <div className="bg-card border border-border/60 rounded-xl p-4 flex flex-col gap-3">
         <div className="flex items-center gap-2">
           <span className="text-lg">🔄</span>
-          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Daily Review</span>
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Daily Review</span>
         </div>
-        <p className="text-2xl font-bold text-gray-100">
+        <p className="text-2xl font-bold text-foreground">
           {srsCardsdue}
-          <span className="text-sm font-normal text-gray-500 ml-1">cards due</span>
+          <span className="text-sm font-normal text-muted-foreground ml-1">cards due</span>
         </p>
         {srsCardsdue > 0 ? (
           <Link
@@ -35,36 +35,36 @@ export function DashboardKPICards({
             Start Review
           </Link>
         ) : (
-          <p className="mt-auto text-xs text-gray-600">All caught up today</p>
+          <p className="mt-auto text-xs text-muted-foreground">All caught up today</p>
         )}
       </div>
 
       {/* Streak */}
-      <div className="bg-[#151820] border border-gray-800/60 rounded-xl p-4 flex flex-col gap-3">
+      <div className="bg-card border border-border/60 rounded-xl p-4 flex flex-col gap-3">
         <div className="flex items-center gap-2">
           <span className="text-lg">🔥</span>
-          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Study Streak</span>
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Study Streak</span>
         </div>
-        <p className="text-2xl font-bold text-gray-100">
+        <p className="text-2xl font-bold text-foreground">
           {streak}
-          <span className="text-sm font-normal text-gray-500 ml-1">days</span>
+          <span className="text-sm font-normal text-muted-foreground ml-1">days</span>
         </p>
-        <p className="mt-auto text-xs text-gray-600">
+        <p className="mt-auto text-xs text-muted-foreground">
           {streak === 0 ? 'Start reviewing to build your streak' : streak >= 7 ? 'Keep it up!' : 'Review daily to keep streak going'}
         </p>
       </div>
 
       {/* Materials */}
-      <div className="bg-[#151820] border border-gray-800/60 rounded-xl p-4 flex flex-col gap-3">
+      <div className="bg-card border border-border/60 rounded-xl p-4 flex flex-col gap-3">
         <div className="flex items-center gap-2">
           <span className="text-lg">📚</span>
-          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Materials</span>
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Materials</span>
         </div>
-        <p className="text-2xl font-bold text-gray-100">
+        <p className="text-2xl font-bold text-foreground">
           {totalDocs}
-          <span className="text-sm font-normal text-gray-500 ml-1">docs</span>
+          <span className="text-sm font-normal text-muted-foreground ml-1">docs</span>
         </p>
-        <p className="mt-auto text-xs text-gray-600">
+        <p className="mt-auto text-xs text-muted-foreground">
           {totalSubjects} subject{totalSubjects !== 1 ? 's' : ''} this semester
         </p>
       </div>

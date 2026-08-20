@@ -77,12 +77,12 @@ export default function RegisterPage() {
         <div className="w-full max-w-sm text-center">
           <div className="text-5xl mb-4">⏳</div>
           <h1 className="text-xl font-semibold mb-2">Registration Submitted</h1>
-          <p className="text-gray-400 text-sm mb-6">
+          <p className="text-muted-foreground text-sm mb-6">
             Your account is pending admin approval. You will be able to log in once approved.
           </p>
           <button
             onClick={() => router.replace('/login')}
-            className="text-sm text-blue-400 hover:underline"
+            className="text-sm text-primary hover:underline"
           >
             Back to Login
           </button>
@@ -99,14 +99,14 @@ export default function RegisterPage() {
 
           {/* College dropdown */}
           <div>
-            <label className="block text-sm mb-1 text-gray-400">College</label>
+            <label className="block text-sm mb-1 text-muted-foreground">College</label>
             {collegesLoading ? (
-              <div className="text-sm text-gray-500 py-2">Loading colleges…</div>
+              <div className="text-sm text-muted-foreground py-2">Loading colleges…</div>
             ) : (
               <select
                 value={selectedCollegeSlug}
                 onChange={(e) => setSelectedCollegeSlug(e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                className="w-full bg-muted border border-border rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
                 required
               >
                 <option value="">Select college</option>
@@ -118,53 +118,53 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label className="block text-sm mb-1 text-gray-400">Full Name</label>
+            <label className="block text-sm mb-1 text-muted-foreground">Full Name</label>
             <input
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+              className="w-full bg-muted border border-border rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
               required
             />
           </div>
           <div>
-            <label className="block text-sm mb-1 text-gray-400">Email</label>
+            <label className="block text-sm mb-1 text-muted-foreground">Email</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+              className="w-full bg-muted border border-border rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
               required
             />
           </div>
           <div>
-            <label className="block text-sm mb-1 text-gray-400">Password</label>
+            <label className="block text-sm mb-1 text-muted-foreground">Password</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+              className="w-full bg-muted border border-border rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
               required
               minLength={8}
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm mb-1 text-gray-400">Roll No. (optional)</label>
+              <label className="block text-sm mb-1 text-muted-foreground">Roll No. (optional)</label>
               <input
                 type="text"
                 value={rollNumber}
                 onChange={(e) => setRollNumber(e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                className="w-full bg-muted border border-border rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
               />
             </div>
             {isMedical ? (
               <div>
-                <label className="block text-sm mb-1 text-gray-400">Year</label>
+                <label className="block text-sm mb-1 text-muted-foreground">Year</label>
                 <select
                   value={year}
                   onChange={(e) => setYear(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                  className="w-full bg-muted border border-border rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
                 >
                   {[1, 2, 3, 4, 5, 6].map((y) => (
                     <option key={y} value={y}>Year {y}</option>
@@ -173,11 +173,11 @@ export default function RegisterPage() {
               </div>
             ) : (
               <div>
-                <label className="block text-sm mb-1 text-gray-400">Semester</label>
+                <label className="block text-sm mb-1 text-muted-foreground">Semester</label>
                 <select
                   value={semester}
                   onChange={(e) => setSemester(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                  className="w-full bg-muted border border-border rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
                 >
                   {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
                     <option key={s} value={s}>Sem {s}</option>
@@ -187,18 +187,18 @@ export default function RegisterPage() {
             )}
           </div>
 
-          {error && <p className="text-red-400 text-sm">{error}</p>}
+          {error && <p className="text-destructive text-sm">{error}</p>}
           <button
             type="submit"
             disabled={loading || !selectedCollegeSlug}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded py-2 text-sm font-medium transition-colors"
+            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 rounded py-2 text-sm font-medium transition-colors"
           >
             {loading ? 'Creating account…' : 'Create account'}
           </button>
         </form>
-        <p className="text-center text-sm text-gray-500 mt-4">
+        <p className="text-center text-sm text-muted-foreground mt-4">
           Already have an account?{' '}
-          <Link href="/login" className="text-blue-400 hover:underline">Sign in</Link>
+          <Link href="/login" className="text-primary hover:underline">Sign in</Link>
         </p>
       </div>
     </div>

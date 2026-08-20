@@ -20,7 +20,10 @@ export const teachingRouter = router({
     .mutation(async ({ ctx, input }) => {
       const conn = await ctx.getCollegeDb();
       const Concept = getConceptModel(conn);
-      const concept = await Concept.findById(input.concept_id).lean();
+      // Scoped to the student's accessible dept, same as the concepts browse
+      // query — findById alone would let a student start a session on a
+      // concept from a department outside their access.
+      const concept = await Concept.findOne({ _id: input.concept_id, dept_id: ctx.user.effective_dept_id }).lean();
       if (!concept) throw new TRPCError({ code: "NOT_FOUND", message: "Concept not found" });
 
       const session = await createTeachingSession(conn, {
@@ -93,6 +96,9 @@ export const teachingRouter = router({
           session.current_phase = TeachingPhase.VISUALISE;
           session.current_step_index = 0;
           session.phase_turn_count = 0;
+          session.strategies_failed = [];
+          session.strategies_attempted = [];
+          session.current_strategy = undefined;
           break;
         }
         case "just_tell_me":
@@ -115,6 +121,9 @@ export const teachingRouter = router({
           session.current_phase = TeachingPhase.CONSOLIDATE;
           session.current_step_index = 0;
           session.phase_turn_count = 0;
+          session.strategies_failed = [];
+          session.strategies_attempted = [];
+          session.current_strategy = undefined;
           break;
       }
 

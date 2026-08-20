@@ -56,14 +56,14 @@ function ConceptBrowser() {
   return (
     <div className="p-4 sm:p-6 max-w-3xl mx-auto space-y-4">
       <div>
-        <h1 className="text-lg font-semibold text-gray-100">Teach me</h1>
-        <p className="text-sm text-gray-500 mt-0.5">
+        <h1 className="text-lg font-semibold text-foreground">Teach me</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">
           Pick a concept and I'll walk you through it — diagnose what you know, build it up in steps, and check your understanding as we go.
         </p>
       </div>
 
       {chapterIndex !== undefined && (
-        <div className="flex items-center gap-2 text-xs text-teal-400 bg-teal-900/20 border border-teal-800/40 rounded-lg px-3 py-2">
+        <div className="flex items-center gap-2 text-xs text-teal-700 dark:text-teal-400 bg-teal-100 dark:bg-teal-900/20 border border-teal-800/40 rounded-lg px-3 py-2">
           <span>Showing Chapter {chapterIndex} concepts</span>
           <button onClick={() => router.push('/teaching')} className="underline hover:no-underline">clear</button>
         </div>
@@ -74,13 +74,13 @@ function ConceptBrowser() {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search concepts…"
-          className="flex-1 bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm text-gray-200 placeholder:text-gray-600 focus:outline-none focus:border-teal-700"
+          className="flex-1 bg-card border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-teal-700"
         />
         {data && data.documents.length > 1 && (
           <select
             value={docId}
             onChange={(e) => setDocId(e.target.value)}
-            className="bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm text-gray-200"
+            className="bg-card border border-border rounded-lg px-3 py-2 text-sm text-foreground"
           >
             <option value="">All books</option>
             {data.documents.map((d) => (
@@ -90,7 +90,7 @@ function ConceptBrowser() {
         )}
       </div>
 
-      {start.isError && <p className="text-sm text-red-400">{start.error.message}</p>}
+      {start.isError && <p className="text-sm text-destructive">{start.error.message}</p>}
 
       {isLoading && (
         <div className="flex items-center justify-center h-32">
@@ -99,7 +99,7 @@ function ConceptBrowser() {
       )}
 
       {!isLoading && byChapter.length === 0 && (
-        <p className="text-sm text-gray-500 py-8 text-center">
+        <p className="text-sm text-muted-foreground py-8 text-center">
           No concepts found yet — your department's books may still be processing.
         </p>
       )}
@@ -107,7 +107,7 @@ function ConceptBrowser() {
       <div className="space-y-6">
         {byChapter.map(([chapterIndex, concepts]) => (
           <div key={chapterIndex}>
-            <h2 className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+            <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
               Chapter {chapterIndex}
             </h2>
             <div className="space-y-1.5">
@@ -116,13 +116,13 @@ function ConceptBrowser() {
                   key={c._id}
                   onClick={() => start.mutate({ concept_id: c._id })}
                   disabled={start.isPending}
-                  className="w-full flex items-center justify-between gap-3 bg-gray-900 hover:bg-gray-800 border border-gray-800 rounded-lg px-4 py-3 text-left transition-colors disabled:opacity-50"
+                  className="w-full flex items-center justify-between gap-3 bg-card hover:bg-muted border border-border rounded-lg px-4 py-3 text-left transition-colors disabled:opacity-50"
                 >
                   <div className="min-w-0">
-                    <p className="text-sm text-gray-200 truncate">{c.canonical_name}</p>
-                    <p className="text-xs text-gray-500 truncate mt-0.5">{c.one_line_definition}</p>
+                    <p className="text-sm text-foreground truncate">{c.canonical_name}</p>
+                    <p className="text-xs text-muted-foreground truncate mt-0.5">{c.one_line_definition}</p>
                   </div>
-                  <span className="shrink-0 text-xs text-teal-400 whitespace-nowrap">
+                  <span className="shrink-0 text-xs text-teal-700 dark:text-teal-400 whitespace-nowrap">
                     {start.isPending && start.variables?.concept_id === c._id ? 'Starting…' : 'Teach me →'}
                   </span>
                 </button>

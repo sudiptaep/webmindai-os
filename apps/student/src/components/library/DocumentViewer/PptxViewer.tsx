@@ -43,14 +43,14 @@ export function PptxViewer({ collegeId, docId, slideCount, thumbnailUrl }: Props
             <button
               key={n}
               onClick={() => handleSlideClick(n)}
-              className={`aspect-video bg-gray-800 rounded-lg overflow-hidden border-2 transition-colors hover:border-teal-500 ${
+              className={`aspect-video bg-muted rounded-lg overflow-hidden border-2 transition-colors hover:border-teal-500 ${
                 selected === n ? 'border-teal-500' : 'border-transparent'
               }`}
             >
               {n === 1 && thumbnailUrl ? (
                 <img src={thumbnailUrl} alt={`Slide ${n}`} className="w-full h-full object-cover" />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-xs text-gray-500">
+                <div className="w-full h-full flex items-center justify-center text-xs text-muted-foreground">
                   Slide {n}
                 </div>
               )}
@@ -61,15 +61,15 @@ export function PptxViewer({ collegeId, docId, slideCount, thumbnailUrl }: Props
 
       {/* Enlarged view */}
       {selected !== null && (
-        <div className="w-96 flex flex-col bg-gray-900 border-l border-gray-700 shrink-0">
-          <div className="px-3 py-2 border-b border-gray-700 text-xs text-gray-400">
+        <div className="w-96 flex flex-col bg-card border-l border-border shrink-0">
+          <div className="px-3 py-2 border-b border-border text-xs text-muted-foreground">
             Slide {selected} of {slideCount}
           </div>
-          <div className="flex-1 flex items-center justify-center p-4 bg-gray-950">
+          <div className="flex-1 flex items-center justify-center p-4 bg-background">
             {enlargedUrl ? (
               <img src={enlargedUrl} alt={`Slide ${selected}`} className="max-w-full max-h-full object-contain rounded" />
             ) : (
-              <div className="text-gray-500 text-sm">Preview not available</div>
+              <div className="text-muted-foreground text-sm">Preview not available</div>
             )}
           </div>
         </div>

@@ -16,7 +16,7 @@ export default function CollegeAdminStudentsPage() {
         <h1 className="text-xl font-semibold">Students</h1>
         <div className="flex gap-2">
           <select value={dept_id} onChange={(e) => { setDeptId(e.target.value); setPage(1); }}
-            className="bg-gray-800 border border-gray-700 rounded px-3 py-1.5 text-sm">
+            className="bg-muted border border-border rounded px-3 py-1.5 text-sm">
             <option value="">All departments</option>
             {(deptsQuery.data ?? []).filter((d) => !d.is_generic).map((d) => (
               <option key={String(d._id)} value={String(d._id)}>{d.name}</option>
@@ -25,10 +25,10 @@ export default function CollegeAdminStudentsPage() {
         </div>
       </div>
 
-      <div className="bg-gray-800 rounded-lg overflow-hidden">
+      <div className="bg-muted rounded-lg overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-gray-700 text-gray-400 text-left">
+            <tr className="border-b border-border text-muted-foreground text-left">
               <th className="px-4 py-3">Student</th>
               <th className="px-4 py-3">Dept</th>
               <th className="px-4 py-3">Semester</th>
@@ -38,25 +38,25 @@ export default function CollegeAdminStudentsPage() {
           </thead>
           <tbody>
             {(studentsQuery.data?.students as Record<string, unknown>[] ?? []).map((s) => (
-              <tr key={String(s._id)} className="border-b border-gray-700 hover:bg-gray-700/40">
+              <tr key={String(s._id)} className="border-b border-border hover:bg-accent/40">
                 <td className="px-4 py-3">
                   <p>{s.name as string}</p>
-                  <p className="text-gray-500 text-xs">{s.email as string}</p>
+                  <p className="text-muted-foreground text-xs">{s.email as string}</p>
                 </td>
-                <td className="px-4 py-3 text-gray-400 text-xs">{s.dept_id as string}</td>
-                <td className="px-4 py-3 text-gray-400">Sem {s.semester as number}</td>
+                <td className="px-4 py-3 text-muted-foreground text-xs">{s.dept_id as string}</td>
+                <td className="px-4 py-3 text-muted-foreground">Sem {s.semester as number}</td>
                 <td className="px-4 py-3">
-                  <span className={`text-xs ${s.status === 'active' ? 'text-green-400' : s.status === 'pending_approval' ? 'text-yellow-400' : 'text-red-400'}`}>
+                  <span className={`text-xs ${s.status === 'active' ? 'text-green-700 dark:text-green-400' : s.status === 'pending_approval' ? 'text-yellow-700 dark:text-yellow-400' : 'text-destructive'}`}>
                     {s.status as string}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-gray-400 text-xs">
+                <td className="px-4 py-3 text-muted-foreground text-xs">
                   {new Date(s.created_at as string).toLocaleDateString()}
                 </td>
               </tr>
             ))}
             {!studentsQuery.data?.students?.length && (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-500">No students found.</td></tr>
+              <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">No students found.</td></tr>
             )}
           </tbody>
         </table>
@@ -65,12 +65,12 @@ export default function CollegeAdminStudentsPage() {
       {studentsQuery.data && studentsQuery.data.total > 30 && (
         <div className="flex justify-end gap-2 mt-4">
           <button disabled={page === 1} onClick={() => setPage((p) => p - 1)}
-            className="px-3 py-1 text-sm border border-gray-700 rounded disabled:opacity-40">Previous</button>
-          <span className="px-3 py-1 text-sm text-gray-400">
+            className="px-3 py-1 text-sm border border-border rounded disabled:opacity-40">Previous</button>
+          <span className="px-3 py-1 text-sm text-muted-foreground">
             Page {page} of {Math.ceil(studentsQuery.data.total / 30)}
           </span>
           <button disabled={page >= Math.ceil(studentsQuery.data.total / 30)} onClick={() => setPage((p) => p + 1)}
-            className="px-3 py-1 text-sm border border-gray-700 rounded disabled:opacity-40">Next</button>
+            className="px-3 py-1 text-sm border border-border rounded disabled:opacity-40">Next</button>
         </div>
       )}
     </div>

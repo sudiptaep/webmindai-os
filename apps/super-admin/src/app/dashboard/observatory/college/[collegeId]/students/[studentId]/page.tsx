@@ -59,8 +59,8 @@ export default function StudentProfilePage() {
       .catch(() => setLoading(false));
   }, [token, collegeId, studentId]);
 
-  if (loading) return <div className="flex items-center justify-center h-64 text-gray-400">Loading…</div>;
-  if (!data) return <div className="flex items-center justify-center h-64 text-red-400">Failed to load student profile</div>;
+  if (loading) return <div className="flex items-center justify-center h-64 text-muted-foreground">Loading…</div>;
+  if (!data) return <div className="flex items-center justify-center h-64 text-destructive">Failed to load student profile</div>;
 
   const summary = data.monthly_summary;
   const profile = data.profile;
@@ -73,14 +73,14 @@ export default function StudentProfilePage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3 flex-wrap">
-        <Link href={`/dashboard/observatory/college/${collegeId}/students`} className="text-gray-500 hover:text-white text-sm">
+        <Link href={`/dashboard/observatory/college/${collegeId}/students`} className="text-muted-foreground hover:text-white text-sm">
           ← Students
         </Link>
-        <span className="text-gray-700">/</span>
+        <span className="text-muted-foreground">/</span>
         <h1 className="text-xl font-bold text-white truncate">
           {profile?.name ?? studentId}
         </h1>
-        <span className="text-xs bg-gray-800 text-gray-400 px-2 py-1 rounded">
+        <span className="text-xs bg-muted text-muted-foreground px-2 py-1 rounded">
           {data.billing_month}
         </span>
       </div>
@@ -88,16 +88,16 @@ export default function StudentProfilePage() {
       {/* Profile + summary KPIs */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Profile card */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-2">
-          <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Profile</h2>
+        <div className="bg-card border border-border rounded-xl p-5 space-y-2">
+          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Profile</h2>
           <p className="text-white font-semibold text-lg">{profile?.name ?? '—'}</p>
-          <p className="text-gray-400 text-sm">{profile?.email ?? studentId}</p>
-          <div className="text-xs text-gray-500 space-y-1 pt-2 border-t border-gray-800">
-            <p>Semester: <span className="text-gray-300">{profile?.semester ?? '—'}</span></p>
-            {profile?.roll_number && <p>Roll No: <span className="text-gray-300">{profile.roll_number}</span></p>}
-            <p>Department: <span className="text-gray-300 truncate">{summary?.dept_id ?? '—'}</span></p>
+          <p className="text-muted-foreground text-sm">{profile?.email ?? studentId}</p>
+          <div className="text-xs text-muted-foreground space-y-1 pt-2 border-t border-border">
+            <p>Semester: <span className="text-foreground">{profile?.semester ?? '—'}</span></p>
+            {profile?.roll_number && <p>Roll No: <span className="text-foreground">{profile.roll_number}</span></p>}
+            <p>Department: <span className="text-foreground truncate">{summary?.dept_id ?? '—'}</span></p>
             {summary?.last_active_at && (
-              <p>Last active: <span className="text-gray-300">{new Date(summary.last_active_at).toLocaleDateString()}</span></p>
+              <p>Last active: <span className="text-foreground">{new Date(summary.last_active_at).toLocaleDateString()}</span></p>
             )}
           </div>
         </div>
@@ -126,8 +126,8 @@ export default function StudentProfilePage() {
 
       {/* Action breakdown */}
       {data.action_breakdown.length > 0 && (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-          <h2 className="text-sm font-semibold text-gray-300 mb-4">Action Breakdown — {data.billing_month}</h2>
+        <div className="bg-card border border-border rounded-xl p-5">
+          <h2 className="text-sm font-semibold text-foreground mb-4">Action Breakdown — {data.billing_month}</h2>
           <div className="space-y-2">
             {data.action_breakdown
               .sort((a, b) => b.tokens - a.tokens)
@@ -136,13 +136,13 @@ export default function StudentProfilePage() {
                 const pct = Math.round((row.tokens / totalTokens) * 100);
                 return (
                   <div key={row.action_type} className="grid grid-cols-12 items-center gap-3 text-sm">
-                    <span className="col-span-3 text-gray-400 text-xs">{ACTION_LABELS[row.action_type] ?? row.action_type}</span>
-                    <div className="col-span-5 h-2 bg-gray-800 rounded-full overflow-hidden">
-                      <div className="h-full bg-blue-600 rounded-full" style={{ width: `${pct}%` }} />
+                    <span className="col-span-3 text-muted-foreground text-xs">{ACTION_LABELS[row.action_type] ?? row.action_type}</span>
+                    <div className="col-span-5 h-2 bg-muted rounded-full overflow-hidden">
+                      <div className="h-full bg-primary text-primary-foreground rounded-full" style={{ width: `${pct}%` }} />
                     </div>
-                    <span className="col-span-1 text-xs text-gray-500">{pct}%</span>
-                    <span className="col-span-2 text-right text-gray-300 font-mono text-xs">{fmtK(row.tokens)}</span>
-                    <span className="col-span-1 text-right text-gray-500 text-xs">{row.count}×</span>
+                    <span className="col-span-1 text-xs text-muted-foreground">{pct}%</span>
+                    <span className="col-span-2 text-right text-foreground font-mono text-xs">{fmtK(row.tokens)}</span>
+                    <span className="col-span-1 text-right text-muted-foreground text-xs">{row.count}×</span>
                   </div>
                 );
               })}
@@ -152,8 +152,8 @@ export default function StudentProfilePage() {
 
       {/* 30-day daily trend */}
       {data.daily_trend.length > 0 && (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-          <h2 className="text-sm font-semibold text-gray-300 mb-4">Daily Token Usage — Last 30 Days</h2>
+        <div className="bg-card border border-border rounded-xl p-5">
+          <h2 className="text-sm font-semibold text-foreground mb-4">Daily Token Usage — Last 30 Days</h2>
           <div className="flex items-end gap-0.5 h-24">
             {data.daily_trend.map((d) => {
               const h = Math.max(4, Math.round((d.tokens / maxDailyTokens) * 96));
@@ -161,13 +161,13 @@ export default function StudentProfilePage() {
                 <div
                   key={d.date}
                   title={`${d.date}: ${fmtK(d.tokens)} tokens, ${d.requests} requests`}
-                  className="flex-1 bg-blue-600 hover:bg-blue-500 rounded-t transition-colors cursor-default"
+                  className="flex-1 bg-primary text-primary-foreground hover:bg-blue-500 rounded-t transition-colors cursor-default"
                   style={{ height: `${h}px` }}
                 />
               );
             })}
           </div>
-          <div className="flex justify-between text-xs text-gray-600 mt-1">
+          <div className="flex justify-between text-xs text-muted-foreground mt-1">
             <span>{data.daily_trend[0]?.date?.slice(5)}</span>
             <span>{data.daily_trend[Math.floor(data.daily_trend.length / 2)]?.date?.slice(5)}</span>
             <span>{data.daily_trend[data.daily_trend.length - 1]?.date?.slice(5)}</span>
@@ -176,8 +176,8 @@ export default function StudentProfilePage() {
       )}
 
       {/* 24h activity heatmap */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-        <h2 className="text-sm font-semibold text-gray-300 mb-4">24h Activity Pattern — Last 30 Days</h2>
+      <div className="bg-card border border-border rounded-xl p-5">
+        <h2 className="text-sm font-semibold text-foreground mb-4">24h Activity Pattern — Last 30 Days</h2>
         <div className="flex items-end gap-1 h-16">
           {data.hourly_distribution.map((h) => {
             const height = Math.max(4, Math.round((h.requests / maxHourlyReqs) * 64));
@@ -186,19 +186,19 @@ export default function StudentProfilePage() {
               <div key={h.hour} className="flex-1 flex flex-col items-center gap-1">
                 <div
                   title={`${h.hour}:00 — ${h.requests} requests`}
-                  className={`w-full rounded-t transition-colors cursor-default ${isActive ? 'bg-purple-600 hover:bg-purple-500' : 'bg-gray-800'}`}
+                  className={`w-full rounded-t transition-colors cursor-default ${isActive ? 'bg-purple-600 hover:bg-purple-500' : 'bg-muted'}`}
                   style={{ height: `${height}px` }}
                 />
               </div>
             );
           })}
         </div>
-        <div className="flex justify-between text-xs text-gray-600 mt-1">
+        <div className="flex justify-between text-xs text-muted-foreground mt-1">
           {[0, 3, 6, 9, 12, 15, 18, 21, 23].map((h) => (
             <span key={h}>{String(h).padStart(2, '0')}h</span>
           ))}
         </div>
-        <p className="text-xs text-gray-600 mt-2">
+        <p className="text-xs text-muted-foreground mt-2">
           Peak hours: {data.hourly_distribution
             .sort((a, b) => b.requests - a.requests)
             .slice(0, 3)
@@ -219,14 +219,14 @@ function KPICard({
   highlight?: 'red' | 'yellow' | 'normal';
 }) {
   const valueColor =
-    highlight === 'red' ? 'text-red-400' :
-    highlight === 'yellow' ? 'text-yellow-400' :
+    highlight === 'red' ? 'text-destructive' :
+    highlight === 'yellow' ? 'text-yellow-700 dark:text-yellow-400' :
     'text-white';
   return (
-    <div className="bg-gray-950/50 border border-gray-800 rounded-xl p-4">
-      <p className="text-xs text-gray-500 uppercase tracking-wide">{label}</p>
+    <div className="bg-background/50 border border-border rounded-xl p-4">
+      <p className="text-xs text-muted-foreground uppercase tracking-wide">{label}</p>
       <p className={`text-xl font-bold mt-1 ${valueColor}`}>{value}</p>
-      {sub && <p className="text-xs text-gray-600 mt-0.5">{sub}</p>}
+      {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
     </div>
   );
 }

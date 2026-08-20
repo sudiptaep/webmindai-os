@@ -81,22 +81,22 @@ export default function CostPlannerPage() {
   }
 
   const marginColor = result
-    ? result.margin_pct >= 60 ? 'text-green-400' : result.margin_pct >= 30 ? 'text-yellow-400' : 'text-red-400'
+    ? result.margin_pct >= 60 ? 'text-green-700 dark:text-green-400' : result.margin_pct >= 30 ? 'text-yellow-700 dark:text-yellow-400' : 'text-destructive'
     : '';
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Link href="/dashboard" className="text-gray-500 hover:text-white text-sm transition-colors">← Platform Overview</Link>
-        <span className="text-gray-700">/</span>
+        <Link href="/dashboard" className="text-muted-foreground hover:text-white text-sm transition-colors">← Platform Overview</Link>
+        <span className="text-muted-foreground">/</span>
         <h1 className="text-xl font-bold text-white">Cost Plan Builder</h1>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Input form */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-5">
+        <div className="bg-card border border-border rounded-xl p-5 space-y-5">
           <div>
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">College Profile</p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">College Profile</p>
 
             {/* Type presets */}
             <div className="flex gap-2 mb-4">
@@ -104,7 +104,7 @@ export default function CostPlannerPage() {
                 <button
                   key={t}
                   onClick={() => applyPreset(t)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${form.college_type === t ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${form.college_type === t ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:bg-accent'}`}
                 >
                   {t.charAt(0).toUpperCase() + t.slice(1)}
                 </button>
@@ -120,7 +120,7 @@ export default function CostPlannerPage() {
           </div>
 
           <div>
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Usage Assumptions</p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Usage Assumptions</p>
             <div className="space-y-3">
               <Row label="Chats / student / day" value={form.avg_chats_per_student_per_day} onChange={v => set('avg_chats_per_student_per_day', v)} />
               <Row label="Tokens / chat" value={form.avg_tokens_per_chat} onChange={v => set('avg_tokens_per_chat', v)} />
@@ -130,7 +130,7 @@ export default function CostPlannerPage() {
           </div>
 
           <div>
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Ingestion Assumptions</p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Ingestion Assumptions</p>
             <div className="space-y-3">
               <Row label="Docs uploaded / dept / month" value={form.docs_per_dept_per_month} onChange={v => set('docs_per_dept_per_month', v)} />
               <Row label="Pages / doc" value={form.avg_pages_per_doc} onChange={v => set('avg_pages_per_doc', v)} />
@@ -138,12 +138,12 @@ export default function CostPlannerPage() {
             </div>
           </div>
 
-          {error && <p className="text-red-400 text-xs bg-red-950/30 border border-red-900 rounded px-3 py-2">{error}</p>}
+          {error && <p className="text-destructive text-xs bg-red-100 dark:bg-red-950/30 border border-red-300 dark:border-red-900 rounded px-3 py-2">{error}</p>}
 
           <button
             onClick={handleRun}
             disabled={simulate.isPending}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-lg py-2.5 text-sm font-medium text-white transition-colors"
+            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 rounded-lg py-2.5 text-sm font-medium text-white transition-colors"
           >
             {simulate.isPending ? 'Calculating…' : 'Run Simulation →'}
           </button>
@@ -154,10 +154,10 @@ export default function CostPlannerPage() {
           {result ? (
             <>
               {/* Margin status */}
-              <div className={`rounded-xl border p-5 ${result.margin_pct >= 60 ? 'bg-green-950/20 border-green-800' : result.margin_pct >= 30 ? 'bg-yellow-950/20 border-yellow-800' : 'bg-red-950/20 border-red-800'}`}>
-                <p className="text-xs text-gray-400 mb-1">Projected Monthly Margin</p>
+              <div className={`rounded-xl border p-5 ${result.margin_pct >= 60 ? 'bg-green-100 dark:bg-green-950/20 border-green-800' : result.margin_pct >= 30 ? 'bg-yellow-100 dark:bg-yellow-950/20 border-yellow-300 dark:border-yellow-800' : 'bg-red-100 dark:bg-red-950/20 border-red-300 dark:border-red-800'}`}>
+                <p className="text-xs text-muted-foreground mb-1">Projected Monthly Margin</p>
                 <p className={`text-3xl font-bold ${marginColor}`}>{result.margin_pct.toFixed(1)}%</p>
-                <p className="text-sm text-gray-400 mt-1">
+                <p className="text-sm text-muted-foreground mt-1">
                   Revenue: ₹{result.revenue_inr.toLocaleString()} · Cost: ${result.projected_cost_usd.toFixed(2)}
                 </p>
               </div>
@@ -171,8 +171,8 @@ export default function CostPlannerPage() {
               </div>
 
               {/* By service */}
-              <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-                <p className="text-xs font-semibold text-gray-400 mb-3">Cost Breakdown by Service</p>
+              <div className="bg-card border border-border rounded-xl p-4">
+                <p className="text-xs font-semibold text-muted-foreground mb-3">Cost Breakdown by Service</p>
                 <div className="space-y-2">
                   {[
                     { label: 'Anthropic LLM', v: result.by_service.anthropic_llm, color: '#8b5cf6' },
@@ -183,10 +183,10 @@ export default function CostPlannerPage() {
                     return (
                       <div key={label}>
                         <div className="flex justify-between text-xs mb-1">
-                          <span className="text-gray-400">{label}</span>
-                          <span className="text-gray-300 font-mono">${v.toFixed(4)} ({pct.toFixed(0)}%)</span>
+                          <span className="text-muted-foreground">{label}</span>
+                          <span className="text-foreground font-mono">${v.toFixed(4)} ({pct.toFixed(0)}%)</span>
                         </div>
-                        <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                           <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: color }} />
                         </div>
                       </div>
@@ -196,22 +196,22 @@ export default function CostPlannerPage() {
               </div>
 
               {/* Recommended token limit */}
-              <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-                <p className="text-xs font-semibold text-gray-400 mb-2">Recommended Token Limit / Month</p>
+              <div className="bg-card border border-border rounded-xl p-4">
+                <p className="text-xs font-semibold text-muted-foreground mb-2">Recommended Token Limit / Month</p>
                 <p className="text-2xl font-bold text-white font-mono">
                   {result.recommended_token_limit >= 1_000_000
                     ? `${(result.recommended_token_limit / 1_000_000).toFixed(1)}M`
                     : `${(result.recommended_token_limit / 1000).toFixed(0)}K`}
                 </p>
-                <p className="text-xs text-gray-500 mt-1">= projected usage × 1.2 buffer</p>
-                <Link href="/dashboard/policies/global" className="inline-block mt-3 text-xs text-blue-400 hover:text-blue-300 transition-colors">
+                <p className="text-xs text-muted-foreground mt-1">= projected usage × 1.2 buffer</p>
+                <Link href="/dashboard/policies/global" className="inline-block mt-3 text-xs text-primary hover:text-blue-300 transition-colors">
                   Apply to global policy →
                 </Link>
               </div>
             </>
           ) : (
-            <div className="h-full min-h-[300px] bg-gray-900 border border-gray-800 rounded-xl flex items-center justify-center">
-              <div className="text-center text-gray-600">
+            <div className="h-full min-h-[300px] bg-card border border-border rounded-xl flex items-center justify-center">
+              <div className="text-center text-muted-foreground">
                 <p className="text-3xl mb-2">📊</p>
                 <p className="text-sm">Fill in the profile and run simulation</p>
               </div>
@@ -226,13 +226,13 @@ export default function CostPlannerPage() {
 function Row({ label, value, onChange, step }: { label: string; value: string; onChange: (v: string) => void; step?: string }) {
   return (
     <div className="flex items-center justify-between gap-4">
-      <label className="text-sm text-gray-300 flex-1">{label}</label>
+      <label className="text-sm text-foreground flex-1">{label}</label>
       <input
         type="number"
         step={step ?? '1'}
         value={value}
         onChange={e => onChange(e.target.value)}
-        className="w-28 bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white text-right focus:outline-none focus:border-blue-500 transition-colors"
+        className="w-28 bg-muted border border-border rounded-lg px-3 py-1.5 text-sm text-white text-right focus:outline-none focus:border-primary transition-colors"
       />
     </div>
   );
@@ -240,8 +240,8 @@ function Row({ label, value, onChange, step }: { label: string; value: string; o
 
 function KPIBox({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl p-3">
-      <p className="text-xs text-gray-500">{label}</p>
+    <div className="bg-card border border-border rounded-xl p-3">
+      <p className="text-xs text-muted-foreground">{label}</p>
       <p className="text-lg font-bold text-white mt-0.5 font-mono">{value}</p>
     </div>
   );

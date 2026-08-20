@@ -44,8 +44,8 @@ function ResetPasswordForm() {
   if (!token) {
     return (
       <div className="text-center">
-        <p className="text-red-400">Invalid reset link.</p>
-        <Link href="/forgot-password" className="mt-4 inline-block text-blue-400 hover:underline text-sm">
+        <p className="text-destructive">Invalid reset link.</p>
+        <Link href="/forgot-password" className="mt-4 inline-block text-primary hover:underline text-sm">
           Request a new one
         </Link>
       </div>
@@ -55,8 +55,8 @@ function ResetPasswordForm() {
   if (done) {
     return (
       <div className="text-center">
-        <div className="text-green-400 text-4xl mb-4">✓</div>
-        <p className="text-gray-300">Password updated. Redirecting to login…</p>
+        <div className="text-green-700 dark:text-green-400 text-4xl mb-4">✓</div>
+        <p className="text-foreground">Password updated. Redirecting to login…</p>
       </div>
     );
   }
@@ -64,32 +64,32 @@ function ResetPasswordForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="block text-sm mb-1 text-gray-400">New Password</label>
+        <label className="block text-sm mb-1 text-muted-foreground">New Password</label>
         <input
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+          className="w-full bg-muted border border-border rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
           required
           minLength={8}
         />
       </div>
       <div>
-        <label className="block text-sm mb-1 text-gray-400">Confirm Password</label>
+        <label className="block text-sm mb-1 text-muted-foreground">Confirm Password</label>
         <input
           type="password"
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
-          className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+          className="w-full bg-muted border border-border rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
           required
           minLength={8}
         />
       </div>
-      {error && <p className="text-red-400 text-sm">{error}</p>}
+      {error && <p className="text-destructive text-sm">{error}</p>}
       <button
         type="submit"
         disabled={loading}
-        className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded py-2 text-sm font-medium transition-colors"
+        className="w-full bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 rounded py-2 text-sm font-medium transition-colors"
       >
         {loading ? 'Updating…' : 'Update password'}
       </button>
@@ -102,11 +102,11 @@ export default function ResetPasswordPage() {
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
         <h1 className="text-2xl font-bold mb-6 text-center">Set New Password</h1>
-        <Suspense fallback={<div className="text-gray-400 text-sm text-center">Loading…</div>}>
+        <Suspense fallback={<div className="text-muted-foreground text-sm text-center">Loading…</div>}>
           <ResetPasswordForm />
         </Suspense>
-        <p className="text-center text-sm text-gray-500 mt-4">
-          <Link href="/login" className="text-blue-400 hover:underline">
+        <p className="text-center text-sm text-muted-foreground mt-4">
+          <Link href="/login" className="text-primary hover:underline">
             Back to login
           </Link>
         </p>

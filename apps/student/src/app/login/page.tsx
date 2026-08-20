@@ -82,14 +82,14 @@ function LoginForm() {
           {/* College dropdown — only when slug not set by domain context or ?college= param */}
           {!effectiveSlug && (
             <div>
-              <label className="block text-sm mb-1 text-gray-400">College</label>
+              <label className="block text-sm mb-1 text-muted-foreground">College</label>
               {collegesLoading ? (
-                <div className="text-sm text-gray-500 py-2">Loading colleges…</div>
+                <div className="text-sm text-muted-foreground py-2">Loading colleges…</div>
               ) : (
                 <select
                   value={slug}
                   onChange={(e) => setSlug(e.target.value)}
-                  className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                  className="w-full bg-muted border border-border rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
                   required
                 >
                   <option value="">Select college</option>
@@ -102,42 +102,42 @@ function LoginForm() {
           )}
 
           <div>
-            <label className="block text-sm mb-1 text-gray-400">Email</label>
+            <label className="block text-sm mb-1 text-muted-foreground">Email</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+              className="w-full bg-muted border border-border rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
               required
             />
           </div>
           <div>
-            <label className="block text-sm mb-1 text-gray-400">Password</label>
+            <label className="block text-sm mb-1 text-muted-foreground">Password</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+              className="w-full bg-muted border border-border rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
               required
             />
           </div>
-          {error && <p className="text-red-400 text-sm">{error}</p>}
+          {error && <p className="text-destructive text-sm">{error}</p>}
           <button
             type="submit"
             disabled={loading || !slug}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded py-2 text-sm font-medium transition-colors"
+            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 rounded py-2 text-sm font-medium transition-colors"
           >
             {loading ? 'Signing in…' : 'Sign in'}
           </button>
         </form>
-        <p className="text-center text-sm text-gray-500 mt-2">
-          <Link href="/forgot-password" className="text-blue-400 hover:underline text-xs">
+        <p className="text-center text-sm text-muted-foreground mt-2">
+          <Link href="/forgot-password" className="text-primary hover:underline text-xs">
             Forgot password?
           </Link>
         </p>
-        <p className="text-center text-sm text-gray-500 mt-3">
+        <p className="text-center text-sm text-muted-foreground mt-3">
           No account?{' '}
-          <Link href="/register" className="text-blue-400 hover:underline">
+          <Link href="/register" className="text-primary hover:underline">
             Register
           </Link>
         </p>

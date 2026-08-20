@@ -7,6 +7,7 @@ import { useAuthStore } from '@/store/auth.store';
 import { useChatStore } from '@/store/chat.store';
 import { logout } from '@/lib/auth';
 import { trpc } from '@/lib/trpc';
+import { ThemeToggle } from './ThemeToggle';
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
@@ -216,7 +217,7 @@ export function SessionContextMenu({
       <button
         onClick={handleToggle}
         aria-label="Session options"
-        className={`flex items-center justify-center rounded-md text-gray-500 hover:text-gray-300 hover:bg-gray-700/60 transition-colors cursor-pointer ${
+        className={`flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-accent/60 transition-colors cursor-pointer ${
           variant === 'compact' ? 'w-5 h-5' : 'w-7 h-7'
         }`}
       >
@@ -224,11 +225,11 @@ export function SessionContextMenu({
       </button>
 
       {open && (
-        <div className="absolute right-0 top-6 z-50 w-36 bg-[#1e2330] border border-gray-700/60 rounded-lg shadow-xl py-1 overflow-hidden">
+        <div className="absolute right-0 top-6 z-50 w-36 bg-card border border-border/60 rounded-lg shadow-xl py-1 overflow-hidden">
           <button
             onClick={handleDelete}
             disabled={deleteMutation.isPending}
-            className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors cursor-pointer disabled:opacity-50"
+            className="w-full flex items-center gap-2.5 px-3 py-2 text-xs text-destructive hover:text-red-700 dark:hover:text-red-700 dark:hover:text-red-300 hover:bg-red-500/10 transition-colors cursor-pointer disabled:opacity-50"
           >
             <IconTrash />
             {deleteMutation.isPending ? 'Deleting…' : 'Delete'}
@@ -280,14 +281,14 @@ export function AppSidebar({ currentSessionId, onClose, onCollapse }: AppSidebar
   }
 
   return (
-    <aside className="flex flex-col h-full bg-[#151820] border-r border-gray-800/60 w-64 shrink-0">
+    <aside className="flex flex-col h-full bg-card border-r border-border/60 w-64 shrink-0">
       {/* Logo / user */}
-      <div className="px-3 py-3 border-b border-gray-800/60 flex items-center gap-2.5">
+      <div className="px-3 py-3 border-b border-border/60 flex items-center gap-2.5">
         <div className="w-7 h-7 rounded-lg bg-teal-600 flex items-center justify-center text-white shrink-0">
           <IconGradCap />
         </div>
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-gray-100 truncate">
+          <p className="text-sm font-semibold text-foreground truncate">
             Medimind AI
           </p>
         </div>
@@ -295,7 +296,7 @@ export function AppSidebar({ currentSessionId, onClose, onCollapse }: AppSidebar
           {onClose && (
             <button
               onClick={onClose}
-              className="text-gray-500 hover:text-gray-300 cursor-pointer transition-colors lg:hidden"
+              className="text-muted-foreground hover:text-foreground cursor-pointer transition-colors lg:hidden"
               aria-label="Close sidebar"
             >
               <IconClose />
@@ -304,7 +305,7 @@ export function AppSidebar({ currentSessionId, onClose, onCollapse }: AppSidebar
           {onCollapse && (
             <button
               onClick={onCollapse}
-              className="hidden lg:flex items-center justify-center w-7 h-7 rounded-md text-gray-500 hover:text-gray-300 hover:bg-gray-800/60 transition-colors cursor-pointer"
+              className="hidden lg:flex items-center justify-center w-7 h-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors cursor-pointer"
               aria-label="Collapse sidebar"
             >
               <IconPanelLeft />
@@ -335,8 +336,8 @@ export function AppSidebar({ currentSessionId, onClose, onCollapse }: AppSidebar
               onClick={() => onClose?.()}
               className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors cursor-pointer ${
                 isActive
-                  ? 'bg-gray-800 text-gray-100'
-                  : 'text-gray-400 hover:text-gray-100 hover:bg-gray-800/60'
+                  ? 'bg-muted text-foreground'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/60'
               }`}
             >
               {item.icon}
@@ -360,7 +361,7 @@ export function AppSidebar({ currentSessionId, onClose, onCollapse }: AppSidebar
         if (validSessions.length === 0) return <div className="flex-1" />;
         return (
           <div className="flex-1 overflow-y-auto mt-4 px-3 min-h-0">
-            <p className="text-xs font-semibold text-gray-600 uppercase tracking-wider px-3 mb-2">Recent</p>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-2">Recent</p>
             <div className="space-y-0.5">
               {validSessions.map((session: SessionItem) => {
                 const isActive = session._id === currentSessionId;
@@ -370,8 +371,8 @@ export function AppSidebar({ currentSessionId, onClose, onCollapse }: AppSidebar
                     key={session._id}
                     className={`group flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs transition-colors ${
                       isActive
-                        ? 'bg-teal-600/15 text-teal-300 border border-teal-700/40'
-                        : 'text-gray-500 hover:text-gray-300 hover:bg-gray-800/50'
+                        ? 'bg-teal-600/15 text-teal-700 dark:text-teal-300 border border-teal-700/40'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                     }`}
                   >
                     <Link
@@ -397,29 +398,31 @@ export function AppSidebar({ currentSessionId, onClose, onCollapse }: AppSidebar
       })()}
 
       {/* Profile card + logout */}
-      <div className="px-2 py-2 border-t border-gray-800/60">
-        <div className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-gray-800/50 transition-colors group">
+      <div className="px-2 py-2 border-t border-border/60">
+        <div className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-muted/50 transition-colors group">
           {/* Avatar */}
           <Link href="/profile" className="flex items-center gap-2.5 flex-1 min-w-0 cursor-pointer">
             <div className="w-8 h-8 rounded-full bg-teal-700 flex items-center justify-center text-white text-sm font-semibold shrink-0 select-none">
               {user?.name?.charAt(0)?.toUpperCase() ?? '?'}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium text-gray-200 truncate leading-tight">
+              <p className="text-sm font-medium text-foreground truncate leading-tight">
                 {user?.name ?? 'Student'}
               </p>
               {user?.semester && (
-                <p className="text-xs text-gray-600 truncate leading-tight">
+                <p className="text-xs text-muted-foreground truncate leading-tight">
                   {formatAcademicLevel(user.semester, user.college_type)}
                 </p>
               )}
             </div>
           </Link>
+          {/* Theme toggle */}
+          <ThemeToggle className="shrink-0" />
           {/* Logout icon */}
           <button
             onClick={handleLogout}
             title="Sign out"
-            className="shrink-0 w-7 h-7 flex items-center justify-center rounded-md text-gray-600 hover:text-red-400 hover:bg-red-400/10 transition-colors cursor-pointer"
+            className="shrink-0 w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:text-destructive hover:bg-red-400/10 transition-colors cursor-pointer"
           >
             <IconLogout />
           </button>
@@ -440,7 +443,7 @@ export function AppShell({ currentSessionId, children }: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#0f1117]">
+    <div className="flex h-screen overflow-hidden bg-background">
       {sidebarOpen && (
         <div
           className="fixed inset-0 z-20 bg-black/60 lg:hidden"
@@ -460,10 +463,10 @@ export function AppShell({ currentSessionId, children }: AppShellProps) {
       </div>
 
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-800/60 lg:hidden shrink-0">
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-border/60 lg:hidden shrink-0">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="text-gray-400 hover:text-gray-100 cursor-pointer transition-colors"
+            className="text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
             aria-label="Open sidebar"
           >
             <IconMenu />

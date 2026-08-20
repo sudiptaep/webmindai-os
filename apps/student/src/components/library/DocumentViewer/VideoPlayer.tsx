@@ -56,21 +56,21 @@ export function VideoPlayer({ tokenUrl, collegeId, docId, filename }: Props) {
       </div>
 
       {/* Transcript sidebar */}
-      <div className="w-72 flex flex-col bg-gray-900 border-l border-gray-700 shrink-0">
-        <div className="px-3 py-2 border-b border-gray-700">
-          <p className="text-xs font-semibold text-gray-300 mb-1.5">Transcript</p>
+      <div className="w-72 flex flex-col bg-card border-l border-border shrink-0">
+        <div className="px-3 py-2 border-b border-border">
+          <p className="text-xs font-semibold text-foreground mb-1.5">Transcript</p>
           <input
             value={transcriptSearch}
             onChange={e => setTranscriptSearch(e.target.value)}
             placeholder="Search transcript..."
-            className="w-full text-xs bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-gray-100 placeholder-gray-500"
+            className="w-full text-xs bg-muted border border-border rounded-lg px-2 py-1.5 text-foreground placeholder-muted-foreground"
           />
         </div>
         <div className="flex-1 overflow-y-auto py-1">
           {transcript.length === 0 ? (
-            <p className="text-xs text-gray-500 text-center py-6">Transcript unavailable</p>
+            <p className="text-xs text-muted-foreground text-center py-6">Transcript unavailable</p>
           ) : filtered.length === 0 ? (
-            <p className="text-xs text-gray-500 text-center py-6">No matches</p>
+            <p className="text-xs text-muted-foreground text-center py-6">No matches</p>
           ) : filtered.map((seg, i) => {
             const isActive = transcript.indexOf(seg) === activeIdx;
             return (
@@ -78,11 +78,11 @@ export function VideoPlayer({ tokenUrl, collegeId, docId, filename }: Props) {
                 key={i}
                 ref={isActive ? activeRef : null}
                 onClick={() => seekTo(seg.start_sec)}
-                className={`cursor-pointer px-3 py-2 text-xs transition-colors hover:bg-gray-800 ${
-                  isActive ? 'bg-teal-900/40 text-teal-300' : 'text-gray-400'
+                className={`cursor-pointer px-3 py-2 text-xs transition-colors hover:bg-muted ${
+                  isActive ? 'bg-teal-100 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300' : 'text-muted-foreground'
                 }`}
               >
-                <span className="font-mono text-gray-500 mr-2">{formatDuration(seg.start_sec)}</span>
+                <span className="font-mono text-muted-foreground mr-2">{formatDuration(seg.start_sec)}</span>
                 {seg.text}
               </div>
             );

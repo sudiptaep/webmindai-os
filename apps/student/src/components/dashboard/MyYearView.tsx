@@ -36,7 +36,7 @@ export function MyYearView() {
   if (error) {
     return (
       <div className="p-6">
-        <p className="text-sm text-red-400">{error}</p>
+        <p className="text-sm text-destructive">{error}</p>
       </div>
     );
   }
@@ -57,11 +57,11 @@ export function MyYearView() {
     <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-5">
       {/* Header */}
       <div>
-        <h1 className="text-lg font-semibold text-gray-100">
+        <h1 className="text-lg font-semibold text-foreground">
           {getGreeting()}{user?.name ? `, ${user.name.split(' ')[0]}` : ''}.
         </h1>
         {data && (
-          <p className="text-sm text-gray-500 mt-0.5">
+          <p className="text-sm text-muted-foreground mt-0.5">
             {yearLabel}
             {semLabel ? ` · ${semLabel}` : ''}
           </p>
@@ -80,15 +80,15 @@ export function MyYearView() {
 
       {/* Subjects */}
       {data && data.subjects.length > 0 && (
-        <div className="bg-[#151820] border border-gray-800/60 rounded-xl overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-800/60">
-            <h2 className="text-sm font-semibold text-gray-300">
+        <div className="bg-card border border-border/60 rounded-xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-border/60">
+            <h2 className="text-sm font-semibold text-foreground">
               {isMedical
                 ? `Year ${data.student_year} / Semester ${data.student_semester} Materials`
                 : `${ordinal(data.student_year)} Year Materials`}
             </h2>
           </div>
-          <div className="px-4 divide-y divide-gray-800/40">
+          <div className="px-4 divide-y divide-border/40">
             {data.subjects.map(subject => (
               <YearSubjectGroup key={subject.subject_id} subject={subject} />
             ))}
@@ -98,9 +98,9 @@ export function MyYearView() {
 
       {/* No subjects state */}
       {data && data.subjects.length === 0 && (
-        <div className="bg-[#151820] border border-gray-800/60 rounded-xl p-8 text-center">
-          <p className="text-sm text-gray-500 mb-1">No materials found for your year and semester.</p>
-          <p className="text-xs text-gray-600">Ask your faculty to upload content, or update your year in profile settings.</p>
+        <div className="bg-card border border-border/60 rounded-xl p-8 text-center">
+          <p className="text-sm text-muted-foreground mb-1">No materials found for your year and semester.</p>
+          <p className="text-xs text-muted-foreground">Ask your faculty to upload content, or update your year in profile settings.</p>
         </div>
       )}
 

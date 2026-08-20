@@ -13,7 +13,7 @@ export function GenericFallbackBanner() {
   if (!user?.using_generic_fallback) return null;
 
   return (
-    <div className="bg-amber-900/40 border border-amber-700 rounded-lg px-4 py-2 text-sm text-amber-300 flex items-center justify-between gap-4">
+    <div className="bg-amber-100 dark:bg-amber-900/40 border border-amber-700 rounded-lg px-4 py-2 text-sm text-amber-700 dark:text-amber-300 flex items-center justify-between gap-4">
       <span>
         Your department has no content yet — answers come from the General knowledge base.
       </span>

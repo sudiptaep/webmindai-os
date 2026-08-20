@@ -105,7 +105,7 @@ export default function CollegePolicyPage() {
     });
   }
 
-  if (isLoading) return <div className="flex items-center justify-center h-64 text-gray-400">Loading…</div>;
+  if (isLoading) return <div className="flex items-center justify-center h-64 text-muted-foreground">Loading…</div>;
 
   const globalLimits = globalPolicy as Record<string, unknown> | null;
 
@@ -113,8 +113,8 @@ export default function CollegePolicyPage() {
     <div className="space-y-6 max-w-2xl">
       {/* Header */}
       <div className="flex items-center gap-3 flex-wrap">
-        <Link href={`/dashboard/colleges/${collegeId}/costs`} className="text-gray-500 hover:text-white text-sm transition-colors">← {collegeId} costs</Link>
-        <span className="text-gray-700">/</span>
+        <Link href={`/dashboard/colleges/${collegeId}/costs`} className="text-muted-foreground hover:text-white text-sm transition-colors">← {collegeId} costs</Link>
+        <span className="text-muted-foreground">/</span>
         <h1 className="text-xl font-bold text-white">College Policy</h1>
       </div>
 
@@ -124,7 +124,7 @@ export default function CollegePolicyPage() {
       </div>
 
       {/* Form */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-5">
+      <div className="bg-card border border-border rounded-xl p-6 space-y-5">
         <Section title="Token Limits">
           <FieldRow
             label="Token limit / month"
@@ -189,11 +189,11 @@ export default function CollegePolicyPage() {
                   onChange={() => toggleModel(m)}
                   className="accent-blue-500"
                 />
-                <span className="text-sm text-gray-300 group-hover:text-white transition-colors font-mono">{m}</span>
+                <span className="text-sm text-foreground group-hover:text-white transition-colors font-mono">{m}</span>
               </label>
             ))}
             {fields.allowed_llm_models.length === 0 && (
-              <p className="text-xs text-gray-600 mt-1">None selected → inherits global allowed models</p>
+              <p className="text-xs text-muted-foreground mt-1">None selected → inherits global allowed models</p>
             )}
           </div>
         </Section>
@@ -213,17 +213,17 @@ export default function CollegePolicyPage() {
             onChange={e => set('notes', e.target.value)}
             placeholder="Internal notes about this policy..."
             rows={2}
-            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-blue-500 resize-none"
+            className="w-full bg-muted border border-border rounded-lg px-3 py-2 text-sm text-white placeholder-muted-foreground focus:outline-none focus:border-primary resize-none"
           />
         </Section>
 
-        {error && <p className="text-red-400 text-xs bg-red-950/30 border border-red-900 rounded px-3 py-2">{error}</p>}
+        {error && <p className="text-destructive text-xs bg-red-100 dark:bg-red-950/30 border border-red-300 dark:border-red-900 rounded px-3 py-2">{error}</p>}
 
         <div className="flex items-center gap-3 pt-2">
           <button
             onClick={handleSave}
             disabled={setPolicy.isPending}
-            className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-lg px-5 py-2 text-sm font-medium text-white transition-colors"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 rounded-lg px-5 py-2 text-sm font-medium text-white transition-colors"
           >
             {setPolicy.isPending ? 'Saving…' : saved ? '✓ Saved' : 'Save Policy'}
           </button>
@@ -231,12 +231,12 @@ export default function CollegePolicyPage() {
             <button
               onClick={() => { if (confirm('Delete college override? College will inherit global policy.')) deletePolicy.mutate({ collegeId }); }}
               disabled={deletePolicy.isPending}
-              className="text-xs text-red-400 hover:text-red-300 disabled:opacity-50 transition-colors"
+              className="text-xs text-destructive hover:text-red-700 dark:hover:text-red-300 disabled:opacity-50 transition-colors"
             >
               Delete override
             </button>
           )}
-          <Link href="/dashboard/policies/global" className="ml-auto text-xs text-gray-500 hover:text-gray-300 transition-colors">
+          <Link href="/dashboard/policies/global" className="ml-auto text-xs text-muted-foreground hover:text-foreground transition-colors">
             Edit global policy →
           </Link>
         </div>
@@ -248,7 +248,7 @@ export default function CollegePolicyPage() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">{title}</p>
+      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">{title}</p>
       <div className="space-y-3">{children}</div>
     </div>
   );
@@ -260,15 +260,15 @@ function FieldRow({ label, value, onChange, placeholder, hint }: {
   return (
     <div className="grid grid-cols-2 gap-4 items-start">
       <div>
-        <p className="text-sm text-gray-300">{label}</p>
-        {hint && <p className="text-xs text-gray-600 mt-0.5">{hint}</p>}
+        <p className="text-sm text-foreground">{label}</p>
+        {hint && <p className="text-xs text-muted-foreground mt-0.5">{hint}</p>}
       </div>
       <input
         type="number"
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
-        className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-blue-500 transition-colors"
+        className="bg-muted border border-border rounded-lg px-3 py-1.5 text-sm text-white placeholder-muted-foreground focus:outline-none focus:border-primary transition-colors"
       />
     </div>
   );

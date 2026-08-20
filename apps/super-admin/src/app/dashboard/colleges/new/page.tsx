@@ -37,7 +37,7 @@ export default function NewCollegePage() {
     <div className="max-w-lg">
       <button
         onClick={() => router.back()}
-        className="text-sm text-gray-400 hover:text-gray-100 mb-4 flex items-center gap-1"
+        className="text-sm text-muted-foreground hover:text-foreground mb-4 flex items-center gap-1"
       >
         ← Back
       </button>
@@ -48,7 +48,7 @@ export default function NewCollegePage() {
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+            className="w-full bg-muted border border-border rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
             required
           />
         </Field>
@@ -57,16 +57,16 @@ export default function NewCollegePage() {
             value={slug}
             onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
             placeholder="my-college"
-            className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+            className="w-full bg-muted border border-border rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
             required
           />
-          <p className="text-xs text-gray-500 mt-1">{slug || 'slug'}.yourplatform.com</p>
+          <p className="text-xs text-muted-foreground mt-1">{slug || 'slug'}.yourplatform.com</p>
         </Field>
         <Field label="Type">
           <select
             value={type}
             onChange={(e) => setType(e.target.value as typeof type)}
-            className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+            className="w-full bg-muted border border-border rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
           >
             <option value="engineering">Engineering</option>
             <option value="medical">Medical</option>
@@ -79,7 +79,7 @@ export default function NewCollegePage() {
             value={ownerEmail}
             onChange={(e) => setOwnerEmail(e.target.value)}
             placeholder="admin@college.edu"
-            className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+            className="w-full bg-muted border border-border rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
             required
           />
         </Field>
@@ -88,17 +88,17 @@ export default function NewCollegePage() {
             type="number"
             value={tokenLimit}
             onChange={(e) => setTokenLimit(e.target.value)}
-            className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+            className="w-full bg-muted border border-border rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
             required
           />
         </Field>
 
-        {error && <p className="text-red-400 text-sm">{error}</p>}
+        {error && <p className="text-destructive text-sm">{error}</p>}
 
         <button
           type="submit"
           disabled={createMut.isPending}
-          className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded py-2 text-sm font-medium transition-colors"
+          className="w-full bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 rounded py-2 text-sm font-medium transition-colors"
         >
           {createMut.isPending ? 'Creating…' : 'Create College'}
         </button>
@@ -110,7 +110,7 @@ export default function NewCollegePage() {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-sm mb-1 text-gray-400">{label}</label>
+      <label className="block text-sm mb-1 text-muted-foreground">{label}</label>
       {children}
     </div>
   );

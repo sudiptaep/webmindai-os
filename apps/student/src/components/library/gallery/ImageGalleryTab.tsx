@@ -47,7 +47,7 @@ export function ImageGalleryTab({ docId, collegeId }: Props) {
         <select
           value={typeFilter}
           onChange={(e) => setTypeFilter(e.target.value)}
-          className="bg-gray-800 border border-gray-700 text-xs text-gray-200 rounded-lg px-2 py-1.5"
+          className="bg-muted border border-border text-xs text-foreground rounded-lg px-2 py-1.5"
         >
           <option value="all">All types</option>
           {types.map((t) => (
@@ -60,7 +60,7 @@ export function ImageGalleryTab({ docId, collegeId }: Props) {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search labels/captions…"
-          className="bg-gray-800 border border-gray-700 text-xs text-gray-200 rounded-lg px-2 py-1.5 flex-1 min-w-[160px] placeholder-gray-500"
+          className="bg-muted border border-border text-xs text-foreground rounded-lg px-2 py-1.5 flex-1 min-w-[160px] placeholder-muted-foreground"
         />
       </div>
 
@@ -70,10 +70,10 @@ export function ImageGalleryTab({ docId, collegeId }: Props) {
         </div>
       )}
 
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && <p className="text-sm text-destructive">{error}</p>}
 
       {!loading && !error && images.length === 0 && (
-        <p className="text-sm text-gray-500 text-center py-12">No images found for this document.</p>
+        <p className="text-sm text-muted-foreground text-center py-12">No images found for this document.</p>
       )}
 
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
@@ -81,12 +81,12 @@ export function ImageGalleryTab({ docId, collegeId }: Props) {
           <button
             key={img.image_asset_id}
             onClick={() => setExpanded(img)}
-            className="text-left border border-gray-700/60 rounded-lg overflow-hidden bg-gray-800/60 hover:border-teal-600/50 transition-colors cursor-pointer"
+            className="text-left border border-border/60 rounded-lg overflow-hidden bg-muted/60 hover:border-teal-600/50 transition-colors cursor-pointer"
           >
             <img src={img.thumbnail_url} alt={img.alt_text} className="w-full h-28 object-cover bg-white" />
             <div className="p-2">
-              <p className="text-xs text-gray-200 line-clamp-2">{img.caption}</p>
-              <p className="text-[10px] text-gray-500 mt-1">Pg.{img.source_page} · {img.image_type.replace(/_/g, ' ')}</p>
+              <p className="text-xs text-foreground line-clamp-2">{img.caption}</p>
+              <p className="text-[10px] text-muted-foreground mt-1">Pg.{img.source_page} · {img.image_type.replace(/_/g, ' ')}</p>
             </div>
           </button>
         ))}

@@ -28,26 +28,26 @@ export function SubjectSidebar({ subjects, params, studentYear, onChange }: Prop
   ).sort((a, b) => a - b);
 
   return (
-    <aside className="w-60 shrink-0 bg-gray-900 border-r border-gray-700 flex flex-col">
-      <div className="px-4 py-3 border-b border-gray-700">
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Search</p>
+    <aside className="w-60 shrink-0 bg-card border-r border-border flex flex-col">
+      <div className="px-4 py-3 border-b border-border">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Search</p>
         <input
           value={params.q ?? ''}
           onChange={e => onChange({ q: e.target.value || undefined })}
           placeholder="Search documents..."
-          className="w-full text-xs bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-gray-100 placeholder-gray-500"
+          className="w-full text-xs bg-muted border border-border rounded-lg px-3 py-2 text-foreground placeholder-muted-foreground"
         />
       </div>
 
-      <div className="px-4 py-3 border-b border-gray-700">
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Year</p>
+      <div className="px-4 py-3 border-b border-border">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Year</p>
         <div className="flex flex-wrap gap-1.5">
           <button
             onClick={() => onChange({ study_year: undefined, subject_id: undefined })}
             className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
               !params.study_year
                 ? 'bg-teal-600 border-teal-500 text-white'
-                : 'border-gray-600 text-gray-400 hover:text-white'
+                : 'border-border text-muted-foreground hover:text-white'
             }`}
           >
             My Year {studentYear}
@@ -59,7 +59,7 @@ export function SubjectSidebar({ subjects, params, studentYear, onChange }: Prop
               className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
                 params.study_year === String(y)
                   ? 'bg-teal-600 border-teal-500 text-white'
-                  : 'border-gray-600 text-gray-400 hover:text-white'
+                  : 'border-border text-muted-foreground hover:text-white'
               }`}
             >
               Year {y}
@@ -68,8 +68,8 @@ export function SubjectSidebar({ subjects, params, studentYear, onChange }: Prop
         </div>
       </div>
 
-      <div className="px-4 py-3 border-b border-gray-700">
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">File Type</p>
+      <div className="px-4 py-3 border-b border-border">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">File Type</p>
         <div className="flex flex-wrap gap-1.5">
           {FILE_TYPES.map(t => (
             <button
@@ -78,7 +78,7 @@ export function SubjectSidebar({ subjects, params, studentYear, onChange }: Prop
               className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
                 (params.type ?? 'all') === t
                   ? 'bg-teal-600 border-teal-500 text-white'
-                  : 'border-gray-600 text-gray-400 hover:text-white'
+                  : 'border-border text-muted-foreground hover:text-white'
               }`}
             >
               {t.toUpperCase()}
@@ -87,15 +87,15 @@ export function SubjectSidebar({ subjects, params, studentYear, onChange }: Prop
         </div>
       </div>
 
-      <div className="px-4 py-3 border-b border-gray-700">
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Sort</p>
+      <div className="px-4 py-3 border-b border-border">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Sort</p>
         <select
           value={`${params.sort ?? 'date'}-${params.order ?? 'desc'}`}
           onChange={e => {
             const [sort, order] = e.target.value.split('-');
             onChange({ sort, order });
           }}
-          className="w-full text-xs bg-gray-800 border border-gray-700 rounded-lg px-2 py-1.5 text-gray-100"
+          className="w-full text-xs bg-muted border border-border rounded-lg px-2 py-1.5 text-foreground"
         >
           <option value="date-desc">Newest first</option>
           <option value="date-asc">Oldest first</option>
@@ -107,32 +107,32 @@ export function SubjectSidebar({ subjects, params, studentYear, onChange }: Prop
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-3">
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">Subjects</p>
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Subjects</p>
         <nav className="space-y-0.5">
           <button
             onClick={() => onChange({ subject_id: undefined })}
             className={`w-full text-left text-xs px-2.5 py-2 rounded-lg transition-colors ${
-              !params.subject_id ? 'bg-teal-900/40 text-teal-300' : 'text-gray-300 hover:bg-gray-800'
+              !params.subject_id ? 'bg-teal-100 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300' : 'text-foreground hover:bg-muted'
             }`}
           >
             All subjects
-            <span className="ml-1 text-gray-500">({subjects.reduce((n, s) => n + s.doc_count, 0)})</span>
+            <span className="ml-1 text-muted-foreground">({subjects.reduce((n, s) => n + s.doc_count, 0)})</span>
           </button>
           {subjects.map(s => (
             <button
               key={s.subject_id ?? 'general'}
               onClick={() => onChange({ subject_id: s.subject_id ?? undefined })}
               className={`w-full text-left text-xs px-2.5 py-2 rounded-lg transition-colors ${
-                params.subject_id === s.subject_id ? 'bg-teal-900/40 text-teal-300' : 'text-gray-300 hover:bg-gray-800'
+                params.subject_id === s.subject_id ? 'bg-teal-100 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300' : 'text-foreground hover:bg-muted'
               }`}
             >
               <span className="block truncate">{s.subject_name}</span>
               {s.subject_code && (
-                <span className="text-gray-500">{s.subject_code} · </span>
+                <span className="text-muted-foreground">{s.subject_code} · </span>
               )}
-              {s.year != null && <span className="text-gray-500">Year {s.year} · </span>}
-              {s.semester && !isMedical && <span className="text-gray-500">{semLabel} {s.semester} · </span>}
-              <span className="text-gray-500">{s.doc_count} docs</span>
+              {s.year != null && <span className="text-muted-foreground">Year {s.year} · </span>}
+              {s.semester && !isMedical && <span className="text-muted-foreground">{semLabel} {s.semester} · </span>}
+              <span className="text-muted-foreground">{s.doc_count} docs</span>
             </button>
           ))}
         </nav>

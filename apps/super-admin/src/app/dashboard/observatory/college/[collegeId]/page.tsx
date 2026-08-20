@@ -44,7 +44,7 @@ export default function CollegeObservatoryPage() {
       .catch(() => setLoading(false));
   }, [token, collegeId]);
 
-  if (loading) return <div className="flex items-center justify-center h-64 text-gray-400">Loading…</div>;
+  if (loading) return <div className="flex items-center justify-center h-64 text-muted-foreground">Loading…</div>;
 
   const m = data?.mongodb;
   const depts = data?.dept_breakdown ?? [];
@@ -52,13 +52,13 @@ export default function CollegeObservatoryPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3 flex-wrap">
-        <Link href="/dashboard/observatory" className="text-gray-500 hover:text-white text-sm">← Observatory</Link>
-        <span className="text-gray-700">/</span>
+        <Link href="/dashboard/observatory" className="text-muted-foreground hover:text-white text-sm">← Observatory</Link>
+        <span className="text-muted-foreground">/</span>
         <h1 className="text-xl font-bold text-white truncate">{collegeId} — College Detail</h1>
         <div className="ml-auto flex gap-2">
           <Link
             href={`/dashboard/observatory/college/${collegeId}/students`}
-            className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1.5 rounded transition-colors"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 text-white text-sm px-3 py-1.5 rounded transition-colors"
           >
             Student Usage →
           </Link>
@@ -74,12 +74,12 @@ export default function CollegeObservatoryPage() {
       </div>
 
       {/* Dept breakdown */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-        <h2 className="text-sm font-semibold text-gray-300 mb-4">Department Breakdown — This Month</h2>
+      <div className="bg-card border border-border rounded-xl p-5">
+        <h2 className="text-sm font-semibold text-foreground mb-4">Department Breakdown — This Month</h2>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-xs text-gray-500 uppercase border-b border-gray-800">
+              <tr className="text-xs text-muted-foreground uppercase border-b border-border">
                 <th className="pb-2 text-left">Department</th>
                 <th className="pb-2 text-right">Claude Tokens (month)</th>
                 <th className="pb-2 text-right">Claude Tokens (today)</th>
@@ -89,18 +89,18 @@ export default function CollegeObservatoryPage() {
                 <th className="pb-2"></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-800/50">
+            <tbody className="divide-y divide-border/50">
               {depts.sort((a, b) => b.claude_tokens_month - a.claude_tokens_month).map((d) => (
-                <tr key={d.dept_id} className="hover:bg-gray-800/40">
+                <tr key={d.dept_id} className="hover:bg-muted/40">
                   <td className="py-2 text-white font-medium max-w-[160px] truncate">{d.dept_id}</td>
-                  <td className="py-2 text-right text-gray-300 font-mono text-xs">{fmtK(d.claude_tokens_month)}</td>
-                  <td className="py-2 text-right text-gray-400 font-mono text-xs">{fmtK(d.claude_tokens_today)}</td>
-                  <td className="py-2 text-right text-gray-400 text-xs">{fmtK(d.claude_requests_month)}</td>
-                  <td className="py-2 text-right text-gray-400 font-mono text-xs">{fmtK(d.embed_tokens_month)}</td>
+                  <td className="py-2 text-right text-foreground font-mono text-xs">{fmtK(d.claude_tokens_month)}</td>
+                  <td className="py-2 text-right text-muted-foreground font-mono text-xs">{fmtK(d.claude_tokens_today)}</td>
+                  <td className="py-2 text-right text-muted-foreground text-xs">{fmtK(d.claude_requests_month)}</td>
+                  <td className="py-2 text-right text-muted-foreground font-mono text-xs">{fmtK(d.embed_tokens_month)}</td>
                   <td className="py-2 text-right">
                     <Link
                       href={`/dashboard/observatory/college/${collegeId}/students?dept_id=${d.dept_id}`}
-                      className="text-blue-400 hover:text-blue-300 text-xs"
+                      className="text-primary hover:text-blue-300 text-xs"
                     >
                       Students →
                     </Link>
@@ -108,7 +108,7 @@ export default function CollegeObservatoryPage() {
                   <td className="py-2 text-right">
                     <Link
                       href={`/dashboard/colleges/${collegeId}/depts/${d.dept_id}`}
-                      className="text-gray-500 hover:text-gray-300 text-xs"
+                      className="text-muted-foreground hover:text-foreground text-xs"
                     >
                       Dept →
                     </Link>
@@ -116,7 +116,7 @@ export default function CollegeObservatoryPage() {
                 </tr>
               ))}
               {depts.length === 0 && (
-                <tr><td colSpan={7} className="py-6 text-center text-gray-600 text-sm">No usage data for this month</td></tr>
+                <tr><td colSpan={7} className="py-6 text-center text-muted-foreground text-sm">No usage data for this month</td></tr>
               )}
             </tbody>
           </table>
@@ -128,8 +128,8 @@ export default function CollegeObservatoryPage() {
 
 function KPICard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-      <p className="text-xs text-gray-500 uppercase tracking-wide">{label}</p>
+    <div className="bg-card border border-border rounded-xl p-4">
+      <p className="text-xs text-muted-foreground uppercase tracking-wide">{label}</p>
       <p className="text-xl font-bold text-white mt-1">{value}</p>
     </div>
   );

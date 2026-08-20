@@ -60,46 +60,46 @@ export default function AnalyticsPage() {
       )}
 
       {/* Query volume last 7d */}
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 mb-6">
-        <h2 className="text-sm font-medium mb-3 text-gray-300">Query volume — last 7 days</h2>
-        {volume?.length === 0 && <p className="text-gray-500 text-xs">No data yet.</p>}
+      <div className="bg-muted border border-border rounded-lg p-4 mb-6">
+        <h2 className="text-sm font-medium mb-3 text-foreground">Query volume — last 7 days</h2>
+        {volume?.length === 0 && <p className="text-muted-foreground text-xs">No data yet.</p>}
         <div className="space-y-1">
           {volume?.map((row: { date: string; total: number; answered: number; unanswered: number }) => (
             <div key={row.date} className="flex items-center gap-3 text-xs">
-              <span className="text-gray-400 w-20 shrink-0">{row.date}</span>
-              <div className="flex-1 bg-gray-700 rounded-full h-2">
+              <span className="text-muted-foreground w-20 shrink-0">{row.date}</span>
+              <div className="flex-1 bg-accent rounded-full h-2">
                 <div
                   className="bg-blue-500 rounded-full h-2"
                   style={{ width: `${Math.min(100, (row.answered / Math.max(row.total, 1)) * 100)}%` }}
                 />
               </div>
-              <span className="text-gray-300 w-8 text-right">{row.total}</span>
+              <span className="text-foreground w-8 text-right">{row.total}</span>
             </div>
           ))}
         </div>
       </div>
 
       {/* Retrieval precision (F-18-B) */}
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 mb-6">
-        <h2 className="text-sm font-medium mb-1 text-gray-300">Retrieval precision — last 7 days</h2>
-        <p className="text-xs text-gray-500 mb-3">
+      <div className="bg-muted border border-border rounded-lg p-4 mb-6">
+        <h2 className="text-sm font-medium mb-1 text-foreground">Retrieval precision — last 7 days</h2>
+        <p className="text-xs text-muted-foreground mb-3">
           % of retrieved chunks that survived diversity re-selection into the final answer. Low values may mean topK is too broad or chunking needs work.
         </p>
-        {precision?.query_count === 0 && <p className="text-gray-500 text-xs">No data yet.</p>}
+        {precision?.query_count === 0 && <p className="text-muted-foreground text-xs">No data yet.</p>}
         {precision && precision.query_count > 0 && (
           <>
             <p className="text-2xl font-bold mb-3">{precision.weekly_precision_pct}%</p>
             <div className="space-y-1">
               {precision.by_complexity.map((row) => (
                 <div key={row.query_complexity} className="flex items-center gap-3 text-xs">
-                  <span className="text-gray-400 w-24 shrink-0">{row.query_complexity}</span>
-                  <div className="flex-1 bg-gray-700 rounded-full h-2">
+                  <span className="text-muted-foreground w-24 shrink-0">{row.query_complexity}</span>
+                  <div className="flex-1 bg-accent rounded-full h-2">
                     <div
                       className="bg-emerald-500 rounded-full h-2"
                       style={{ width: `${Math.round(row.avg_precision * 100)}%` }}
                     />
                   </div>
-                  <span className="text-gray-300 w-10 text-right">{Math.round(row.avg_precision * 100)}%</span>
+                  <span className="text-foreground w-10 text-right">{Math.round(row.avg_precision * 100)}%</span>
                 </div>
               ))}
             </div>
@@ -108,15 +108,15 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Trending topics */}
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-        <h2 className="text-sm font-medium mb-3 text-gray-300">Trending topics — last 24h</h2>
-        {topics?.length === 0 && <p className="text-gray-500 text-xs">No topics yet.</p>}
+      <div className="bg-muted border border-border rounded-lg p-4">
+        <h2 className="text-sm font-medium mb-3 text-foreground">Trending topics — last 24h</h2>
+        {topics?.length === 0 && <p className="text-muted-foreground text-xs">No topics yet.</p>}
         <div className="space-y-2">
           {topics?.slice(0, 10).map((t: { query_text: string; count: number; first_seen: string }, i: number) => (
             <div key={i} className="flex items-center gap-3 text-xs">
-              <span className="text-gray-400 w-5">{i + 1}.</span>
-              <span className="flex-1 truncate text-gray-100">{t.query_text}</span>
-              <span className="text-gray-400">{t.count}×</span>
+              <span className="text-muted-foreground w-5">{i + 1}.</span>
+              <span className="flex-1 truncate text-foreground">{t.query_text}</span>
+              <span className="text-muted-foreground">{t.count}×</span>
             </div>
           ))}
         </div>
@@ -127,8 +127,8 @@ export default function AnalyticsPage() {
 
 function StatCard({ label, value }: { label: string; value: number | string }) {
   return (
-    <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-      <p className="text-xs text-gray-400">{label}</p>
+    <div className="bg-muted border border-border rounded-lg p-4">
+      <p className="text-xs text-muted-foreground">{label}</p>
       <p className="text-2xl font-bold mt-1">{value}</p>
     </div>
   );

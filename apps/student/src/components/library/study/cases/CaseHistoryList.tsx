@@ -41,13 +41,13 @@ export function CaseHistoryList({ collegeId, docId, chapterIdx, onSelect, onClos
     );
   }
 
-  if (error) return <p className="text-[10px] text-red-400">{error}</p>;
+  if (error) return <p className="text-[10px] text-destructive">{error}</p>;
 
   if (cases.length === 0) {
     return (
       <div className="text-center py-4">
-        <p className="text-[10px] text-gray-600">No cases generated for this chapter yet</p>
-        <button onClick={onClose} className="mt-2 text-[10px] text-teal-500 hover:text-teal-400">
+        <p className="text-[10px] text-muted-foreground">No cases generated for this chapter yet</p>
+        <button onClick={onClose} className="mt-2 text-[10px] text-teal-500 hover:text-teal-700 dark:text-teal-400">
           ← Back
         </button>
       </div>
@@ -57,22 +57,22 @@ export function CaseHistoryList({ collegeId, docId, chapterIdx, onSelect, onClos
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between mb-1">
-        <p className="text-[10px] text-gray-500">{cases.length} case{cases.length !== 1 ? 's' : ''} cached</p>
-        <button onClick={onClose} className="text-[10px] text-gray-600 hover:text-gray-400">← Back</button>
+        <p className="text-[10px] text-muted-foreground">{cases.length} case{cases.length !== 1 ? 's' : ''} cached</p>
+        <button onClick={onClose} className="text-[10px] text-muted-foreground hover:text-muted-foreground">← Back</button>
       </div>
 
       {cases.map(c => (
         <button
           key={c._id}
           onClick={() => onSelect({ questionType: c.question_type, difficulty: c.difficulty })}
-          className="w-full text-left px-2.5 py-2 rounded-lg border border-gray-800/60 hover:border-teal-800/40 hover:bg-teal-900/10 transition-colors space-y-1"
+          className="w-full text-left px-2.5 py-2 rounded-lg border border-border/60 hover:border-teal-800/40 hover:bg-teal-100 dark:bg-teal-900/10 transition-colors space-y-1"
         >
           <div className="flex items-center gap-1.5">
             <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${DIFFICULTY_DOT[c.difficulty] ?? 'bg-gray-500'}`} />
-            <span className="text-[10px] text-gray-400 capitalize">{c.question_type}</span>
-            <span className="text-[10px] text-gray-600 capitalize ml-auto">{c.difficulty}</span>
+            <span className="text-[10px] text-muted-foreground capitalize">{c.question_type}</span>
+            <span className="text-[10px] text-muted-foreground capitalize ml-auto">{c.difficulty}</span>
           </div>
-          <p className="text-[11px] text-gray-500 leading-snug line-clamp-2">
+          <p className="text-[11px] text-muted-foreground leading-snug line-clamp-2">
             {c.case_text.slice(0, 90)}{c.case_text.length > 90 ? '…' : ''}
           </p>
         </button>

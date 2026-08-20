@@ -18,10 +18,10 @@ export function DocumentGrid({ subjects, collegeId, onPreview, onAiSummary, onSt
 
   if (subjects.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center flex-1 text-gray-500 py-16">
+      <div className="flex flex-col items-center justify-center flex-1 text-muted-foreground py-16">
         <p className="text-4xl mb-3">📂</p>
         <p className="text-sm">No documents found</p>
-        <p className="text-xs text-gray-600 mt-1">Documents must finish processing before they appear here</p>
+        <p className="text-xs text-muted-foreground mt-1">Documents must finish processing before they appear here</p>
       </div>
     );
   }
@@ -51,9 +51,9 @@ export function DocumentGrid({ subjects, collegeId, onPreview, onAiSummary, onSt
             {/* Year header — only shown when there are multiple year groups */}
             {sortedYears.length > 1 && (
               <div className="flex items-center gap-3 mb-4">
-                <h2 className="text-base font-bold text-teal-400">{yearLabel}</h2>
-                <div className="flex-1 h-px bg-gray-800" />
-                <span className="text-xs text-gray-600">
+                <h2 className="text-base font-bold text-teal-700 dark:text-teal-400">{yearLabel}</h2>
+                <div className="flex-1 h-px bg-muted" />
+                <span className="text-xs text-muted-foreground">
                   {yearSubjects.reduce((n, s) => n + s.doc_count, 0)} docs
                 </span>
               </div>
@@ -63,14 +63,14 @@ export function DocumentGrid({ subjects, collegeId, onPreview, onAiSummary, onSt
               {yearSubjects.map(subject => (
                 <section key={subject.subject_id ?? 'general'}>
                   <div className="flex items-baseline gap-2 mb-3">
-                    <h3 className="text-sm font-semibold text-gray-200">{subject.subject_name}</h3>
+                    <h3 className="text-sm font-semibold text-foreground">{subject.subject_name}</h3>
                     {subject.subject_code && (
-                      <span className="text-xs text-gray-500">{subject.subject_code}</span>
+                      <span className="text-xs text-muted-foreground">{subject.subject_code}</span>
                     )}
                     {subject.semester && !isMedical && (
-                      <span className="text-xs text-gray-500">· {semLabel} {subject.semester}</span>
+                      <span className="text-xs text-muted-foreground">· {semLabel} {subject.semester}</span>
                     )}
-                    <span className="text-xs text-gray-600 ml-auto">
+                    <span className="text-xs text-muted-foreground ml-auto">
                       {subject.doc_count} doc{subject.doc_count !== 1 ? 's' : ''}
                     </span>
                   </div>

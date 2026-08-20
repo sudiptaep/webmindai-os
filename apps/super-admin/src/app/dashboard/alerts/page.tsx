@@ -50,12 +50,12 @@ export default function AlertsPage() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <div className="flex items-center gap-3">
-            <Link href="/dashboard" className="text-gray-500 hover:text-white text-sm transition-colors">← Platform Overview</Link>
-            <span className="text-gray-700">/</span>
+            <Link href="/dashboard" className="text-muted-foreground hover:text-white text-sm transition-colors">← Platform Overview</Link>
+            <span className="text-muted-foreground">/</span>
             <h1 className="text-xl font-bold text-white">Alerts</h1>
           </div>
           {activeCount > 0 && (
-            <p className="text-sm text-red-400 mt-0.5">{activeCount} active alert{activeCount > 1 ? 's' : ''} require attention</p>
+            <p className="text-sm text-destructive mt-0.5">{activeCount} active alert{activeCount > 1 ? 's' : ''} require attention</p>
           )}
         </div>
         <div className="flex gap-2">
@@ -63,7 +63,7 @@ export default function AlertsPage() {
             <button
               key={s}
               onClick={() => setStatusFilter(s === 'all' ? undefined : s)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${(s === 'all' && !statusFilter) || statusFilter === s ? 'bg-gray-700 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${(s === 'all' && !statusFilter) || statusFilter === s ? 'bg-accent text-white' : 'bg-muted text-muted-foreground hover:bg-accent'}`}
             >
               {s.charAt(0).toUpperCase() + s.slice(1)}
             </button>
@@ -71,12 +71,12 @@ export default function AlertsPage() {
         </div>
       </div>
 
-      {isLoading && <div className="flex items-center justify-center h-40 text-gray-400">Loading…</div>}
+      {isLoading && <div className="flex items-center justify-center h-40 text-muted-foreground">Loading…</div>}
 
       {!isLoading && alerts.length === 0 && (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-12 text-center">
+        <div className="bg-card border border-border rounded-xl p-12 text-center">
           <p className="text-4xl mb-3">✓</p>
-          <p className="text-gray-400 text-sm">No alerts{statusFilter ? ` (${statusFilter})` : ''}</p>
+          <p className="text-muted-foreground text-sm">No alerts{statusFilter ? ` (${statusFilter})` : ''}</p>
         </div>
       )}
 
@@ -101,25 +101,25 @@ function AlertCard({ alert, onResolve, resolving }: { alert: Alert; onResolve: (
   const isResolved = alert.status === 'resolved';
 
   return (
-    <div className={`rounded-xl border p-4 transition-opacity ${isResolved ? 'opacity-50' : ''} ${isCritical && !isResolved ? 'bg-red-950/20 border-red-800/60' : isResolved ? 'bg-gray-900 border-gray-800' : 'bg-yellow-950/20 border-yellow-800/60'}`}>
+    <div className={`rounded-xl border p-4 transition-opacity ${isResolved ? 'opacity-50' : ''} ${isCritical && !isResolved ? 'bg-red-100 dark:bg-red-950/20 border-red-300 dark:border-red-800/60' : isResolved ? 'bg-card border-border' : 'bg-yellow-100 dark:bg-yellow-950/20 border-yellow-300 dark:border-yellow-800/60'}`}>
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-3 flex-1 min-w-0">
           <span className="mt-0.5 text-base shrink-0">{isCritical && !isResolved ? '🔴' : isResolved ? '✓' : '⚠️'}</span>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className={`text-xs font-semibold uppercase tracking-wide ${isCritical && !isResolved ? 'text-red-400' : isResolved ? 'text-gray-500' : 'text-yellow-400'}`}>
+              <span className={`text-xs font-semibold uppercase tracking-wide ${isCritical && !isResolved ? 'text-destructive' : isResolved ? 'text-muted-foreground' : 'text-yellow-700 dark:text-yellow-400'}`}>
                 {ALERT_TYPE_LABELS[alert.alert_type] ?? alert.alert_type}
               </span>
-              <span className="text-xs text-gray-600">·</span>
+              <span className="text-xs text-muted-foreground">·</span>
               <Link
                 href={`/dashboard/colleges/${alert.college_id}/costs`}
-                className="text-xs text-blue-400 hover:text-blue-300 transition-colors truncate"
+                className="text-xs text-primary hover:text-blue-300 transition-colors truncate"
               >
                 {alert.college_id}
               </Link>
             </div>
-            <p className={`text-sm mt-1 ${isResolved ? 'text-gray-500' : 'text-gray-300'}`}>{alert.message}</p>
-            <p className="text-xs text-gray-600 mt-1">
+            <p className={`text-sm mt-1 ${isResolved ? 'text-muted-foreground' : 'text-foreground'}`}>{alert.message}</p>
+            <p className="text-xs text-muted-foreground mt-1">
               {timeAgo(alert.created_at)}
               {isResolved && alert.resolved_at && ` · resolved ${timeAgo(alert.resolved_at)}`}
             </p>
@@ -129,7 +129,7 @@ function AlertCard({ alert, onResolve, resolving }: { alert: Alert; onResolve: (
           <button
             onClick={onResolve}
             disabled={resolving}
-            className="shrink-0 text-xs text-gray-500 hover:text-white disabled:opacity-50 border border-gray-700 hover:border-gray-500 rounded-lg px-2.5 py-1 transition-colors"
+            className="shrink-0 text-xs text-muted-foreground hover:text-white disabled:opacity-50 border border-border hover:border-gray-500 rounded-lg px-2.5 py-1 transition-colors"
           >
             {resolving ? '…' : 'Resolve'}
           </button>

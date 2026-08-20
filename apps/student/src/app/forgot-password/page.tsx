@@ -37,12 +37,12 @@ export default function ForgotPasswordPage() {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="w-full max-w-sm text-center">
-          <div className="text-green-400 text-4xl mb-4">✓</div>
+          <div className="text-green-700 dark:text-green-400 text-4xl mb-4">✓</div>
           <h1 className="text-xl font-bold mb-2">Check your email</h1>
-          <p className="text-gray-400 text-sm">
+          <p className="text-muted-foreground text-sm">
             If an account exists for <strong>{email}</strong>, we sent a password reset link.
           </p>
-          <Link href="/login" className="mt-6 inline-block text-blue-400 hover:underline text-sm">
+          <Link href="/login" className="mt-6 inline-block text-primary hover:underline text-sm">
             Back to login
           </Link>
         </div>
@@ -54,43 +54,43 @@ export default function ForgotPasswordPage() {
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
         <h1 className="text-2xl font-bold mb-2 text-center">Reset Password</h1>
-        <p className="text-gray-400 text-sm text-center mb-6">
+        <p className="text-muted-foreground text-sm text-center mb-6">
           Enter your email and we'll send a reset link.
         </p>
         <form onSubmit={handleSubmit} className="space-y-4">
           {!collegeSlug && (
             <div>
-              <label className="block text-sm mb-1 text-gray-400">College</label>
+              <label className="block text-sm mb-1 text-muted-foreground">College</label>
               <input
                 type="text"
                 value={slug}
                 onChange={(e) => setSlug(e.target.value)}
                 placeholder="your-college"
-                className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                className="w-full bg-muted border border-border rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
               />
             </div>
           )}
           <div>
-            <label className="block text-sm mb-1 text-gray-400">Email</label>
+            <label className="block text-sm mb-1 text-muted-foreground">Email</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+              className="w-full bg-muted border border-border rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
               required
             />
           </div>
-          {error && <p className="text-red-400 text-sm">{error}</p>}
+          {error && <p className="text-destructive text-sm">{error}</p>}
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded py-2 text-sm font-medium transition-colors"
+            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 rounded py-2 text-sm font-medium transition-colors"
           >
             {loading ? 'Sending…' : 'Send reset link'}
           </button>
         </form>
-        <p className="text-center text-sm text-gray-500 mt-4">
-          <Link href="/login" className="text-blue-400 hover:underline">
+        <p className="text-center text-sm text-muted-foreground mt-4">
+          <Link href="/login" className="text-primary hover:underline">
             Back to login
           </Link>
         </p>

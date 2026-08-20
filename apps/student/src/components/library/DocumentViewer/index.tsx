@@ -55,7 +55,7 @@ export function DocumentViewer({ collegeId, docId, initialPage, onClose }: Props
     if (file_type === 'mp4' || file_type === 'mkv') return <VideoPlayer tokenUrl={url} collegeId={collegeId} docId={docId} filename={original_filename} />;
     if (file_type === 'mp3' || file_type === 'm4a') return <AudioPlayer tokenUrl={url} collegeId={collegeId} docId={docId} filename={original_filename} />;
     if (file_type === 'docx')            return <DocxViewer collegeId={collegeId} docId={docId} />;
-    return <div className="flex items-center justify-center h-full text-gray-400">Preview not available for this file type</div>;
+    return <div className="flex items-center justify-center h-full text-muted-foreground">Preview not available for this file type</div>;
   }
 
   return (
@@ -64,11 +64,11 @@ export function DocumentViewer({ collegeId, docId, initialPage, onClose }: Props
       <div className="fixed inset-0 z-40 bg-black/60" onClick={onClose} />
 
       {/* Slide-over panel */}
-      <div className="fixed inset-y-0 right-0 z-40 w-full max-w-5xl flex flex-col bg-gray-900 shadow-2xl">
+      <div className="fixed inset-y-0 right-0 z-40 w-full max-w-5xl flex flex-col bg-card shadow-2xl">
         {/* Header */}
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-700 shrink-0">
-          <button onClick={onClose} className="text-gray-400 hover:text-white text-xl leading-none">✕</button>
-          <h2 className="flex-1 text-sm font-semibold text-gray-100 truncate">
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-border shrink-0">
+          <button onClick={onClose} className="text-muted-foreground hover:text-white text-xl leading-none">✕</button>
+          <h2 className="flex-1 text-sm font-semibold text-foreground truncate">
             {doc?.original_filename ?? '…'}
           </h2>
 
@@ -93,7 +93,7 @@ export function DocumentViewer({ collegeId, docId, initialPage, onClose }: Props
             </div>
           )}
           {error && (
-            <div className="flex items-center justify-center h-full text-red-400 text-sm">{error}</div>
+            <div className="flex items-center justify-center h-full text-destructive text-sm">{error}</div>
           )}
           {!loading && !error && renderViewer()}
         </div>

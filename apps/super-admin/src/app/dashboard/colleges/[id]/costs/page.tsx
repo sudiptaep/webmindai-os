@@ -42,7 +42,7 @@ export default function CollegeCostPage() {
     URL.revokeObjectURL(url);
   }
 
-  if (isLoading) return <div className="flex items-center justify-center h-64 text-gray-400">Loading…</div>;
+  if (isLoading) return <div className="flex items-center justify-center h-64 text-muted-foreground">Loading…</div>;
 
   const totals = data?.totals;
   const byDept = (data?.by_dept ?? []) as Array<{ dept_id: string; total_cost_usd: number; llm_input_tokens: number; llm_output_tokens: number; chat_message_count: number; token_utilisation_pct: number }>;
@@ -63,16 +63,16 @@ export default function CollegeCostPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3 flex-wrap">
-        <Link href="/dashboard" className="text-gray-500 hover:text-white text-sm transition-colors">← Platform Overview</Link>
-        <span className="text-gray-700">/</span>
+        <Link href="/dashboard" className="text-muted-foreground hover:text-white text-sm transition-colors">← Platform Overview</Link>
+        <span className="text-muted-foreground">/</span>
         <h1 className="text-xl font-bold text-white truncate">{collegeId} — Cost Detail</h1>
         <div className="ml-auto flex items-center gap-2">
           <select value={month} onChange={(e) => setMonth(e.target.value)}
-            className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none">
+            className="bg-muted border border-border rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none">
             {months.map((m) => <option key={m} value={m}>{m}</option>)}
           </select>
-          <button onClick={exportCsv} className="bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded-lg px-3 py-1.5 text-sm text-white transition-colors">Export CSV</button>
-          <Link href={`/dashboard/colleges/${collegeId}/policy`} className="bg-blue-600 hover:bg-blue-700 rounded-lg px-3 py-1.5 text-sm text-white transition-colors">Edit Policy</Link>
+          <button onClick={exportCsv} className="bg-muted hover:bg-accent border border-border rounded-lg px-3 py-1.5 text-sm text-white transition-colors">Export CSV</button>
+          <Link href={`/dashboard/colleges/${collegeId}/policy`} className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg px-3 py-1.5 text-sm text-white transition-colors">Edit Policy</Link>
         </div>
       </div>
 
@@ -86,37 +86,37 @@ export default function CollegeCostPage() {
 
       {/* Dept breakdown + service donut */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-gray-900 border border-gray-800 rounded-xl p-5">
-          <h2 className="text-sm font-semibold text-gray-300 mb-4">Cost by Department</h2>
+        <div className="lg:col-span-2 bg-card border border-border rounded-xl p-5">
+          <h2 className="text-sm font-semibold text-foreground mb-4">Cost by Department</h2>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead><tr className="text-xs text-gray-500 uppercase border-b border-gray-800">
+              <thead><tr className="text-xs text-muted-foreground uppercase border-b border-border">
                 <th className="pb-2 text-left">Department</th>
                 <th className="pb-2 text-right">Tokens</th>
                 <th className="pb-2 text-right">Cost USD</th>
                 <th className="pb-2 text-right">Chats</th>
                 <th className="pb-2"></th>
               </tr></thead>
-              <tbody className="divide-y divide-gray-800/50">
+              <tbody className="divide-y divide-border/50">
                 {byDept.sort((a, b) => b.total_cost_usd - a.total_cost_usd).map((d) => (
-                  <tr key={d.dept_id} className="hover:bg-gray-800/50">
+                  <tr key={d.dept_id} className="hover:bg-muted/50">
                     <td className="py-2 text-white font-medium truncate max-w-[140px]">{d.dept_id}</td>
-                    <td className="py-2 text-right text-gray-300 font-mono text-xs">{fmtK((d.llm_input_tokens ?? 0) + (d.llm_output_tokens ?? 0))}</td>
-                    <td className="py-2 text-right text-gray-300 font-mono text-xs">{fmt$(d.total_cost_usd)}</td>
-                    <td className="py-2 text-right text-gray-400 text-xs">{fmtK(d.chat_message_count ?? 0)}</td>
+                    <td className="py-2 text-right text-foreground font-mono text-xs">{fmtK((d.llm_input_tokens ?? 0) + (d.llm_output_tokens ?? 0))}</td>
+                    <td className="py-2 text-right text-foreground font-mono text-xs">{fmt$(d.total_cost_usd)}</td>
+                    <td className="py-2 text-right text-muted-foreground text-xs">{fmtK(d.chat_message_count ?? 0)}</td>
                     <td className="py-2 text-right">
-                      <Link href={`/dashboard/colleges/${collegeId}/depts/${d.dept_id}/costs?month=${month}`} className="text-blue-400 hover:text-blue-300 text-xs">→</Link>
+                      <Link href={`/dashboard/colleges/${collegeId}/depts/${d.dept_id}/costs?month=${month}`} className="text-primary hover:text-blue-300 text-xs">→</Link>
                     </td>
                   </tr>
                 ))}
-                {byDept.length === 0 && <tr><td colSpan={5} className="py-6 text-center text-gray-600 text-sm">No dept data</td></tr>}
+                {byDept.length === 0 && <tr><td colSpan={5} className="py-6 text-center text-muted-foreground text-sm">No dept data</td></tr>}
               </tbody>
             </table>
           </div>
         </div>
 
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-          <h2 className="text-sm font-semibold text-gray-300 mb-4">Cost by Service</h2>
+        <div className="bg-card border border-border rounded-xl p-5">
+          <h2 className="text-sm font-semibold text-foreground mb-4">Cost by Service</h2>
           {serviceData.length > 0 ? (
             <ResponsiveContainer width="100%" height={180}>
               <PieChart>
@@ -125,17 +125,17 @@ export default function CollegeCostPage() {
                 </Pie>
                 <Tooltip formatter={(v: any) => v !== undefined && v !== null ? `$${Number(v).toFixed(4)}` : ''} />
 
-                <Legend formatter={(v: string) => <span className="text-xs text-gray-400">{v}</span>} />
+                <Legend formatter={(v: string) => <span className="text-xs text-muted-foreground">{v}</span>} />
               </PieChart>
             </ResponsiveContainer>
-          ) : <div className="h-44 flex items-center justify-center text-gray-600 text-sm">No data</div>}
+          ) : <div className="h-44 flex items-center justify-center text-muted-foreground text-sm">No data</div>}
 
           {/* Margin */}
           {margin && (
-            <div className={`mt-4 p-3 rounded-lg border text-xs ${margin.status === 'danger' ? 'bg-red-950/30 border-red-800' : margin.status === 'warn' ? 'bg-yellow-950/30 border-yellow-800' : 'bg-green-950/30 border-green-800'}`}>
-              <p className="text-gray-400">Revenue: ₹{margin.revenue_inr.toFixed(0)}</p>
-              <p className="text-gray-400">Cost: ₹{margin.cost_inr.toFixed(0)} (${margin.cost_usd.toFixed(4)})</p>
-              <p className={`font-semibold mt-1 ${margin.status === 'danger' ? 'text-red-300' : margin.status === 'warn' ? 'text-yellow-300' : 'text-green-300'}`}>
+            <div className={`mt-4 p-3 rounded-lg border text-xs ${margin.status === 'danger' ? 'bg-red-100 dark:bg-red-950/30 border-red-300 dark:border-red-800' : margin.status === 'warn' ? 'bg-yellow-100 dark:bg-yellow-950/30 border-yellow-300 dark:border-yellow-800' : 'bg-green-100 dark:bg-green-950/30 border-green-800'}`}>
+              <p className="text-muted-foreground">Revenue: ₹{margin.revenue_inr.toFixed(0)}</p>
+              <p className="text-muted-foreground">Cost: ₹{margin.cost_inr.toFixed(0)} (${margin.cost_usd.toFixed(4)})</p>
+              <p className={`font-semibold mt-1 ${margin.status === 'danger' ? 'text-red-300' : margin.status === 'warn' ? 'text-yellow-300' : 'text-green-700 dark:text-green-300'}`}>
                 Margin: ₹{margin.margin_inr.toFixed(0)} ({margin.margin_pct.toFixed(1)}%)
               </p>
             </div>
@@ -145,8 +145,8 @@ export default function CollegeCostPage() {
 
       {/* Daily trend */}
       {dailyTrend.length > 0 && (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-          <h2 className="text-sm font-semibold text-gray-300 mb-4">Daily Cost — {month}</h2>
+        <div className="bg-card border border-border rounded-xl p-5">
+          <h2 className="text-sm font-semibold text-foreground mb-4">Daily Cost — {month}</h2>
           <ResponsiveContainer width="100%" height={140}>
             <BarChart data={dailyTrend}>
               <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#6b7280' }} />
@@ -160,8 +160,8 @@ export default function CollegeCostPage() {
 
       {/* Policy summary */}
       {policy && (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-          <h2 className="text-sm font-semibold text-gray-300 mb-3">Policy in Effect</h2>
+        <div className="bg-card border border-border rounded-xl p-5">
+          <h2 className="text-sm font-semibold text-foreground mb-3">Policy in Effect</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
             <PolicyRow label="Token limit" value={fmtK(policy.llm_token_limit_per_month) + '/mo'} />
             <PolicyRow label="Budget ceiling" value={`$${policy.cost_budget_usd_per_month}/mo`} />
@@ -178,12 +178,12 @@ export default function CollegeCostPage() {
 function KPICard({ label, value, sub, pct }: { label: string; value: string; sub: string; pct?: number }) {
   const color = (pct ?? 0) >= 90 ? 'bg-red-500' : (pct ?? 0) >= 75 ? 'bg-yellow-500' : 'bg-blue-500';
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
-      <p className="text-xs text-gray-500 uppercase tracking-wide">{label}</p>
+    <div className="bg-card border border-border rounded-xl p-4">
+      <p className="text-xs text-muted-foreground uppercase tracking-wide">{label}</p>
       <p className="text-xl font-bold text-white mt-1">{value}</p>
-      <p className="text-xs text-gray-500 mt-0.5">{sub}</p>
+      <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>
       {pct !== undefined && (
-        <div className="mt-2 h-1 bg-gray-800 rounded-full overflow-hidden">
+        <div className="mt-2 h-1 bg-muted rounded-full overflow-hidden">
           <div className={`h-full ${color} rounded-full transition-all`} style={{ width: `${Math.min(pct, 100)}%` }} />
         </div>
       )}
@@ -193,6 +193,6 @@ function KPICard({ label, value, sub, pct }: { label: string; value: string; sub
 
 function PolicyRow({ label, value }: { label: string; value: string }) {
   return (
-    <div><span className="text-gray-500">{label}: </span><span className="text-gray-300">{value}</span></div>
+    <div><span className="text-muted-foreground">{label}: </span><span className="text-foreground">{value}</span></div>
   );
 }

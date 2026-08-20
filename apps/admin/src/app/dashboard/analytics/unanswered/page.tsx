@@ -26,7 +26,7 @@ export default function UnansweredPage() {
       <div className="flex items-center gap-4 mb-6">
         <button
           onClick={() => router.back()}
-          className="text-sm text-gray-400 hover:text-gray-100"
+          className="text-sm text-muted-foreground hover:text-foreground"
         >
           ← Back
         </button>
@@ -37,17 +37,17 @@ export default function UnansweredPage() {
         {data?.queries?.map((q) => (
           <div
             key={q._id}
-            className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 flex items-center gap-4"
+            className="bg-muted border border-border rounded-lg px-4 py-3 flex items-center gap-4"
           >
             <div className="flex-1 min-w-0">
               <p className="text-sm truncate">{q.query_text}</p>
-              <p className="text-xs text-gray-400 mt-0.5">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 {new Date(q.created_at).toLocaleString()}
               </p>
             </div>
             <button
               onClick={() => ack.mutate({ query_id: q._id })}
-              className="text-xs text-green-400 hover:text-green-300 px-2 py-1 border border-green-800 rounded shrink-0"
+              className="text-xs text-green-700 dark:text-green-400 hover:text-green-700 dark:text-green-300 px-2 py-1 border border-green-800 rounded shrink-0"
             >
               Acknowledge
             </button>
@@ -56,16 +56,16 @@ export default function UnansweredPage() {
       </div>
 
       {data?.queries?.length === 0 && (
-        <p className="text-gray-500 text-sm">No unanswered queries.</p>
+        <p className="text-muted-foreground text-sm">No unanswered queries.</p>
       )}
 
       {totalPages > 1 && (
         <div className="flex gap-2 mt-4">
           <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}
-            className="text-sm px-3 py-1 border border-gray-700 rounded disabled:opacity-40">Prev</button>
-          <span className="text-sm text-gray-400 self-center">{page} / {totalPages}</span>
+            className="text-sm px-3 py-1 border border-border rounded disabled:opacity-40">Prev</button>
+          <span className="text-sm text-muted-foreground self-center">{page} / {totalPages}</span>
           <button onClick={() => setPage((p) => p + 1)} disabled={page >= totalPages}
-            className="text-sm px-3 py-1 border border-gray-700 rounded disabled:opacity-40">Next</button>
+            className="text-sm px-3 py-1 border border-border rounded disabled:opacity-40">Next</button>
         </div>
       )}
     </div>

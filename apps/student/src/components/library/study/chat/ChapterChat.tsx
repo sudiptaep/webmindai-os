@@ -172,7 +172,7 @@ export function ChapterChat({ chapter, docId, collegeId, onSwitchChapter }: Prop
 
   if (initError) {
     return (
-      <div className="flex-1 flex items-center justify-center text-red-400 text-sm p-6">
+      <div className="flex-1 flex items-center justify-center text-destructive text-sm p-6">
         {initError}
       </div>
     );
@@ -192,13 +192,13 @@ export function ChapterChat({ chapter, docId, collegeId, onSwitchChapter }: Prop
           (F-13-G) is retired — "Teach me" now opens a full F-20 adaptive
           teaching session (concept graph, misconception handling, spaced
           checks) instead of a single system-prompt flag on this chat. */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-gray-800 shrink-0">
-        <span className="text-xs text-gray-500">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-border shrink-0">
+        <span className="text-xs text-muted-foreground">
           Scoped to pages {chapter.start_page}–{chapter.end_page}
         </span>
         <button
           onClick={() => router.push(`/teaching?doc_id=${docId}&chapter_index=${chapter.chapter_index}`)}
-          className="text-xs bg-teal-800/60 hover:bg-teal-700/60 border border-teal-700/60 text-teal-200 rounded-lg px-2.5 py-1 transition-colors"
+          className="text-xs bg-teal-100 dark:bg-teal-800/60 hover:bg-teal-200 dark:hover:bg-teal-700/60 border border-teal-300 dark:border-teal-700/60 text-teal-800 dark:text-teal-200 rounded-lg px-2.5 py-1 transition-colors"
         >
           🎓 Teach me this chapter
         </button>
@@ -207,11 +207,11 @@ export function ChapterChat({ chapter, docId, collegeId, onSwitchChapter }: Prop
       {/* Message list */}
       <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
         {messages.length === 0 && (
-          <div className="flex items-center justify-center h-full text-gray-600 text-sm text-center">
+          <div className="flex items-center justify-center h-full text-muted-foreground text-sm text-center">
             <div>
               <p className="text-2xl mb-2">💬</p>
               <p>Ask anything about Chapter {chapter.chapter_index}:</p>
-              <p className="text-xs text-gray-700 mt-1">"{chapter.title}"</p>
+              <p className="text-xs text-muted-foreground mt-1">"{chapter.title}"</p>
             </div>
           </div>
         )}
@@ -223,8 +223,8 @@ export function ChapterChat({ chapter, docId, collegeId, onSwitchChapter }: Prop
                 ${msg.role === 'user'
                   ? 'bg-teal-700 text-white rounded-br-sm'
                   : msg.isFallback
-                    ? 'bg-amber-900/30 border border-amber-800/50 text-amber-200 rounded-bl-sm'
-                    : 'bg-gray-800 text-gray-100 rounded-bl-sm'
+                    ? 'bg-amber-100 dark:bg-amber-900/30 border border-amber-800/50 text-amber-200 rounded-bl-sm'
+                    : 'bg-muted text-foreground rounded-bl-sm'
                 }`}
             >
               {msg.content || (streaming && msg.role === 'assistant' ? (
@@ -245,7 +245,7 @@ export function ChapterChat({ chapter, docId, collegeId, onSwitchChapter }: Prop
               {msg.isFallback && msg.suggestionChapterIndex && onSwitchChapter && (
                 <button
                   onClick={() => onSwitchChapter(msg.suggestionChapterIndex!)}
-                  className="mt-2 block text-xs text-amber-400 underline underline-offset-2 hover:text-amber-300"
+                  className="mt-2 block text-xs text-amber-700 dark:text-amber-400 underline underline-offset-2 hover:text-amber-700 dark:text-amber-300"
                 >
                   Go to Chapter {msg.suggestionChapterIndex}: {msg.suggestionChapterTitle}
                 </button>
@@ -270,7 +270,7 @@ export function ChapterChat({ chapter, docId, collegeId, onSwitchChapter }: Prop
       </div>
 
       {/* Input bar */}
-      <div className="px-4 pb-4 pt-2 border-t border-gray-800 shrink-0">
+      <div className="px-4 pb-4 pt-2 border-t border-border shrink-0">
         <div className="flex gap-2 items-end">
           <textarea
             ref={inputRef}
@@ -280,7 +280,7 @@ export function ChapterChat({ chapter, docId, collegeId, onSwitchChapter }: Prop
             placeholder={`Ask about Chapter ${chapter.chapter_index}…`}
             rows={1}
             disabled={streaming}
-            className="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-gray-100 placeholder-gray-600 resize-none focus:outline-none focus:border-teal-600 disabled:opacity-50 max-h-32 overflow-y-auto"
+            className="flex-1 bg-muted border border-border rounded-xl px-3 py-2.5 text-sm text-foreground placeholder-muted-foreground resize-none focus:outline-none focus:border-teal-600 disabled:opacity-50 max-h-32 overflow-y-auto"
             style={{ height: 'auto', minHeight: '42px' }}
             onInput={e => {
               const t = e.currentTarget;
@@ -291,14 +291,14 @@ export function ChapterChat({ chapter, docId, collegeId, onSwitchChapter }: Prop
           <button
             onClick={sendMessage}
             disabled={!input.trim() || streaming}
-            className="p-2.5 bg-teal-600 hover:bg-teal-500 disabled:bg-gray-700 disabled:cursor-not-allowed text-white rounded-xl transition-colors shrink-0"
+            className="p-2.5 bg-teal-600 hover:bg-teal-500 disabled:bg-accent disabled:cursor-not-allowed text-white rounded-xl transition-colors shrink-0"
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path d="M14 8L2 2l2.5 6L2 14l12-6z" fill="currentColor" />
             </svg>
           </button>
         </div>
-        <p className="text-xs text-gray-700 mt-1.5 pl-1">Enter to send · Shift+Enter for new line</p>
+        <p className="text-xs text-muted-foreground mt-1.5 pl-1">Enter to send · Shift+Enter for new line</p>
       </div>
     </div>
   );

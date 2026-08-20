@@ -13,16 +13,16 @@ export default function CollegeAdminFacultyPage() {
         <h1 className="text-xl font-semibold">Faculty (Dept Admins)</h1>
         <button
           onClick={() => router.push('/college-admin/faculty/new')}
-          className="bg-blue-600 hover:bg-blue-700 text-sm px-4 py-2 rounded text-white"
+          className="bg-primary text-primary-foreground hover:bg-primary/90 text-sm px-4 py-2 rounded text-white"
         >
           + Add Faculty
         </button>
       </div>
 
-      <div className="bg-gray-800 rounded-lg overflow-hidden">
+      <div className="bg-muted rounded-lg overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-gray-700 text-gray-400 text-left">
+            <tr className="border-b border-border text-muted-foreground text-left">
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Dept ID</th>
               <th className="px-4 py-3">Title</th>
@@ -33,19 +33,19 @@ export default function CollegeAdminFacultyPage() {
           </thead>
           <tbody>
             {((adminsQuery.data as Record<string, unknown>[] | undefined) ?? []).map((admin) => (
-              <tr key={String(admin._id)} className="border-b border-gray-700 hover:bg-gray-700/40">
+              <tr key={String(admin._id)} className="border-b border-border hover:bg-accent/40">
                 <td className="px-4 py-3">
                   <p>{admin.name as string}</p>
-                  <p className="text-gray-500 text-xs">{admin.email as string}</p>
+                  <p className="text-muted-foreground text-xs">{admin.email as string}</p>
                 </td>
-                <td className="px-4 py-3 text-gray-400 text-xs">{admin.dept_id as string}</td>
-                <td className="px-4 py-3 text-gray-400">{admin.faculty_title as string ?? '—'}</td>
+                <td className="px-4 py-3 text-muted-foreground text-xs">{admin.dept_id as string}</td>
+                <td className="px-4 py-3 text-muted-foreground">{admin.faculty_title as string ?? '—'}</td>
                 <td className="px-4 py-3">
-                  <span className={`text-xs ${admin.status === 'active' ? 'text-green-400' : admin.status === 'invited' ? 'text-yellow-400' : 'text-red-400'}`}>
+                  <span className={`text-xs ${admin.status === 'active' ? 'text-green-700 dark:text-green-400' : admin.status === 'invited' ? 'text-yellow-700 dark:text-yellow-400' : 'text-destructive'}`}>
                     {admin.status as string}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-gray-400 text-xs">
+                <td className="px-4 py-3 text-muted-foreground text-xs">
                   {admin.last_login ? new Date(admin.last_login as string).toLocaleString() : 'Never'}
                 </td>
                 <td className="px-4 py-3 flex gap-2">
@@ -59,7 +59,7 @@ export default function CollegeAdminFacultyPage() {
               </tr>
             ))}
             {!adminsQuery.data?.length && (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-500">No dept admins added yet.</td></tr>
+              <tr><td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">No dept admins added yet.</td></tr>
             )}
           </tbody>
         </table>
@@ -72,7 +72,7 @@ function DeactivateButton({ adminId, onDone }: { adminId: string; onDone: () => 
   const mut = trpc.collegeAdmin.deactivateDeptAdmin.useMutation({ onSuccess: onDone });
   return (
     <button onClick={() => mut.mutate({ admin_id: adminId })} disabled={mut.isPending}
-      className="text-red-400 hover:text-red-300 text-xs disabled:opacity-50">
+      className="text-destructive hover:text-red-700 dark:hover:text-red-300 text-xs disabled:opacity-50">
       Deactivate
     </button>
   );
@@ -82,7 +82,7 @@ function ResendButton({ adminId, onDone }: { adminId: string; onDone: () => void
   const mut = trpc.collegeAdmin.resendDeptAdminInvite.useMutation({ onSuccess: onDone });
   return (
     <button onClick={() => mut.mutate({ admin_id: adminId })} disabled={mut.isPending}
-      className="text-yellow-400 hover:text-yellow-300 text-xs disabled:opacity-50">
+      className="text-yellow-700 dark:text-yellow-400 hover:text-yellow-800 dark:hover:text-yellow-300 text-xs disabled:opacity-50">
       Resend
     </button>
   );

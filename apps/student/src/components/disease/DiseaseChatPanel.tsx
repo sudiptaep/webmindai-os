@@ -26,9 +26,9 @@ export function DiseaseChatPanel({ disease }: DiseaseChatPanelProps) {
   return (
     <div className="flex flex-col gap-3">
       {messages.length === 0 && (
-        <div className="bg-[#0f1117] border border-gray-800/40 rounded-xl p-4 text-center space-y-1">
-          <p className="text-sm text-gray-400">Ask anything about <span className="text-teal-400 capitalize">{disease}</span></p>
-          <p className="text-xs text-gray-600">Answers draw from all your uploaded subjects</p>
+        <div className="bg-muted border border-border/40 rounded-xl p-4 text-center space-y-1">
+          <p className="text-sm text-muted-foreground">Ask anything about <span className="text-teal-700 dark:text-teal-400 capitalize">{disease}</span></p>
+          <p className="text-xs text-muted-foreground">Answers draw from all your uploaded subjects</p>
         </div>
       )}
 
@@ -42,8 +42,8 @@ export function DiseaseChatPanel({ disease }: DiseaseChatPanelProps) {
               <div
                 className={`max-w-[85%] rounded-xl px-3.5 py-2.5 text-sm leading-relaxed ${
                   msg.role === 'user'
-                    ? 'bg-teal-700/30 border border-teal-700/40 text-gray-100'
-                    : 'bg-[#1e2330] border border-gray-700/40 text-gray-200'
+                    ? 'bg-teal-700/30 border border-teal-700/40 text-foreground'
+                    : 'bg-card border border-border/40 text-foreground'
                 }`}
               >
                 {msg.content || (
@@ -68,12 +68,12 @@ export function DiseaseChatPanel({ disease }: DiseaseChatPanelProps) {
           onKeyDown={handleKeyDown}
           placeholder={`Ask about ${disease}…`}
           rows={2}
-          className="flex-1 resize-none bg-[#0f1117] border border-gray-700/60 rounded-xl px-3 py-2.5 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-teal-600/60 transition-colors"
+          className="flex-1 resize-none bg-muted border border-border/60 rounded-xl px-3 py-2.5 text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:border-teal-600/60 transition-colors"
         />
         {streaming ? (
           <button
             onClick={stopStream}
-            className="shrink-0 px-4 py-2.5 rounded-xl bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm transition-colors"
+            className="shrink-0 px-4 py-2.5 rounded-xl bg-accent hover:bg-accent text-foreground text-sm transition-colors"
           >
             Stop
           </button>

@@ -54,7 +54,7 @@ export default function UsersPage() {
         <div className="flex gap-2">
           <button
             onClick={() => router.push('/dashboard/users/college-admins/new')}
-            className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 text-white text-sm px-4 py-2 rounded"
           >
             + Create College Admin
           </button>
@@ -68,18 +68,18 @@ export default function UsersPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-gray-700 mb-4">
+      <div className="flex border-b border-border mb-4">
         {(['college_admins', 'dept_admins'] as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => { setTab(t); setPage(1); }}
             className={`px-4 py-2 text-sm border-b-2 -mb-px ${
-              tab === t ? 'border-blue-500 text-blue-400' : 'border-transparent text-gray-400 hover:text-gray-200'
+              tab === t ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
             {t === 'college_admins' ? 'College Admins' : 'Dept Admins'}
             {data && (
-              <span className="ml-2 text-xs text-gray-500">({data.total})</span>
+              <span className="ml-2 text-xs text-muted-foreground">({data.total})</span>
             )}
           </button>
         ))}
@@ -92,12 +92,12 @@ export default function UsersPage() {
           placeholder="Search name or email..."
           value={search}
           onChange={handleSearch}
-          className="bg-gray-800 border border-gray-700 rounded px-3 py-1.5 text-sm w-64"
+          className="bg-muted border border-border rounded px-3 py-1.5 text-sm w-64"
         />
         <select
           value={statusFilter}
           onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-          className="bg-gray-800 border border-gray-700 rounded px-3 py-1.5 text-sm"
+          className="bg-muted border border-border rounded px-3 py-1.5 text-sm"
         >
           <option value="">All statuses</option>
           <option value="active">Active</option>
@@ -108,11 +108,11 @@ export default function UsersPage() {
 
       {/* Table */}
       {isLoading ? (
-        <p className="text-gray-400 text-sm">Loading...</p>
+        <p className="text-muted-foreground text-sm">Loading...</p>
       ) : (
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-gray-700 text-gray-400 text-left">
+            <tr className="border-b border-border text-muted-foreground text-left">
               <th className="pb-2 pr-4">Name</th>
               <th className="pb-2 pr-4">College</th>
               {tab === 'dept_admins' && <th className="pb-2 pr-4">Department</th>}
@@ -124,20 +124,20 @@ export default function UsersPage() {
           </thead>
           <tbody>
             {((data?.admins as Record<string, string | undefined>[]) ?? []).map((admin) => (
-              <tr key={admin._id} className="border-b border-gray-800 hover:bg-gray-800/40">
+              <tr key={admin._id} className="border-b border-border hover:bg-muted/40">
                 <td className="py-2 pr-4">
                   <p className="font-medium">{admin.name}</p>
-                  <p className="text-gray-400 text-xs">{admin.email}</p>
+                  <p className="text-muted-foreground text-xs">{admin.email}</p>
                 </td>
-                <td className="py-2 pr-4 text-gray-300">{admin.college_name}</td>
-                {tab === 'dept_admins' && <td className="py-2 pr-4 text-gray-300">{admin.dept_name}</td>}
-                <td className="py-2 pr-4 text-gray-300">
+                <td className="py-2 pr-4 text-foreground">{admin.college_name}</td>
+                {tab === 'dept_admins' && <td className="py-2 pr-4 text-foreground">{admin.dept_name}</td>}
+                <td className="py-2 pr-4 text-foreground">
                   {admin.admin_title ?? admin.faculty_title ?? '—'}
                 </td>
                 <td className="py-2 pr-4">
                   <InviteStatusBadge status={admin.status as string} />
                 </td>
-                <td className="py-2 pr-4 text-gray-400">
+                <td className="py-2 pr-4 text-muted-foreground">
                   {admin.last_login ? new Date(admin.last_login as string).toLocaleDateString() : '—'}
                 </td>
                 <td className="py-2">
@@ -149,13 +149,13 @@ export default function UsersPage() {
                           : `/dashboard/users/dept-admins/${admin._id}?college_id=${admin.college_id}`,
                       )
                     }
-                    className="text-blue-400 hover:text-blue-300 text-xs mr-3"
+                    className="text-primary hover:text-blue-300 text-xs mr-3"
                   >
                     Edit
                   </button>
                   <button
                     onClick={() => handleDelete(admin)}
-                    className="text-red-500 hover:text-red-400 text-xs"
+                    className="text-destructive hover:text-destructive text-xs"
                   >
                     Delete
                   </button>
@@ -164,7 +164,7 @@ export default function UsersPage() {
             ))}
             {!data?.admins?.length && (
               <tr>
-                <td colSpan={7} className="py-8 text-center text-gray-500">
+                <td colSpan={7} className="py-8 text-center text-muted-foreground">
                   No {tab === 'college_admins' ? 'college admins' : 'dept admins'} found.
                 </td>
               </tr>
@@ -179,17 +179,17 @@ export default function UsersPage() {
           <button
             disabled={page === 1}
             onClick={() => setPage((p) => p - 1)}
-            className="px-3 py-1 text-sm border border-gray-700 rounded disabled:opacity-40"
+            className="px-3 py-1 text-sm border border-border rounded disabled:opacity-40"
           >
             Previous
           </button>
-          <span className="px-3 py-1 text-sm text-gray-400">
+          <span className="px-3 py-1 text-sm text-muted-foreground">
             Page {page} of {Math.ceil(data.total / 20)}
           </span>
           <button
             disabled={page >= Math.ceil(data.total / 20)}
             onClick={() => setPage((p) => p + 1)}
-            className="px-3 py-1 text-sm border border-gray-700 rounded disabled:opacity-40"
+            className="px-3 py-1 text-sm border border-border rounded disabled:opacity-40"
           >
             Next
           </button>

@@ -56,7 +56,7 @@ interface SectionHeaderProps {
   accentColor?: string;
 }
 
-function SectionHeader({ title, expanded, onToggle, onOpen, badge, accentColor = 'text-gray-300' }: SectionHeaderProps) {
+function SectionHeader({ title, expanded, onToggle, onOpen, badge, accentColor = 'text-foreground' }: SectionHeaderProps) {
   return (
     <div className="flex items-center gap-1.5">
       <button
@@ -64,7 +64,7 @@ function SectionHeader({ title, expanded, onToggle, onOpen, badge, accentColor =
         className="flex items-center gap-1.5 flex-1 min-w-0 group"
       >
         <ChevronDown
-          className={`w-3.5 h-3.5 text-gray-500 transition-transform duration-200 shrink-0 ${expanded ? '' : '-rotate-90'}`}
+          className={`w-3.5 h-3.5 text-muted-foreground transition-transform duration-200 shrink-0 ${expanded ? '' : '-rotate-90'}`}
         />
         <p className={`text-xs font-semibold truncate ${accentColor}`}>{title}</p>
         {badge && <span className="ml-1 shrink-0">{badge}</span>}
@@ -72,7 +72,7 @@ function SectionHeader({ title, expanded, onToggle, onOpen, badge, accentColor =
       <button
         onClick={onOpen}
         title={`Open ${title} in full view`}
-        className="shrink-0 p-1 rounded-md text-gray-600 hover:text-gray-300 hover:bg-gray-800 transition-colors"
+        className="shrink-0 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
       >
         <MaximizeIcon />
       </button>
@@ -99,12 +99,12 @@ function ToolOverlay({ title, accentColor, onClose, children }: ToolOverlayProps
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-[60] flex flex-col bg-gray-950">
-      <header className="flex items-center gap-3 px-5 py-3 border-b border-gray-800 shrink-0">
+    <div className="fixed inset-0 z-[60] flex flex-col bg-background">
+      <header className="flex items-center gap-3 px-5 py-3 border-b border-border shrink-0">
         <p className={`text-sm font-semibold ${accentColor}`}>{title}</p>
         <button
           onClick={onClose}
-          className="ml-auto p-1.5 rounded-lg text-gray-500 hover:text-gray-200 hover:bg-gray-800 transition-colors"
+          className="ml-auto p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
           title="Close (Esc)"
         >
           <CloseIcon />
@@ -198,7 +198,7 @@ export function ToolsPanel({ chapter, docId, collegeId }: Props) {
           <div className="flex justify-end mb-2">
             <button
               onClick={handleNewConfig}
-              className="text-xs text-gray-600 hover:text-gray-400 transition-colors"
+              className="text-xs text-muted-foreground hover:text-muted-foreground transition-colors"
             >
               ← Config
             </button>
@@ -212,7 +212,7 @@ export function ToolsPanel({ chapter, docId, collegeId }: Props) {
               onGenerate={handleGenerate}
               loading={generating}
             />
-            {genError && <p className="mt-2 text-xs text-red-400">{genError}</p>}
+            {genError && <p className="mt-2 text-xs text-destructive">{genError}</p>}
           </>
         )}
         {phase === 'running' && sessionId && (
@@ -244,8 +244,8 @@ export function ToolsPanel({ chapter, docId, collegeId }: Props) {
         <div className="space-y-1.5 mb-3">
           {chapter.pyq_years.map(year => (
             <div key={year} className="flex items-center gap-2">
-              <span className="text-xs text-gray-500 w-10">{year}</span>
-              <div className="flex-1 h-1.5 bg-gray-800 rounded-full overflow-hidden">
+              <span className="text-xs text-muted-foreground w-10">{year}</span>
+              <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
                 <div
                   className="h-full bg-amber-500 rounded-full"
                   style={{ width: `${Math.min(chapter.pyq_coverage_score * 100, 100)}%` }}
@@ -256,7 +256,7 @@ export function ToolsPanel({ chapter, docId, collegeId }: Props) {
         </div>
         <button
           onClick={() => setShowPyq(v => !v)}
-          className="text-xs text-amber-500 hover:text-amber-400 transition-colors"
+          className="text-xs text-amber-500 hover:text-amber-700 dark:text-amber-400 transition-colors"
         >
           {showPyq ? '▲ Hide questions' : '▼ See questions'}
         </button>
@@ -271,7 +271,7 @@ export function ToolsPanel({ chapter, docId, collegeId }: Props) {
         )}
       </>
     ) : (
-      <p className="text-xs text-gray-600">No PYQs mapped yet</p>
+      <p className="text-xs text-muted-foreground">No PYQs mapped yet</p>
     );
   }
 
@@ -303,9 +303,9 @@ export function ToolsPanel({ chapter, docId, collegeId }: Props) {
     if (!openSection || !chapter) return null;
 
     const configs: Record<SectionKey, { title: string; accent: string; content: () => React.ReactNode }> = {
-      quiz:  { title: 'Smart Quiz',     accent: 'text-violet-300', content: () => renderQuizContent(true) },
-      pyq:   { title: 'PYQ Radar',      accent: 'text-amber-300',  content: renderPyqContent },
-      notes: { title: 'My Notes',       accent: 'text-teal-300',   content: renderNotesContent },
+      quiz:  { title: 'Smart Quiz',     accent: 'text-violet-700 dark:text-violet-300', content: () => renderQuizContent(true) },
+      pyq:   { title: 'PYQ Radar',      accent: 'text-amber-700 dark:text-amber-300',  content: renderPyqContent },
+      notes: { title: 'My Notes',       accent: 'text-teal-700 dark:text-teal-300',   content: renderNotesContent },
       cases: { title: 'Clinical Cases', accent: 'text-rose-300',   content: renderCasesContent },
     };
 
@@ -321,44 +321,44 @@ export function ToolsPanel({ chapter, docId, collegeId }: Props) {
 
   return (
     <>
-      <aside className="w-72 shrink-0 flex flex-col bg-gray-950 overflow-y-auto">
-        <div className="px-4 py-2.5 border-b border-gray-800 shrink-0">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Tools</p>
+      <aside className="w-72 shrink-0 flex flex-col bg-background overflow-y-auto">
+        <div className="px-4 py-2.5 border-b border-border shrink-0">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Tools</p>
         </div>
 
         {chapter ? (
           <div className="p-3 space-y-2">
 
             {/* ── Smart Quiz ──────────────────────────────────────── */}
-            <section className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+            <section className="bg-card border border-border rounded-xl overflow-hidden">
               <div className="px-3 py-2.5">
                 <SectionHeader
                   title="Smart Quiz"
-                  accentColor="text-violet-300"
+                  accentColor="text-violet-700 dark:text-violet-300"
                   expanded={expanded.quiz}
                   onToggle={() => toggleSection('quiz')}
                   onOpen={() => setOpenSection('quiz')}
                 />
               </div>
               {expanded.quiz && (
-                <div className="px-3 pb-3 border-t border-gray-800/60 pt-2.5">
+                <div className="px-3 pb-3 border-t border-border/60 pt-2.5">
                   {renderQuizContent()}
                 </div>
               )}
             </section>
 
             {/* ── PYQ Radar ───────────────────────────────────────── */}
-            <section className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+            <section className="bg-card border border-border rounded-xl overflow-hidden">
               <div className="px-3 py-2.5">
                 <SectionHeader
                   title="PYQ Radar"
-                  accentColor="text-amber-300"
+                  accentColor="text-amber-700 dark:text-amber-300"
                   expanded={expanded.pyq}
                   onToggle={() => toggleSection('pyq')}
                   onOpen={() => setOpenSection('pyq')}
                   badge={
                     chapter.pyq_count > 0 ? (
-                      <span className="text-xs bg-amber-900/40 text-amber-400 border border-amber-800 px-1.5 py-0.5 rounded-full">
+                      <span className="text-xs bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 border border-amber-800 px-1.5 py-0.5 rounded-full">
                         {chapter.pyq_count}
                       </span>
                     ) : undefined
@@ -366,32 +366,32 @@ export function ToolsPanel({ chapter, docId, collegeId }: Props) {
                 />
               </div>
               {expanded.pyq && (
-                <div className="px-3 pb-3 border-t border-gray-800/60 pt-2.5">
+                <div className="px-3 pb-3 border-t border-border/60 pt-2.5">
                   {renderPyqContent()}
                 </div>
               )}
             </section>
 
             {/* ── My Notes ────────────────────────────────────────── */}
-            <section className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+            <section className="bg-card border border-border rounded-xl overflow-hidden">
               <div className="px-3 py-2.5">
                 <SectionHeader
                   title="My Notes"
-                  accentColor="text-teal-300"
+                  accentColor="text-teal-700 dark:text-teal-300"
                   expanded={expanded.notes}
                   onToggle={() => toggleSection('notes')}
                   onOpen={() => setOpenSection('notes')}
                 />
               </div>
               {expanded.notes && (
-                <div className="px-3 pb-3 border-t border-gray-800/60 pt-2.5">
+                <div className="px-3 pb-3 border-t border-border/60 pt-2.5">
                   {renderNotesContent()}
                 </div>
               )}
             </section>
 
             {/* ── Clinical Cases ───────────────────────────────────── */}
-            <section className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+            <section className="bg-card border border-border rounded-xl overflow-hidden">
               <div className="px-3 py-2.5">
                 <SectionHeader
                   title="Clinical Cases"
@@ -402,7 +402,7 @@ export function ToolsPanel({ chapter, docId, collegeId }: Props) {
                 />
               </div>
               {expanded.cases && (
-                <div className="px-3 pb-3 border-t border-gray-800/60 pt-2.5">
+                <div className="px-3 pb-3 border-t border-border/60 pt-2.5">
                   {renderCasesContent()}
                 </div>
               )}
@@ -410,7 +410,7 @@ export function ToolsPanel({ chapter, docId, collegeId }: Props) {
 
           </div>
         ) : (
-          <div className="flex-1 flex items-center justify-center p-6 text-gray-700 text-xs text-center">
+          <div className="flex-1 flex items-center justify-center p-6 text-muted-foreground text-xs text-center">
             Select a chapter to see tools
           </div>
         )}

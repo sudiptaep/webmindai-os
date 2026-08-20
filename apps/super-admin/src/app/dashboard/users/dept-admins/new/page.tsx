@@ -49,21 +49,21 @@ export default function CreateDeptAdminPage() {
   return (
     <div className="max-w-lg">
       <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => router.back()} className="text-gray-400 hover:text-gray-200 text-sm">← Back</button>
+        <button onClick={() => router.back()} className="text-muted-foreground hover:text-foreground text-sm">← Back</button>
         <h1 className="text-xl font-semibold">Create Dept Admin</h1>
       </div>
 
-      {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
+      {error && <p className="text-destructive text-sm mb-4">{error}</p>}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm text-gray-400 mb-1">College *</label>
+          <label className="block text-sm text-muted-foreground mb-1">College *</label>
           <select
             required
             value={form.college_id}
             onChange={(e) => setForm((f) => ({ ...f, college_id: e.target.value, dept_id: '' }))}
             disabled={collegesQuery.isLoading}
-            className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm disabled:opacity-60"
+            className="w-full bg-muted border border-border rounded px-3 py-2 text-sm disabled:opacity-60"
           >
             <option value="">
               {collegesQuery.isLoading ? 'Loading colleges…' : collegesQuery.isError ? 'Error loading colleges' : 'Select college…'}
@@ -73,19 +73,19 @@ export default function CreateDeptAdminPage() {
             ))}
           </select>
           {collegesQuery.isError && (
-            <p className="text-red-400 text-xs mt-1">
+            <p className="text-destructive text-xs mt-1">
               {(collegesQuery.error as { message?: string })?.message ?? 'Failed to load colleges. Re-login and try again.'}
             </p>
           )}
         </div>
 
         <div>
-          <label className="block text-sm text-gray-400 mb-1">Department *</label>
+          <label className="block text-sm text-muted-foreground mb-1">Department *</label>
           <select
             required
             value={form.dept_id}
             onChange={(e) => setForm((f) => ({ ...f, dept_id: e.target.value }))}
-            className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm"
+            className="w-full bg-muted border border-border rounded px-3 py-2 text-sm"
             disabled={!form.college_id}
           >
             <option value="">Select department…</option>
@@ -96,34 +96,34 @@ export default function CreateDeptAdminPage() {
         </div>
 
         <div>
-          <label className="block text-sm text-gray-400 mb-1">Full Name *</label>
+          <label className="block text-sm text-muted-foreground mb-1">Full Name *</label>
           <input required value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-            className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm" />
+            className="w-full bg-muted border border-border rounded px-3 py-2 text-sm" />
         </div>
 
         <div>
-          <label className="block text-sm text-gray-400 mb-1">Work Email *</label>
+          <label className="block text-sm text-muted-foreground mb-1">Work Email *</label>
           <input required type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-            className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm" />
+            className="w-full bg-muted border border-border rounded px-3 py-2 text-sm" />
         </div>
 
         <div>
-          <label className="block text-sm text-gray-400 mb-1">Faculty Title</label>
+          <label className="block text-sm text-muted-foreground mb-1">Faculty Title</label>
           <select value={form.faculty_title} onChange={(e) => setForm((f) => ({ ...f, faculty_title: e.target.value as never }))}
-            className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm">
+            className="w-full bg-muted border border-border rounded px-3 py-2 text-sm">
             <option value="">Select title…</option>
             {FACULTY_TITLES.map((t) => <option key={t}>{t}</option>)}
           </select>
         </div>
 
         <div>
-          <label className="block text-sm text-gray-400 mb-1">Phone</label>
+          <label className="block text-sm text-muted-foreground mb-1">Phone</label>
           <input value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-            className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm" />
+            className="w-full bg-muted border border-border rounded px-3 py-2 text-sm" />
         </div>
 
         <div>
-          <p className="text-sm text-gray-400 mb-2">Permissions within their department</p>
+          <p className="text-sm text-muted-foreground mb-2">Permissions within their department</p>
           <div className="space-y-2 pl-1">
             {[
               ['can_upload_documents', 'Can upload documents'],
@@ -146,7 +146,7 @@ export default function CreateDeptAdminPage() {
 
         <div className="flex gap-3 pt-2">
           <button type="button" onClick={() => router.back()}
-            className="flex-1 border border-gray-700 rounded py-2 text-sm text-gray-400 hover:text-gray-200">
+            className="flex-1 border border-border rounded py-2 text-sm text-muted-foreground hover:text-foreground">
             Cancel
           </button>
           <button type="submit" disabled={createMutation.isPending}

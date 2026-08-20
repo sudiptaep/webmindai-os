@@ -40,20 +40,20 @@ export default function DocumentDetailPage({ params }: { params: { id: string } 
     onSuccess: () => router.push('/dashboard/documents'),
   });
 
-  if (isLoading) return <p className="text-gray-400 text-sm">Loading…</p>;
-  if (!doc) return <p className="text-gray-400 text-sm">Document not found.</p>;
+  if (isLoading) return <p className="text-muted-foreground text-sm">Loading…</p>;
+  if (!doc) return <p className="text-muted-foreground text-sm">Document not found.</p>;
 
   return (
     <div className="max-w-2xl">
       <button
         onClick={() => router.back()}
-        className="text-sm text-gray-400 hover:text-gray-100 mb-4 flex items-center gap-1"
+        className="text-sm text-muted-foreground hover:text-foreground mb-4 flex items-center gap-1"
       >
         ← Back
       </button>
       <h1 className="text-xl font-semibold mb-6 break-all">{doc.original_filename}</h1>
 
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-5 space-y-3 text-sm">
+      <div className="bg-muted border border-border rounded-lg p-5 space-y-3 text-sm">
         <Row label="Status" value={doc.ingestion_status} />
         <Row label="File type" value={doc.file_type} />
         <Row label="Department" value={doc.dept_id} />
@@ -70,13 +70,13 @@ export default function DocumentDetailPage({ params }: { params: { id: string } 
       </div>
 
       {quality?.signal_breakdown && (
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-5 mt-4 text-sm">
+        <div className="bg-muted border border-border rounded-lg p-5 mt-4 text-sm">
           <div className="flex items-center justify-between mb-3">
             <span className="font-medium">Quality breakdown</span>
             <button
               onClick={() => rescore.mutate({ college_id: collegeId, doc_id: doc._id })}
               disabled={rescore.isPending}
-              className="text-xs bg-gray-700 hover:bg-gray-600 disabled:opacity-50 px-3 py-1 rounded"
+              className="text-xs bg-accent hover:bg-accent disabled:opacity-50 px-3 py-1 rounded"
             >
               {rescore.isPending ? 'Re-scoring…' : 'Re-score'}
             </button>
@@ -87,21 +87,21 @@ export default function DocumentDetailPage({ params }: { params: { id: string } 
           <SignalRow label="Vocabulary validity" value={quality.signal_breakdown.vocab_validity} />
           <SignalRow label="Boilerplate penalty" value={quality.signal_breakdown.boilerplate_penalty} />
           {quality.recommendations.length > 0 && (
-            <div className="mt-3 text-xs text-amber-400 space-y-1">
+            <div className="mt-3 text-xs text-amber-700 dark:text-amber-400 space-y-1">
               {quality.recommendations.map((r, i) => <p key={i}>⚠️ {r}</p>)}
             </div>
           )}
-          {rescore.isError && <p className="mt-2 text-xs text-red-400">{rescore.error.message}</p>}
+          {rescore.isError && <p className="mt-2 text-xs text-destructive">{rescore.error.message}</p>}
         </div>
       )}
       {quality?.quality_rescoring_needed && !quality.signal_breakdown && (
-        <p className="mt-4 text-xs text-amber-400">
+        <p className="mt-4 text-xs text-amber-700 dark:text-amber-400">
           ⚠️ This document was ingested before the quality scoring update — re-ingest to get a full breakdown.
         </p>
       )}
 
       {(doc as { has_chapter_map?: boolean }).has_chapter_map && (
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-5 mt-4 text-sm">
+        <div className="bg-muted border border-border rounded-lg p-5 mt-4 text-sm">
           <div className="flex items-center justify-between mb-3">
             <span className="font-medium">
               Concept graph {concepts ? `· ${concepts.length} concepts` : ''}
@@ -109,7 +109,7 @@ export default function DocumentDetailPage({ params }: { params: { id: string } 
             <button
               onClick={() => extractConcepts.mutate({ doc_id: doc._id })}
               disabled={extractConcepts.isPending}
-              className="text-xs bg-gray-700 hover:bg-gray-600 disabled:opacity-50 px-3 py-1 rounded"
+              className="text-xs bg-accent hover:bg-accent disabled:opacity-50 px-3 py-1 rounded"
             >
               {extractConcepts.isPending
                 ? 'Queuing…'
@@ -120,11 +120,11 @@ export default function DocumentDetailPage({ params }: { params: { id: string } 
           </div>
 
           {extractConcepts.isError && (
-            <p className="text-xs text-red-400 mb-2">{extractConcepts.error.message}</p>
+            <p className="text-xs text-destructive mb-2">{extractConcepts.error.message}</p>
           )}
 
           {validation && (validation.cycles.length > 0 || validation.suspicious_edges.length > 0) && (
-            <div className="mb-3 text-xs text-amber-400 space-y-1">
+            <div className="mb-3 text-xs text-amber-700 dark:text-amber-400 space-y-1">
               {validation.cycles.map((cycle, i) => (
                 <p key={`cycle-${i}`}>⚠ Cycle detected: {cycle.join(' → ')}</p>
               ))}
@@ -139,21 +139,21 @@ export default function DocumentDetailPage({ params }: { params: { id: string } 
           {concepts && concepts.length > 0 && (
             <div className="max-h-80 overflow-y-auto space-y-1">
               {concepts.map((c) => (
-                <div key={c._id} className="flex items-start gap-2 py-1 border-b border-gray-700/50 last:border-0">
-                  <span className="text-gray-500 text-xs w-10 shrink-0">Ch.{c.chapter_index}</span>
+                <div key={c._id} className="flex items-start gap-2 py-1 border-b border-border/50 last:border-0">
+                  <span className="text-muted-foreground text-xs w-10 shrink-0">Ch.{c.chapter_index}</span>
                   <span className="flex-1">
                     {c.canonical_name}
                     {c.prerequisite_names.length > 0 && (
-                      <span className="text-gray-500 text-xs"> ← {c.prerequisite_names.join(', ')}</span>
+                      <span className="text-muted-foreground text-xs"> ← {c.prerequisite_names.join(', ')}</span>
                     )}
                   </span>
-                  <span className="text-gray-500 text-xs shrink-0">{c.concept_type}</span>
+                  <span className="text-muted-foreground text-xs shrink-0">{c.concept_type}</span>
                 </div>
               ))}
             </div>
           )}
           {concepts && concepts.length === 0 && !extractConcepts.isPending && (
-            <p className="text-xs text-gray-500">No concepts extracted yet.</p>
+            <p className="text-xs text-muted-foreground">No concepts extracted yet.</p>
           )}
         </div>
       )}
@@ -163,7 +163,7 @@ export default function DocumentDetailPage({ params }: { params: { id: string } 
           href={((doc as any).download_url)}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-4 inline-block text-sm text-blue-400 hover:underline"
+          className="mt-4 inline-block text-sm text-primary hover:underline"
         >
           Download original
         </a>
@@ -173,7 +173,7 @@ export default function DocumentDetailPage({ params }: { params: { id: string } 
         <button
           onClick={() => reingest.mutate({ college_id: collegeId, doc_id: doc._id })}
           disabled={reingest.isPending}
-          className="bg-gray-700 hover:bg-gray-600 disabled:opacity-50 px-4 py-2 rounded text-sm"
+          className="bg-accent hover:bg-accent disabled:opacity-50 px-4 py-2 rounded text-sm"
         >
           {reingest.isPending ? 'Queuing…' : 'Re-ingest'}
         </button>
@@ -195,14 +195,14 @@ export default function DocumentDetailPage({ params }: { params: { id: string } 
         <button
           onClick={() => deleteMut.mutate({ college_id: collegeId, doc_id: doc._id })}
           disabled={deleteMut.isPending}
-          className="bg-red-900/40 hover:bg-red-900/60 border border-red-700 disabled:opacity-50 px-4 py-2 rounded text-sm text-red-300"
+          className="bg-red-100 dark:bg-red-900/40 hover:bg-red-200 dark:hover:bg-red-900/60 border border-red-300 dark:border-red-700 disabled:opacity-50 px-4 py-2 rounded text-sm text-red-700 dark:text-red-300"
         >
           Delete document
         </button>
       </div>
 
       {extractChapters.isError && (
-        <p className="mt-2 text-xs text-red-400">{extractChapters.error.message}</p>
+        <p className="mt-2 text-xs text-destructive">{extractChapters.error.message}</p>
       )}
     </div>
   );
@@ -211,8 +211,8 @@ export default function DocumentDetailPage({ params }: { params: { id: string } 
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex gap-2">
-      <span className="text-gray-400 w-32 shrink-0">{label}</span>
-      <span className="text-gray-100">{value}</span>
+      <span className="text-muted-foreground w-32 shrink-0">{label}</span>
+      <span className="text-foreground">{value}</span>
     </div>
   );
 }
@@ -221,18 +221,18 @@ function SignalRow({ label, value, na }: { label: string; value: number; na?: bo
   const pct = Math.round(value * 100);
   return (
     <div className="flex items-center gap-3 py-1">
-      <span className="text-gray-400 w-40 shrink-0">{label}</span>
+      <span className="text-muted-foreground w-40 shrink-0">{label}</span>
       {na ? (
-        <span className="text-gray-500 text-xs">N/A</span>
+        <span className="text-muted-foreground text-xs">N/A</span>
       ) : (
         <>
-          <div className="flex-1 h-2 bg-gray-700 rounded overflow-hidden">
+          <div className="flex-1 h-2 bg-accent rounded overflow-hidden">
             <div
               className={pct < 60 ? 'h-full bg-amber-500' : 'h-full bg-emerald-500'}
               style={{ width: `${pct}%` }}
             />
           </div>
-          <span className="text-gray-300 text-xs w-10 text-right">{value.toFixed(2)}</span>
+          <span className="text-foreground text-xs w-10 text-right">{value.toFixed(2)}</span>
         </>
       )}
     </div>

@@ -12,10 +12,10 @@ const YEAR_OPTIONS = Array.from({ length: 10 }, (_, i) => String(CURRENT_YEAR - 
 type IngestionStatus = 'pending' | 'processing' | 'completed' | 'failed';
 
 const STATUS_COLORS: Record<IngestionStatus, string> = {
-  pending:    'text-yellow-400',
-  processing: 'text-blue-400',
-  completed:  'text-green-400',
-  failed:     'text-red-400',
+  pending:    'text-yellow-700 dark:text-yellow-400',
+  processing: 'text-primary',
+  completed:  'text-green-700 dark:text-green-400',
+  failed:     'text-destructive',
 };
 
 type SubjectItem = { _id: string; name: string; code: string };
@@ -158,17 +158,17 @@ export default function PYQPage() {
       <h1 className="text-xl font-semibold mb-6">PYQ Papers</h1>
 
       {/* Upload form */}
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-5 mb-6">
-        <h2 className="text-sm font-semibold text-gray-300 mb-4">Upload Question Paper (PDF)</h2>
+      <div className="bg-muted border border-border rounded-lg p-5 mb-6">
+        <h2 className="text-sm font-semibold text-foreground mb-4">Upload Question Paper (PDF)</h2>
 
         <div className="grid grid-cols-2 gap-3 mb-3">
           <div>
-            <label className="block text-xs text-gray-400 mb-1">Department *</label>
+            <label className="block text-xs text-muted-foreground mb-1">Department *</label>
             {(depts ?? []).length > 1 ? (
               <select
                 value={selectedDeptId}
                 onChange={e => setSelectedDeptId(e.target.value)}
-                className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-sm"
+                className="w-full bg-card border border-border rounded px-2 py-1.5 text-sm"
               >
                 <option value="">Select department</option>
                 {(depts ?? []).map(d => (
@@ -176,18 +176,18 @@ export default function PYQPage() {
                 ))}
               </select>
             ) : (
-              <div className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-sm text-gray-300">
+              <div className="w-full bg-card border border-border rounded px-2 py-1.5 text-sm text-foreground">
                 {depts?.[0]?.name ?? 'Loading…'}
               </div>
             )}
           </div>
           <div>
-            <label className="block text-xs text-gray-400 mb-1">Subject</label>
+            <label className="block text-xs text-muted-foreground mb-1">Subject</label>
             <select
               value={selectedSubjectId}
               onChange={e => setSelectedSubjectId(e.target.value)}
               disabled={!selectedDeptId}
-              className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-sm disabled:opacity-50"
+              className="w-full bg-card border border-border rounded px-2 py-1.5 text-sm disabled:opacity-50"
             >
               <option value="">No specific subject</option>
               {(subjects ?? []).map((s: SubjectItem) => (
@@ -196,49 +196,49 @@ export default function PYQPage() {
             </select>
           </div>
           <div>
-            <label className="block text-xs text-gray-400 mb-1">Exam Name *</label>
+            <label className="block text-xs text-muted-foreground mb-1">Exam Name *</label>
             <input
               type="text"
               value={examName}
               onChange={e => setExamName(e.target.value)}
               placeholder="e.g. VTU June 2024"
-              className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-sm"
+              className="w-full bg-card border border-border rounded px-2 py-1.5 text-sm"
             />
           </div>
           <div>
-            <label className="block text-xs text-gray-400 mb-1">Year *</label>
+            <label className="block text-xs text-muted-foreground mb-1">Year *</label>
             <select
               value={year}
               onChange={e => setYear(e.target.value)}
-              className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-sm"
+              className="w-full bg-card border border-border rounded px-2 py-1.5 text-sm"
             >
               {YEAR_OPTIONS.map(y => <option key={y} value={y}>{y}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-xs text-gray-400 mb-1">Month</label>
+            <label className="block text-xs text-muted-foreground mb-1">Month</label>
             <input
               type="text"
               value={month}
               onChange={e => setMonth(e.target.value)}
               placeholder="e.g. June"
-              className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-sm"
+              className="w-full bg-card border border-border rounded px-2 py-1.5 text-sm"
             />
           </div>
           <div>
-            <label className="block text-xs text-gray-400 mb-1">University</label>
+            <label className="block text-xs text-muted-foreground mb-1">University</label>
             <input
               type="text"
               value={university}
               onChange={e => setUniversity(e.target.value)}
               placeholder="e.g. VTU"
-              className="w-full bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-sm"
+              className="w-full bg-card border border-border rounded px-2 py-1.5 text-sm"
             />
           </div>
         </div>
 
-        {uploadError   && <p className="text-xs text-red-400 mb-3">{uploadError}</p>}
-        {uploadSuccess && <p className="text-xs text-green-400 mb-3">{uploadSuccess}</p>}
+        {uploadError   && <p className="text-xs text-destructive mb-3">{uploadError}</p>}
+        {uploadSuccess && <p className="text-xs text-green-700 dark:text-green-400 mb-3">{uploadSuccess}</p>}
 
         <input
           ref={fileInputRef}
@@ -250,7 +250,7 @@ export default function PYQPage() {
         />
         <label
           htmlFor="pyq-upload"
-          className={`inline-block cursor-pointer bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm font-medium transition-colors ${
+          className={`inline-block cursor-pointer bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded text-sm font-medium transition-colors ${
             uploading || !selectedDeptId || !examName.trim() ? 'opacity-50 pointer-events-none' : ''
           }`}
         >
@@ -264,7 +264,7 @@ export default function PYQPage() {
           <select
             value={filterDeptId}
             onChange={e => setFilterDeptId(e.target.value)}
-            className="bg-gray-800 border border-gray-600 rounded px-2 py-1.5 text-sm"
+            className="bg-muted border border-border rounded px-2 py-1.5 text-sm"
           >
             <option value="">All Departments</option>
             {(depts ?? []).map(d => (
@@ -272,45 +272,45 @@ export default function PYQPage() {
             ))}
           </select>
         ) : depts?.[0] ? (
-          <span className="text-sm text-gray-400 px-2 py-1.5 bg-gray-800 rounded border border-gray-600">
+          <span className="text-sm text-muted-foreground px-2 py-1.5 bg-muted rounded border border-border">
             {depts[0].name}
           </span>
         ) : null}
-        <span className="text-xs text-gray-500">{papers.length} papers</span>
+        <span className="text-xs text-muted-foreground">{papers.length} papers</span>
       </div>
 
       {/* Papers list */}
-      {loadingPapers && <p className="text-sm text-gray-400">Loading…</p>}
+      {loadingPapers && <p className="text-sm text-muted-foreground">Loading…</p>}
 
       {!loadingPapers && papers.length === 0 && (
-        <p className="text-sm text-gray-500">No PYQ papers yet. Upload your first question paper above.</p>
+        <p className="text-sm text-muted-foreground">No PYQ papers yet. Upload your first question paper above.</p>
       )}
 
       <div className="space-y-2">
         {papers.map(paper => (
-          <div key={paper._id} className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-3">
+          <div key={paper._id} className="bg-muted border border-border rounded-lg px-4 py-3">
             <div className="flex items-center gap-4">
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium">
                   {paper.exam_name}
-                  {paper.university && <span className="text-gray-400"> · {paper.university}</span>}
+                  {paper.university && <span className="text-muted-foreground"> · {paper.university}</span>}
                 </p>
-                <p className="text-xs text-gray-400 mt-0.5">
+                <p className="text-xs text-muted-foreground mt-0.5">
                   {paper.year}{paper.month && ` · ${paper.month}`}
                   {' · '}
-                  <span className={STATUS_COLORS[paper.ingestion_status] ?? 'text-gray-400'}>
+                  <span className={STATUS_COLORS[paper.ingestion_status] ?? 'text-muted-foreground'}>
                     {paper.ingestion_status}
                   </span>
                   {paper.question_count != null && ` · ${paper.question_count} questions`}
                   {paper.subject_id && subjectMap.get(paper.subject_id) && (
-                    <span className="text-blue-400"> · {subjectMap.get(paper.subject_id)!.name}</span>
+                    <span className="text-primary"> · {subjectMap.get(paper.subject_id)!.name}</span>
                   )}
                 </p>
               </div>
               <div className="flex gap-2 shrink-0">
                 <button
                   onClick={() => handleRemap(paper._id)}
-                  className="text-xs text-gray-400 hover:text-gray-100 px-2 py-1 border border-gray-600 rounded"
+                  className="text-xs text-muted-foreground hover:text-foreground px-2 py-1 border border-border rounded"
                 >
                   Re-map chapters
                 </button>

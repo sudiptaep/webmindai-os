@@ -15,10 +15,10 @@ const ACADEMIC_YEAR_OPTIONS = [
 
 type IngestionStatus = 'pending' | 'processing' | 'completed' | 'failed';
 const STATUS_COLORS: Record<IngestionStatus, string> = {
-  pending:    'text-yellow-400',
-  processing: 'text-blue-400',
-  completed:  'text-green-400',
-  failed:     'text-red-400',
+  pending:    'text-yellow-700 dark:text-yellow-400',
+  processing: 'text-primary',
+  completed:  'text-green-700 dark:text-green-400',
+  failed:     'text-destructive',
 };
 
 type DocRow = {
@@ -102,25 +102,25 @@ function SubjectCard({ sub, collegeId, deptId, acadYear, isMedical }: SubjectCar
   }
 
   return (
-    <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
+    <div className="bg-muted border border-border rounded-lg overflow-hidden">
       <div className="px-4 py-3 flex items-center gap-4">
         <button
           onClick={() => setCollapsed((v) => !v)}
           className="flex-1 flex items-center gap-3 text-left min-w-0"
         >
           <span className="text-sm font-medium truncate">{sub.name}</span>
-          <span className="text-xs text-gray-400 shrink-0">
+          <span className="text-xs text-muted-foreground shrink-0">
             {sub.code} ·{' '}
             {isMedical ? `Year ${sub.year}` : `Sem ${sub.semester} · Year ${sub.year}`}
           </span>
-          <span className="text-xs bg-gray-700 text-gray-300 px-1.5 py-0.5 rounded-full shrink-0">
+          <span className="text-xs bg-accent text-foreground px-1.5 py-0.5 rounded-full shrink-0">
             {isLoading ? '…' : `${docs.length} file${docs.length !== 1 ? 's' : ''}`}
           </span>
-          <span className="text-gray-500 text-xs shrink-0">{collapsed ? '▼' : '▲'}</span>
+          <span className="text-muted-foreground text-xs shrink-0">{collapsed ? '▼' : '▲'}</span>
         </button>
 
         <div className="flex items-center gap-2 shrink-0">
-          <label className="flex items-center gap-1 text-xs text-gray-400 cursor-pointer" title="Extract & analyse embedded diagrams (GPT-4o Vision, ~$0.25-0.60/book)">
+          <label className="flex items-center gap-1 text-xs text-muted-foreground cursor-pointer" title="Extract & analyse embedded diagrams (GPT-4o Vision, ~$0.25-0.60/book)">
             <input
               type="checkbox"
               checked={imagesEnabled}
@@ -139,14 +139,14 @@ function SubjectCard({ sub, collegeId, deptId, acadYear, isMedical }: SubjectCar
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="text-xs bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-3 py-1 rounded transition-colors"
+            className="text-xs bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 text-white px-3 py-1 rounded transition-colors"
           >
             {uploading ? 'Uploading…' : '+ Upload'}
           </button>
           <button
             onClick={() => deleteMut.mutate({ subject_id: sub._id, dept_id: deptId })}
             disabled={deleteMut.isPending}
-            className="text-xs text-red-400 hover:text-red-300 disabled:opacity-50 px-2 py-1 border border-red-800 rounded"
+            className="text-xs text-destructive hover:text-red-700 dark:hover:text-red-300 disabled:opacity-50 px-2 py-1 border border-red-300 dark:border-red-800 rounded"
           >
             Delete
           </button>
@@ -154,28 +154,28 @@ function SubjectCard({ sub, collegeId, deptId, acadYear, isMedical }: SubjectCar
       </div>
 
       {uploadError && (
-        <div className="px-4 pb-2 text-xs text-red-400">{uploadError}</div>
+        <div className="px-4 pb-2 text-xs text-destructive">{uploadError}</div>
       )}
 
       {!collapsed && (
-        <div className="border-t border-gray-700">
+        <div className="border-t border-border">
           {isLoading ? (
-            <p className="text-xs text-gray-500 px-4 py-3">Loading…</p>
+            <p className="text-xs text-muted-foreground px-4 py-3">Loading…</p>
           ) : docs.length === 0 ? (
-            <p className="text-xs text-gray-500 px-4 py-3">
+            <p className="text-xs text-muted-foreground px-4 py-3">
               No files yet. Click + Upload to add one.
             </p>
           ) : (
-            <div className="divide-y divide-gray-700">
+            <div className="divide-y divide-border">
               {docs.map((doc) => (
                 <div key={doc._id} className="px-4 py-2 flex items-center gap-3">
-                  <span className="text-xs text-gray-400 uppercase shrink-0 w-10">{doc.file_type}</span>
-                  <span className="text-xs text-gray-200 flex-1 truncate">{doc.original_filename}</span>
-                  <span className={`text-xs shrink-0 ${STATUS_COLORS[doc.ingestion_status] ?? 'text-gray-400'}`}>
+                  <span className="text-xs text-muted-foreground uppercase shrink-0 w-10">{doc.file_type}</span>
+                  <span className="text-xs text-foreground flex-1 truncate">{doc.original_filename}</span>
+                  <span className={`text-xs shrink-0 ${STATUS_COLORS[doc.ingestion_status] ?? 'text-muted-foreground'}`}>
                     {doc.ingestion_status}
                   </span>
                   {doc.chunk_count != null && (
-                    <span className="text-xs text-gray-500 shrink-0">{doc.chunk_count} chunks</span>
+                    <span className="text-xs text-muted-foreground shrink-0">{doc.chunk_count} chunks</span>
                   )}
                 </div>
               ))}
@@ -211,14 +211,14 @@ function DeptSubjectList({ dept, collegeId, acadYear, isMedical, showHeader }: D
   return (
     <div>
       {showHeader && (
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 mt-4 first:mt-0">
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 mt-4 first:mt-0">
           {dept.name}
         </p>
       )}
       <div className="space-y-2">
-        {isLoading && <p className="text-xs text-gray-500">Loading…</p>}
+        {isLoading && <p className="text-xs text-muted-foreground">Loading…</p>}
         {!isLoading && subjects.length === 0 && (
-          <p className="text-xs text-gray-500">No subjects in this department.</p>
+          <p className="text-xs text-muted-foreground">No subjects in this department.</p>
         )}
         {subjects.map((sub) => (
           <SubjectCard
@@ -303,7 +303,7 @@ export default function SubjectsPage() {
         <div>
           <h1 className="text-xl font-semibold">Subjects</h1>
           {college && (
-            <p className="text-xs text-gray-500 mt-0.5">
+            <p className="text-xs text-muted-foreground mt-0.5">
               {college.name} · {isMedical ? 'Medical (by Year)' : 'Engineering (by Semester)'}
             </p>
           )}
@@ -313,7 +313,7 @@ export default function SubjectsPage() {
             <select
               value={selectedDeptId}
               onChange={(e) => setSelectedDeptId(e.target.value)}
-              className="bg-gray-800 border border-gray-600 rounded px-2 py-1.5 text-sm"
+              className="bg-muted border border-border rounded px-2 py-1.5 text-sm"
             >
               <option value="">All Departments</option>
               {deptList.map((d) => (
@@ -321,14 +321,14 @@ export default function SubjectsPage() {
               ))}
             </select>
           ) : deptList[0] ? (
-            <span className="text-sm text-gray-400 px-2 py-1.5 bg-gray-800 rounded border border-gray-600">
+            <span className="text-sm text-muted-foreground px-2 py-1.5 bg-muted rounded border border-border">
               {deptList[0].name}
             </span>
           ) : null}
           <select
             value={uploadingAcadYear}
             onChange={(e) => setUploadingAcadYear(e.target.value)}
-            className="bg-gray-800 border border-gray-600 rounded px-2 py-1.5 text-sm"
+            className="bg-muted border border-border rounded px-2 py-1.5 text-sm"
             title="Academic year for uploads"
           >
             {ACADEMIC_YEAR_OPTIONS.map((y) => (
@@ -337,7 +337,7 @@ export default function SubjectsPage() {
           </select>
           <button
             onClick={() => setShowForm((v) => !v)}
-            className="bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded text-sm transition-colors"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 px-3 py-1.5 rounded text-sm transition-colors"
           >
             {showForm ? 'Cancel' : 'Add Subject'}
           </button>
@@ -348,14 +348,14 @@ export default function SubjectsPage() {
       {showForm && (
         <form
           onSubmit={handleAdd}
-          className="bg-gray-800 border border-gray-700 rounded-lg p-4 mb-6 grid grid-cols-2 gap-3"
+          className="bg-muted border border-border rounded-lg p-4 mb-6 grid grid-cols-2 gap-3"
         >
           <div className="col-span-2">
-            <label className="block text-xs text-gray-400 mb-1">Department</label>
+            <label className="block text-xs text-muted-foreground mb-1">Department</label>
             <select
               value={effectiveFormDeptId}
               onChange={(e) => setFormDeptId(e.target.value)}
-              className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-blue-500"
+              className="w-full bg-card border border-border rounded px-3 py-1.5 text-sm focus:outline-none focus:border-primary"
               required
             >
               <option value="">Select department</option>
@@ -365,31 +365,31 @@ export default function SubjectsPage() {
             </select>
           </div>
           <div className="col-span-2">
-            <label className="block text-xs text-gray-400 mb-1">Name</label>
+            <label className="block text-xs text-muted-foreground mb-1">Name</label>
             <input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-blue-500"
+              className="w-full bg-card border border-border rounded px-3 py-1.5 text-sm focus:outline-none focus:border-primary"
               required
             />
           </div>
           <div>
-            <label className="block text-xs text-gray-400 mb-1">Code</label>
+            <label className="block text-xs text-muted-foreground mb-1">Code</label>
             <input
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-blue-500"
+              className="w-full bg-card border border-border rounded px-3 py-1.5 text-sm focus:outline-none focus:border-primary"
               required
             />
           </div>
 
           {isMedical ? (
             <div>
-              <label className="block text-xs text-gray-400 mb-1">Year</label>
+              <label className="block text-xs text-muted-foreground mb-1">Year</label>
               <select
                 value={year}
                 onChange={(e) => setYear(e.target.value)}
-                className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-blue-500"
+                className="w-full bg-card border border-border rounded px-3 py-1.5 text-sm focus:outline-none focus:border-primary"
               >
                 {[1, 2, 3, 4, 5, 6].map((y) => (
                   <option key={y} value={y}>Year {y}</option>
@@ -399,11 +399,11 @@ export default function SubjectsPage() {
           ) : (
             <>
               <div>
-                <label className="block text-xs text-gray-400 mb-1">Semester</label>
+                <label className="block text-xs text-muted-foreground mb-1">Semester</label>
                 <select
                   value={semester}
                   onChange={(e) => setSemester(e.target.value)}
-                  className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-blue-500"
+                  className="w-full bg-card border border-border rounded px-3 py-1.5 text-sm focus:outline-none focus:border-primary"
                 >
                   {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
                     <option key={s} value={s}>Sem {s}</option>
@@ -411,11 +411,11 @@ export default function SubjectsPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-gray-400 mb-1">Year of Study</label>
+                <label className="block text-xs text-muted-foreground mb-1">Year of Study</label>
                 <select
                   value={year}
                   onChange={(e) => setYear(e.target.value)}
-                  className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-1.5 text-sm focus:outline-none focus:border-blue-500"
+                  className="w-full bg-card border border-border rounded px-3 py-1.5 text-sm focus:outline-none focus:border-primary"
                 >
                   {[1, 2, 3, 4, 5, 6].map((y) => (
                     <option key={y} value={y}>Year {y}</option>
@@ -429,7 +429,7 @@ export default function SubjectsPage() {
             <button
               type="submit"
               disabled={createMut.isPending || !effectiveFormDeptId}
-              className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 px-4 py-1.5 rounded text-sm"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 px-4 py-1.5 rounded text-sm"
             >
               {createMut.isPending ? 'Saving…' : 'Save'}
             </button>
@@ -442,7 +442,7 @@ export default function SubjectsPage() {
         // All departments mode — one group per dept
         <div className="space-y-1">
           {deptList.length === 0 && (
-            <p className="text-gray-500 text-sm">No departments found.</p>
+            <p className="text-muted-foreground text-sm">No departments found.</p>
           )}
           {deptList.map((dept) => (
             <DeptSubjectList

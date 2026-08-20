@@ -23,7 +23,7 @@ function Spinner() {
   );
 }
 
-const BTN = 'px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 disabled:opacity-30 text-white transition-colors';
+const BTN = 'px-2 py-1 rounded bg-accent hover:bg-accent disabled:opacity-30 text-white transition-colors';
 
 export function PdfViewer({ tokenUrl, initialPage = 1 }: Props) {
   const [numPages, setNumPages]     = useState(0);
@@ -58,9 +58,9 @@ export function PdfViewer({ tokenUrl, initialPage = 1 }: Props) {
   }
 
   return (
-    <div className="flex flex-col h-full bg-gray-950">
+    <div className="flex flex-col h-full bg-background">
       {/* Toolbar */}
-      <div className="flex items-center gap-2 px-4 py-2 bg-gray-900 border-b border-gray-700 shrink-0 text-xs text-gray-400 flex-wrap">
+      <div className="flex items-center gap-2 px-4 py-2 bg-card border-b border-border shrink-0 text-xs text-muted-foreground flex-wrap">
         {/* First / prev */}
         <button onClick={() => goTo(1)}        disabled={page <= 1}        className={BTN} title="First page">«</button>
         <button onClick={() => goTo(page - 1)} disabled={page <= 1}        className={BTN} title="Previous page">‹</button>
@@ -76,7 +76,7 @@ export function PdfViewer({ tokenUrl, initialPage = 1 }: Props) {
             onChange={(e) => setPageInput(e.target.value)}
             onKeyDown={handleInputKey}
             onBlur={commitInput}
-            className="w-16 bg-gray-800 border border-gray-700 rounded px-2 py-0.5 text-white text-center focus:outline-none focus:border-teal-500"
+            className="w-16 bg-muted border border-border rounded px-2 py-0.5 text-white text-center focus:outline-none focus:border-teal-500"
           />
           <span>of {numPages || '…'}</span>
         </div>
@@ -87,7 +87,7 @@ export function PdfViewer({ tokenUrl, initialPage = 1 }: Props) {
       </div>
 
       {/* Canvas */}
-      <div ref={containerRef} className="flex-1 overflow-y-auto flex justify-center bg-gray-950 py-4">
+      <div ref={containerRef} className="flex-1 overflow-y-auto flex justify-center bg-background py-4">
         {/*
           key={tokenUrl} — forces full Document remount when URL changes.
           This properly destroys the old PDF.js worker before creating a new one,
@@ -99,7 +99,7 @@ export function PdfViewer({ tokenUrl, initialPage = 1 }: Props) {
           onLoadSuccess={onDocLoadSuccess}
           loading={<Spinner />}
           error={
-            <div className="flex items-center justify-center py-16 text-gray-400 text-sm">
+            <div className="flex items-center justify-center py-16 text-muted-foreground text-sm">
               Could not load PDF.
             </div>
           }

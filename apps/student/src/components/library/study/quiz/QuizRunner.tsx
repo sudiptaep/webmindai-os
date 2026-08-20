@@ -105,35 +105,35 @@ export function QuizRunner({ collegeId, sessionId, questions, timeLimitSeconds, 
     <div className="flex flex-col gap-3">
       {/* Progress + timer row */}
       <div className="flex items-center gap-3">
-        <div className="flex-1 h-1 bg-gray-800 rounded-full overflow-hidden">
+        <div className="flex-1 h-1 bg-muted rounded-full overflow-hidden">
           <div
             className="h-full bg-violet-500 rounded-full transition-all"
             style={{ width: `${progressPct}%` }}
           />
         </div>
-        <span className="text-xs text-gray-500 shrink-0">{idx + 1}/{questions.length}</span>
+        <span className="text-xs text-muted-foreground shrink-0">{idx + 1}/{questions.length}</span>
         {timeLeft != null && (
-          <span className={`text-xs font-mono shrink-0 ${timeLeft < 60 ? 'text-red-400' : 'text-gray-400'}`}>
+          <span className={`text-xs font-mono shrink-0 ${timeLeft < 60 ? 'text-destructive' : 'text-muted-foreground'}`}>
             {formatTime(timeLeft)}
           </span>
         )}
       </div>
 
       {/* Question card */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4">
+      <div className="bg-card border border-border rounded-xl p-4">
         <div className="flex items-center gap-2 mb-3">
-          <span className="text-xs bg-violet-900/50 text-violet-400 border border-violet-800 px-2 py-0.5 rounded-full">
+          <span className="text-xs bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-400 border border-violet-800 px-2 py-0.5 rounded-full">
             {q.question_type}
           </span>
           {q.is_pyq && (
-            <span className="text-xs bg-amber-900/40 text-amber-400 border border-amber-800 px-2 py-0.5 rounded-full">
+            <span className="text-xs bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 border border-amber-800 px-2 py-0.5 rounded-full">
               PYQ {q.pyq_year ?? ''}
             </span>
           )}
-          <span className="text-xs text-gray-600 ml-auto">{q.bloom_level}</span>
+          <span className="text-xs text-muted-foreground ml-auto">{q.bloom_level}</span>
         </div>
 
-        <p className="text-sm text-gray-200 leading-relaxed mb-4">{q.question_text}</p>
+        <p className="text-sm text-foreground leading-relaxed mb-4">{q.question_text}</p>
 
         {/* Image label diagram */}
         {isImageLabel && q.image_token_url && (
@@ -160,12 +160,12 @@ export function QuizRunner({ collegeId, sessionId, questions, timeLimitSeconds, 
                   onClick={() => setSelected(opt)}
                   className={`w-full text-left text-xs px-3 py-2 rounded-lg border transition-colors ${
                     showCorrect && isCorrectOpt
-                      ? 'bg-teal-900/40 border-teal-700 text-teal-300'
+                      ? 'bg-teal-100 dark:bg-teal-900/40 border-teal-700 text-teal-700 dark:text-teal-300'
                       : isWrong
-                        ? 'bg-red-900/40 border-red-700 text-red-300'
+                        ? 'bg-red-100 dark:bg-red-900/40 border-red-300 dark:border-red-700 text-red-800 dark:text-red-300'
                         : isSelected
-                          ? 'bg-violet-900/50 border-violet-600 text-violet-200'
-                          : 'bg-gray-800 border-gray-700 text-gray-300 hover:border-gray-600'
+                          ? 'bg-violet-100 dark:bg-violet-900/50 border-violet-600 text-violet-200'
+                          : 'bg-muted border-border text-foreground hover:border-ring'
                   }`}
                 >
                   {opt}
@@ -192,12 +192,12 @@ export function QuizRunner({ collegeId, sessionId, questions, timeLimitSeconds, 
                   onClick={() => setSelected(key)}
                   className={`w-full text-left text-xs px-3 py-2 rounded-lg border transition-colors ${
                     showCorrect && isCorrectOpt
-                      ? 'bg-teal-900/40 border-teal-700 text-teal-300'
+                      ? 'bg-teal-100 dark:bg-teal-900/40 border-teal-700 text-teal-700 dark:text-teal-300'
                       : isWrong
-                        ? 'bg-red-900/40 border-red-700 text-red-300'
+                        ? 'bg-red-100 dark:bg-red-900/40 border-red-300 dark:border-red-700 text-red-800 dark:text-red-300'
                         : isSelected
-                          ? 'bg-violet-900/50 border-violet-600 text-violet-200'
-                          : 'bg-gray-800 border-gray-700 text-gray-300 hover:border-gray-600'
+                          ? 'bg-violet-100 dark:bg-violet-900/50 border-violet-600 text-violet-200'
+                          : 'bg-muted border-border text-foreground hover:border-ring'
                   }`}
                 >
                   {opt}
@@ -215,7 +215,7 @@ export function QuizRunner({ collegeId, sessionId, questions, timeLimitSeconds, 
             disabled={!!feedback || hasAnsweredCurrent}
             rows={3}
             placeholder="Write your answer…"
-            className="w-full bg-gray-800 border border-gray-700 rounded-lg text-xs text-gray-200 p-2.5 resize-none focus:outline-none focus:border-violet-600 placeholder:text-gray-600"
+            className="w-full bg-muted border border-border rounded-lg text-xs text-foreground p-2.5 resize-none focus:outline-none focus:border-violet-600 placeholder:text-muted-foreground"
           />
         )}
 
@@ -223,11 +223,11 @@ export function QuizRunner({ collegeId, sessionId, questions, timeLimitSeconds, 
         {feedback && (
           <div className={`mt-3 p-3 rounded-lg text-xs border ${
             feedback.is_correct
-              ? 'bg-teal-900/30 border-teal-800 text-teal-300'
-              : 'bg-red-900/30 border-red-800 text-red-300'
+              ? 'bg-teal-100 dark:bg-teal-900/30 border-teal-800 text-teal-700 dark:text-teal-300'
+              : 'bg-red-100 dark:bg-red-900/30 border-red-300 dark:border-red-800 text-red-800 dark:text-red-300'
           }`}>
             <p className="font-semibold mb-1">{feedback.is_correct ? 'Correct!' : `Incorrect — Answer: ${feedback.correct_answer}`}</p>
-            {feedback.explanation && <p className="text-gray-400">{feedback.explanation}</p>}
+            {feedback.explanation && <p className="text-muted-foreground">{feedback.explanation}</p>}
           </div>
         )}
       </div>
@@ -247,7 +247,7 @@ export function QuizRunner({ collegeId, sessionId, questions, timeLimitSeconds, 
           <button
             onClick={handleNext}
             disabled={submitting}
-            className="flex-1 text-xs py-2 rounded-lg bg-gray-700 hover:bg-gray-600 disabled:opacity-40 text-gray-200 font-medium transition-colors"
+            className="flex-1 text-xs py-2 rounded-lg bg-accent hover:bg-accent disabled:opacity-40 text-foreground font-medium transition-colors"
           >
             {isLast ? (submitting ? 'Finishing…' : 'Finish Quiz') : 'Next →'}
           </button>
@@ -255,7 +255,7 @@ export function QuizRunner({ collegeId, sessionId, questions, timeLimitSeconds, 
         {!isPractice && !isLast && (
           <button
             onClick={() => { setAnswered(prev => new Map(prev).set(q.question_id, selected ?? textAnswer ?? '')); handleNext(); }}
-            className="text-xs px-3 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-500 transition-colors"
+            className="text-xs px-3 py-2 rounded-lg bg-muted hover:bg-accent text-muted-foreground transition-colors"
             title="Skip question"
           >
             Skip
@@ -268,7 +268,7 @@ export function QuizRunner({ collegeId, sessionId, questions, timeLimitSeconds, 
         <button
           onClick={handleFinish}
           disabled={submitting}
-          className="text-xs text-gray-600 hover:text-gray-400 transition-colors text-center"
+          className="text-xs text-muted-foreground hover:text-muted-foreground transition-colors text-center"
         >
           Submit all &amp; finish
         </button>

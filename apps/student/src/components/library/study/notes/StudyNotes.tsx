@@ -67,7 +67,7 @@ export function StudyNotes({ collegeId, docId, chapterIndex }: Props) {
           <div className="w-4 h-4 border-2 border-teal-500 border-t-transparent rounded-full animate-spin" />
         </div>
       ) : notes.length === 0 ? (
-        <p className="text-xs text-gray-600">No notes yet. Add your first note below.</p>
+        <p className="text-xs text-muted-foreground">No notes yet. Add your first note below.</p>
       ) : (
         <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
           {notes.map(n => (
@@ -85,7 +85,7 @@ export function StudyNotes({ collegeId, docId, chapterIndex }: Props) {
           onKeyDown={handleKeyDown}
           rows={2}
           placeholder="Add a note… (Enter to save)"
-          className="w-full bg-gray-800 border border-gray-700 rounded-lg text-xs text-gray-200 p-2.5 resize-none focus:outline-none focus:border-teal-600 placeholder:text-gray-600"
+          className="w-full bg-muted border border-border rounded-lg text-xs text-foreground p-2.5 resize-none focus:outline-none focus:border-teal-600 placeholder:text-muted-foreground"
         />
         <div className="flex items-center gap-2">
           <button
@@ -99,7 +99,7 @@ export function StudyNotes({ collegeId, docId, chapterIndex }: Props) {
             <a
               href={exportUrl}
               download
-              className="text-xs px-2 py-1.5 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 transition-colors"
+              className="text-xs px-2 py-1.5 rounded-lg bg-accent hover:bg-accent text-foreground transition-colors"
               title="Download notes as text file"
             >
               ↓ Export

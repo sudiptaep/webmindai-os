@@ -56,7 +56,7 @@ export default function SettingsPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-400">Loading…</div>
+        <div className="text-muted-foreground">Loading…</div>
       </div>
     );
   }
@@ -66,74 +66,74 @@ export default function SettingsPage() {
       <h1 className="text-2xl font-bold mb-6">Account Settings</h1>
 
       {/* Read-only info */}
-      <div className="bg-gray-900 rounded-lg p-4 mb-6 space-y-2">
+      <div className="bg-card rounded-lg p-4 mb-6 space-y-2">
         <div className="flex justify-between text-sm">
-          <span className="text-gray-400">Email</span>
+          <span className="text-muted-foreground">Email</span>
           <span>{profile?.email}</span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-gray-400">Role</span>
-          <span className="text-blue-400">Super Admin</span>
+          <span className="text-muted-foreground">Role</span>
+          <span className="text-primary">Super Admin</span>
         </div>
       </div>
 
       {/* Edit form */}
-      <form onSubmit={handleUpdate} className="bg-gray-900 rounded-lg p-4 space-y-4">
-        <h2 className="font-semibold text-sm text-gray-300 uppercase tracking-wide">
+      <form onSubmit={handleUpdate} className="bg-card rounded-lg p-4 space-y-4">
+        <h2 className="font-semibold text-sm text-foreground uppercase tracking-wide">
           Update Profile
         </h2>
         <div>
-          <label className="block text-sm mb-1 text-gray-400">Display Name</label>
+          <label className="block text-sm mb-1 text-muted-foreground">Display Name</label>
           <input
             type="text"
             value={name || profile?.name || ''}
             onChange={(e) => setName(e.target.value)}
-            className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+            className="w-full bg-muted border border-border rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
           />
         </div>
 
-        <div className="border-t border-gray-800 pt-4">
-          <h3 className="text-sm text-gray-400 mb-3">Change Password (optional)</h3>
+        <div className="border-t border-border pt-4">
+          <h3 className="text-sm text-muted-foreground mb-3">Change Password (optional)</h3>
           <div className="space-y-3">
             <div>
-              <label className="block text-sm mb-1 text-gray-400">Current Password</label>
+              <label className="block text-sm mb-1 text-muted-foreground">Current Password</label>
               <input
                 type="password"
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                className="w-full bg-muted border border-border rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
               />
             </div>
             <div>
-              <label className="block text-sm mb-1 text-gray-400">New Password</label>
+              <label className="block text-sm mb-1 text-muted-foreground">New Password</label>
               <input
                 type="password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 minLength={8}
-                className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                className="w-full bg-muted border border-border rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
               />
             </div>
             <div>
-              <label className="block text-sm mb-1 text-gray-400">Confirm New Password</label>
+              <label className="block text-sm mb-1 text-muted-foreground">Confirm New Password</label>
               <input
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 minLength={8}
-                className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                className="w-full bg-muted border border-border rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
               />
             </div>
           </div>
         </div>
 
-        {error && <p className="text-red-400 text-sm">{error}</p>}
-        {success && <p className="text-green-400 text-sm">{success}</p>}
+        {error && <p className="text-destructive text-sm">{error}</p>}
+        {success && <p className="text-green-700 dark:text-green-400 text-sm">{success}</p>}
 
         <button
           type="submit"
           disabled={updateMutation.isPending}
-          className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded py-2 text-sm font-medium transition-colors"
+          className="w-full bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 rounded py-2 text-sm font-medium transition-colors"
         >
           {updateMutation.isPending ? 'Saving…' : 'Save changes'}
         </button>

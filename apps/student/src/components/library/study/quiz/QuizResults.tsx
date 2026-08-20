@@ -39,19 +39,19 @@ export function QuizResults({ results, totalCount, onRetry, onNewQuiz }: Props) 
           pyq_coverage_pct, pyq_would_pass_count, recommendation } = results;
 
   const grade =
-    score_pct >= 80 ? { label: 'Excellent', color: 'text-teal-400' }
-    : score_pct >= 60 ? { label: 'Good', color: 'text-amber-400' }
+    score_pct >= 80 ? { label: 'Excellent', color: 'text-teal-700 dark:text-teal-400' }
+    : score_pct >= 60 ? { label: 'Good', color: 'text-amber-700 dark:text-amber-400' }
     : score_pct >= 40 ? { label: 'Fair', color: 'text-orange-400' }
-    : { label: 'Needs work', color: 'text-red-400' };
+    : { label: 'Needs work', color: 'text-destructive' };
 
   return (
     <div className="space-y-4">
       {/* Score header */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 flex items-center gap-4">
+      <div className="bg-card border border-border rounded-xl p-4 flex items-center gap-4">
         <ScoreRing pct={score_pct} />
         <div>
           <p className={`text-sm font-semibold ${grade.color}`}>{grade.label}</p>
-          <p className="text-xs text-gray-400 mt-0.5">
+          <p className="text-xs text-muted-foreground mt-0.5">
             {correct_count} / {total_count} correct
           </p>
           {pyq_coverage_pct > 0 && (
@@ -66,21 +66,21 @@ export function QuizResults({ results, totalCount, onRetry, onNewQuiz }: Props) 
       {(strong_topics.length > 0 || weak_topics.length > 0) && (
         <div className="grid grid-cols-2 gap-2">
           {strong_topics.length > 0 && (
-            <div className="bg-teal-950/40 border border-teal-900/60 rounded-xl p-3">
-              <p className="text-xs font-semibold text-teal-400 mb-2">Strong</p>
+            <div className="bg-teal-100 dark:bg-teal-950/40 border border-teal-300 dark:border-teal-900/60 rounded-xl p-3">
+              <p className="text-xs font-semibold text-teal-700 dark:text-teal-400 mb-2">Strong</p>
               <div className="space-y-1">
                 {strong_topics.map(t => (
-                  <p key={t} className="text-xs text-gray-400">{t}</p>
+                  <p key={t} className="text-xs text-muted-foreground">{t}</p>
                 ))}
               </div>
             </div>
           )}
           {weak_topics.length > 0 && (
-            <div className="bg-red-950/40 border border-red-900/60 rounded-xl p-3">
-              <p className="text-xs font-semibold text-red-400 mb-2">Weak</p>
+            <div className="bg-red-100 dark:bg-red-950/40 border border-red-300 dark:border-red-900/60 rounded-xl p-3">
+              <p className="text-xs font-semibold text-destructive mb-2">Weak</p>
               <div className="space-y-1">
                 {weak_topics.map(t => (
-                  <p key={t} className="text-xs text-gray-400">{t}</p>
+                  <p key={t} className="text-xs text-muted-foreground">{t}</p>
                 ))}
               </div>
             </div>
@@ -90,9 +90,9 @@ export function QuizResults({ results, totalCount, onRetry, onNewQuiz }: Props) 
 
       {/* AI recommendation */}
       {recommendation && (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-3">
-          <p className="text-xs font-semibold text-gray-400 mb-1.5">Study tip</p>
-          <p className="text-xs text-gray-300 leading-relaxed">{recommendation}</p>
+        <div className="bg-card border border-border rounded-xl p-3">
+          <p className="text-xs font-semibold text-muted-foreground mb-1.5">Study tip</p>
+          <p className="text-xs text-foreground leading-relaxed">{recommendation}</p>
         </div>
       )}
 
@@ -106,7 +106,7 @@ export function QuizResults({ results, totalCount, onRetry, onNewQuiz }: Props) 
         </button>
         <button
           onClick={onNewQuiz}
-          className="flex-1 text-xs py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-200 font-medium transition-colors"
+          className="flex-1 text-xs py-2 rounded-lg bg-accent hover:bg-accent text-foreground font-medium transition-colors"
         >
           New Config
         </button>

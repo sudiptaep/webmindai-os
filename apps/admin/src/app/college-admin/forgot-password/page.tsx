@@ -25,27 +25,27 @@ function ForgotPasswordForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-950">
+    <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="w-full max-w-sm">
         <h1 className="text-xl font-bold text-center mb-6">Forgot Password</h1>
         {sent ? (
-          <div className="bg-gray-900 rounded-xl p-6 border border-gray-800 text-center">
-            <p className="text-green-400 text-sm mb-4">If that email exists, a reset link has been sent.</p>
-            <Link href="/college-admin/login" className="text-blue-400 hover:text-blue-300 text-sm">Back to login →</Link>
+          <div className="bg-card rounded-xl p-6 border border-border text-center">
+            <p className="text-green-700 dark:text-green-400 text-sm mb-4">If that email exists, a reset link has been sent.</p>
+            <Link href="/college-admin/login" className="text-primary hover:text-blue-300 text-sm">Back to login →</Link>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-4 bg-gray-900 rounded-xl p-6 border border-gray-800">
+          <form onSubmit={handleSubmit} className="space-y-4 bg-card rounded-xl p-6 border border-border">
             <div>
-              <label className="block text-sm text-gray-400 mb-1">Email</label>
+              <label className="block text-sm text-muted-foreground mb-1">Email</label>
               <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm" />
+                className="w-full bg-muted border border-border rounded px-3 py-2 text-sm" />
             </div>
             <button type="submit" disabled={loading}
-              className="w-full bg-blue-600 hover:bg-blue-700 rounded py-2.5 text-sm font-medium disabled:opacity-50">
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 rounded py-2.5 text-sm font-medium disabled:opacity-50">
               {loading ? 'Sending…' : 'Send Reset Link'}
             </button>
-            <p className="text-center text-xs text-gray-600">
-              <Link href="/college-admin/login" className="hover:text-gray-400">Back to login</Link>
+            <p className="text-center text-xs text-muted-foreground">
+              <Link href="/college-admin/login" className="hover:text-muted-foreground">Back to login</Link>
             </p>
           </form>
         )}

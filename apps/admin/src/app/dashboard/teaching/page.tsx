@@ -30,7 +30,7 @@ export default function TeachingProfilePage() {
     if (profile) setForm(profile);
   }, [profile]);
 
-  if (isLoading || !form) return <p className="text-gray-400 text-sm">Loading…</p>;
+  if (isLoading || !form) return <p className="text-muted-foreground text-sm">Loading…</p>;
 
   function set<K extends keyof NonNullable<typeof form>>(key: K, value: NonNullable<typeof form>[K]) {
     setForm((f) => (f ? { ...f, [key]: value } : f));
@@ -67,24 +67,24 @@ export default function TeachingProfilePage() {
       <div className="flex items-center justify-between mb-1">
         <h1 className="text-xl font-semibold">Teaching profile</h1>
         <div className="flex gap-3">
-          <a href="/dashboard/teaching/misconceptions" className="text-xs text-teal-400 hover:underline">Misconceptions →</a>
-          <a href="/dashboard/teaching/analytics" className="text-xs text-teal-400 hover:underline">Analytics →</a>
+          <a href="/dashboard/teaching/misconceptions" className="text-xs text-teal-700 dark:text-teal-400 hover:underline">Misconceptions →</a>
+          <a href="/dashboard/teaching/analytics" className="text-xs text-teal-700 dark:text-teal-400 hover:underline">Analytics →</a>
         </div>
       </div>
-      <p className="text-sm text-gray-400 mb-6">
+      <p className="text-sm text-muted-foreground mb-6">
         Configures how the adaptive teaching engine ("Teach me") explains concepts to your students.
       </p>
 
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-5 space-y-5 text-sm">
+      <div className="bg-muted border border-border rounded-lg p-5 space-y-5 text-sm">
         <div>
-          <label className="block text-gray-400 mb-2">Strategy preference order (tiebreaker only — strategies are still matched to concept type)</label>
+          <label className="block text-muted-foreground mb-2">Strategy preference order (tiebreaker only — strategies are still matched to concept type)</label>
           <div className="space-y-1">
             {form.strategy_preference_order.map((s, i) => (
-              <div key={s} className="flex items-center gap-2 bg-gray-900 rounded px-3 py-1.5">
-                <span className="text-gray-500 w-5">{i + 1}.</span>
+              <div key={s} className="flex items-center gap-2 bg-card rounded px-3 py-1.5">
+                <span className="text-muted-foreground w-5">{i + 1}.</span>
                 <span className="flex-1">{STRATEGY_LABELS[s] ?? s}</span>
-                <button onClick={() => moveStrategy(i, -1)} className="text-gray-400 hover:text-gray-100 px-1">↑</button>
-                <button onClick={() => moveStrategy(i, 1)} className="text-gray-400 hover:text-gray-100 px-1">↓</button>
+                <button onClick={() => moveStrategy(i, -1)} className="text-muted-foreground hover:text-foreground px-1">↑</button>
+                <button onClick={() => moveStrategy(i, 1)} className="text-muted-foreground hover:text-foreground px-1">↓</button>
               </div>
             ))}
           </div>
@@ -123,13 +123,13 @@ export default function TeachingProfilePage() {
           onChange={(v) => set('require_misconception_probe', v)} />
 
         <div>
-          <label className="block text-gray-400 mb-1">Custom instruction (added to every teaching turn's prompt)</label>
+          <label className="block text-muted-foreground mb-1">Custom instruction (added to every teaching turn's prompt)</label>
           <textarea
             value={form.custom_instruction}
             onChange={(e) => set('custom_instruction', e.target.value)}
             rows={3}
             maxLength={2000}
-            className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm"
+            className="w-full bg-card border border-border rounded px-3 py-2 text-sm"
             placeholder="e.g. Always relate mechanisms back to underlying physiology before pharmacology."
           />
         </div>
@@ -139,12 +139,12 @@ export default function TeachingProfilePage() {
         <button
           onClick={save}
           disabled={update.isPending}
-          className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 px-4 py-2 rounded text-sm"
+          className="bg-primary text-primary-foreground hover:bg-blue-500 disabled:opacity-50 px-4 py-2 rounded text-sm"
         >
           {update.isPending ? 'Saving…' : 'Save profile'}
         </button>
-        {update.isSuccess && <span className="text-xs text-emerald-400">Saved</span>}
-        {update.isError && <span className="text-xs text-red-400">{update.error.message}</span>}
+        {update.isSuccess && <span className="text-xs text-emerald-700 dark:text-emerald-400">Saved</span>}
+        {update.isError && <span className="text-xs text-destructive">{update.error.message}</span>}
       </div>
     </div>
   );
@@ -155,11 +155,11 @@ function Select({ label, value, onChange, options }: {
 }) {
   return (
     <div>
-      <label className="block text-gray-400 mb-1">{label}</label>
+      <label className="block text-muted-foreground mb-1">{label}</label>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm"
+        className="w-full bg-card border border-border rounded px-3 py-2 text-sm"
       >
         {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
       </select>
@@ -172,14 +172,14 @@ function NumberField({ label, value, min, max, onChange }: {
 }) {
   return (
     <div>
-      <label className="block text-gray-400 mb-1">{label}</label>
+      <label className="block text-muted-foreground mb-1">{label}</label>
       <input
         type="number"
         min={min}
         max={max}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full bg-gray-900 border border-gray-700 rounded px-3 py-2 text-sm"
+        className="w-full bg-card border border-border rounded px-3 py-2 text-sm"
       />
     </div>
   );

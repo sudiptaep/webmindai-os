@@ -5,9 +5,9 @@ import { useAuthStore } from '@/store/auth.store';
 import { addCaseToSRS, type CaseForStudent } from '@/hooks/useClinicalCase';
 
 const DIFFICULTY_COLOR: Record<string, string> = {
-  recall:      'text-green-400 border-green-800/40 bg-green-900/10',
-  application: 'text-amber-400 border-amber-800/40 bg-amber-900/10',
-  analysis:    'text-red-400 border-red-800/40 bg-red-900/10',
+  recall:      'text-green-700 dark:text-green-400 border-green-800/40 bg-green-100 dark:bg-green-900/10',
+  application: 'text-amber-700 dark:text-amber-400 border-amber-800/40 bg-amber-100 dark:bg-amber-900/10',
+  analysis:    'text-destructive border-red-300 dark:border-red-800/40 bg-red-100 dark:bg-red-900/10',
 };
 
 interface CaseDisplayProps {
@@ -43,19 +43,19 @@ export function CaseDisplay({ clinicalCase: c, collegeId, onGenerateNew }: CaseD
     <div className="space-y-3">
       {/* Badges */}
       <div className="flex items-center gap-1.5 flex-wrap">
-        <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-800 text-gray-400 border border-gray-700/50 capitalize">
+        <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border/50 capitalize">
           {c.question_type}
         </span>
         <span className={`text-[10px] px-2 py-0.5 rounded-full border capitalize ${DIFFICULTY_COLOR[c.difficulty] ?? ''}`}>
           {c.difficulty}
         </span>
         {c.from_cache && (
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-900/20 text-blue-400 border border-blue-800/30">
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-900/20 text-primary border border-blue-800/30">
             cached
           </span>
         )}
         {c.source_pages.length > 0 && (
-          <span className="text-[10px] text-gray-600 ml-auto">
+          <span className="text-[10px] text-muted-foreground ml-auto">
             p.{c.source_pages.join(', ')}
           </span>
         )}
@@ -63,16 +63,16 @@ export function CaseDisplay({ clinicalCase: c, collegeId, onGenerateNew }: CaseD
 
       {/* Scenario */}
       <div>
-        <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Clinical Scenario</p>
-        <p className="text-xs text-gray-300 leading-relaxed bg-gray-900/60 rounded-lg p-3 border border-gray-800/60">
+        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Clinical Scenario</p>
+        <p className="text-xs text-foreground leading-relaxed bg-card/60 rounded-lg p-3 border border-border/60">
           {c.case_text}
         </p>
       </div>
 
       {/* Question */}
       <div>
-        <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Question</p>
-        <p className="text-xs font-medium text-gray-200 leading-relaxed">{c.question}</p>
+        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Question</p>
+        <p className="text-xs font-medium text-foreground leading-relaxed">{c.question}</p>
       </div>
 
       {/* MCQ options */}
@@ -90,11 +90,11 @@ export function CaseDisplay({ clinicalCase: c, collegeId, onGenerateNew }: CaseD
                 key={i}
                 className={`flex items-start gap-2 px-2.5 py-1.5 rounded-lg text-[11px] border ${
                   isCorrect
-                    ? 'border-teal-700/50 bg-teal-900/20 text-teal-300'
-                    : 'border-gray-700/30 text-gray-400'
+                    ? 'border-teal-700/50 bg-teal-100 dark:bg-teal-900/20 text-teal-700 dark:text-teal-300'
+                    : 'border-border/30 text-muted-foreground'
                 }`}
               >
-                <span className="font-mono shrink-0 text-gray-500">{letter}.</span>
+                <span className="font-mono shrink-0 text-muted-foreground">{letter}.</span>
                 <span>{opt}</span>
               </div>
             );
@@ -106,7 +106,7 @@ export function CaseDisplay({ clinicalCase: c, collegeId, onGenerateNew }: CaseD
       {!revealed ? (
         <button
           onClick={() => setRevealed(true)}
-          className="w-full py-2 rounded-lg border border-teal-700/40 text-teal-400 hover:bg-teal-700/10 text-xs font-medium transition-colors"
+          className="w-full py-2 rounded-lg border border-teal-700/40 text-teal-700 dark:text-teal-400 hover:bg-teal-700/10 text-xs font-medium transition-colors"
         >
           Show Answer
         </button>
@@ -114,15 +114,15 @@ export function CaseDisplay({ clinicalCase: c, collegeId, onGenerateNew }: CaseD
         <div className="space-y-2.5 pt-1">
           {/* Answer */}
           <div>
-            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Answer</p>
-            <p className="text-xs text-teal-300 font-medium leading-relaxed">{c.correct_answer}</p>
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Answer</p>
+            <p className="text-xs text-teal-700 dark:text-teal-300 font-medium leading-relaxed">{c.correct_answer}</p>
           </div>
 
           {/* Expected answer (for SAQ/open types) */}
           {c.expected_answer && c.expected_answer !== c.correct_answer && (
             <div>
-              <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Model Answer</p>
-              <p className="text-xs text-gray-300 leading-relaxed bg-gray-900/40 rounded-lg p-2.5 border border-gray-800/40">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Model Answer</p>
+              <p className="text-xs text-foreground leading-relaxed bg-card/40 rounded-lg p-2.5 border border-border/40">
                 {c.expected_answer}
               </p>
             </div>
@@ -131,10 +131,10 @@ export function CaseDisplay({ clinicalCase: c, collegeId, onGenerateNew }: CaseD
           {/* Key teaching points */}
           {c.key_teaching_points.length > 0 && (
             <div>
-              <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Teaching Points</p>
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Teaching Points</p>
               <ul className="space-y-1">
                 {c.key_teaching_points.map((pt, i) => (
-                  <li key={i} className="flex items-start gap-1.5 text-[11px] text-gray-400">
+                  <li key={i} className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
                     <span className="text-teal-600 mt-0.5 shrink-0">·</span>
                     {pt}
                   </li>
@@ -149,7 +149,7 @@ export function CaseDisplay({ clinicalCase: c, collegeId, onGenerateNew }: CaseD
               <button
                 onClick={handleAddToSRS}
                 disabled={srsLoading}
-                className="flex-1 py-1.5 rounded-lg border border-teal-700/40 text-teal-400 hover:bg-teal-700/10 text-[11px] font-medium transition-colors disabled:opacity-50"
+                className="flex-1 py-1.5 rounded-lg border border-teal-700/40 text-teal-700 dark:text-teal-400 hover:bg-teal-700/10 text-[11px] font-medium transition-colors disabled:opacity-50"
               >
                 {srsLoading ? 'Adding…' : '+ Add to Review Deck'}
               </button>
@@ -158,12 +158,12 @@ export function CaseDisplay({ clinicalCase: c, collegeId, onGenerateNew }: CaseD
             )}
             <button
               onClick={onGenerateNew}
-              className="px-3 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-gray-200 text-[11px] transition-colors"
+              className="px-3 py-1.5 rounded-lg bg-muted hover:bg-accent text-muted-foreground hover:text-foreground text-[11px] transition-colors"
             >
               New
             </button>
           </div>
-          {srsError && <p className="text-[10px] text-red-400">{srsError}</p>}
+          {srsError && <p className="text-[10px] text-destructive">{srsError}</p>}
         </div>
       )}
     </div>

@@ -25,12 +25,12 @@ export function ImageLightbox({ src, alt, caption, labels, onClose }: ImageLight
       <div className="max-w-5xl max-h-full flex flex-col gap-3" onClick={(e) => e.stopPropagation()}>
         <img src={src} alt={alt} className="max-h-[80vh] object-contain rounded-lg bg-white" />
 
-        <div className="bg-gray-900/90 border border-gray-700/60 rounded-lg p-3 text-center">
-          <p className="text-gray-100 text-sm font-medium">{caption}</p>
+        <div className="bg-card/90 border border-border/60 rounded-lg p-3 text-center">
+          <p className="text-foreground text-sm font-medium">{caption}</p>
           {labels.length > 0 && (
             <div className="flex flex-wrap justify-center gap-1 mt-2">
               {labels.map((l) => (
-                <span key={l} className="text-xs bg-gray-700/50 text-gray-300 px-2 py-0.5 rounded">
+                <span key={l} className="text-xs bg-accent/50 text-foreground px-2 py-0.5 rounded">
                   {l}
                 </span>
               ))}
@@ -40,7 +40,7 @@ export function ImageLightbox({ src, alt, caption, labels, onClose }: ImageLight
 
         <button
           onClick={onClose}
-          className="text-gray-400 hover:text-gray-100 text-sm text-center cursor-pointer"
+          className="text-muted-foreground hover:text-foreground text-sm text-center cursor-pointer"
         >
           ✕ Close (Esc)
         </button>

@@ -46,13 +46,13 @@ export function QuizConfigForm({ chapterTitle, hasPyq, onGenerate, loading }: Pr
 
   return (
     <div className="space-y-4">
-      <p className="text-xs text-gray-500 leading-relaxed">
+      <p className="text-xs text-muted-foreground leading-relaxed">
         {chapterTitle}
       </p>
 
       {/* Question type */}
       <div>
-        <p className="text-xs text-gray-500 mb-1.5">Type</p>
+        <p className="text-xs text-muted-foreground mb-1.5">Type</p>
         <div className="grid grid-cols-5 gap-1">
           {TYPES.map(t => (
             <button
@@ -60,8 +60,8 @@ export function QuizConfigForm({ chapterTitle, hasPyq, onGenerate, loading }: Pr
               onClick={() => setQType(t.key)}
               className={`text-[10px] py-1.5 rounded-lg border transition-colors ${
                 qType === t.key
-                  ? 'bg-violet-900/60 border-violet-600 text-violet-300'
-                  : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600'
+                  ? 'bg-violet-100 dark:bg-violet-900/60 border-violet-600 text-violet-700 dark:text-violet-300'
+                  : 'bg-muted border-border text-muted-foreground hover:border-ring'
               }`}
             >
               {t.label}
@@ -72,7 +72,7 @@ export function QuizConfigForm({ chapterTitle, hasPyq, onGenerate, loading }: Pr
 
       {/* Difficulty */}
       <div>
-        <p className="text-xs text-gray-500 mb-1.5">Difficulty</p>
+        <p className="text-xs text-muted-foreground mb-1.5">Difficulty</p>
         <div className="grid grid-cols-2 gap-1">
           {DIFFS.map(d => (
             <button
@@ -80,8 +80,8 @@ export function QuizConfigForm({ chapterTitle, hasPyq, onGenerate, loading }: Pr
               onClick={() => setDiff(d.key)}
               className={`text-xs py-1.5 rounded-lg border transition-colors ${
                 diff === d.key
-                  ? 'bg-violet-900/60 border-violet-600 text-violet-300'
-                  : 'bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-600'
+                  ? 'bg-violet-100 dark:bg-violet-900/60 border-violet-600 text-violet-700 dark:text-violet-300'
+                  : 'bg-muted border-border text-muted-foreground hover:border-ring'
               }`}
             >
               {d.label}
@@ -93,8 +93,8 @@ export function QuizConfigForm({ chapterTitle, hasPyq, onGenerate, loading }: Pr
       {/* Count */}
       <div>
         <div className="flex items-center justify-between mb-1">
-          <p className="text-xs text-gray-500">Questions</p>
-          <span className="text-xs font-semibold text-gray-300">{count}</span>
+          <p className="text-xs text-muted-foreground">Questions</p>
+          <span className="text-xs font-semibold text-foreground">{count}</span>
         </div>
         <input
           type="range"
@@ -103,7 +103,7 @@ export function QuizConfigForm({ chapterTitle, hasPyq, onGenerate, loading }: Pr
           onChange={e => setCount(Number(e.target.value))}
           className="w-full accent-violet-500"
         />
-        <div className="flex justify-between text-xs text-gray-700 mt-0.5">
+        <div className="flex justify-between text-xs text-muted-foreground mt-0.5">
           <span>5</span><span>40</span>
         </div>
       </div>
@@ -112,20 +112,20 @@ export function QuizConfigForm({ chapterTitle, hasPyq, onGenerate, loading }: Pr
       <div className="space-y-2">
         {hasPyq && (
           <label className="flex items-center justify-between cursor-pointer">
-            <span className="text-xs text-gray-400">Include PYQ questions</span>
+            <span className="text-xs text-muted-foreground">Include PYQ questions</span>
             <button
               onClick={() => setPyq(v => !v)}
-              className={`w-9 h-5 rounded-full transition-colors relative ${pyq ? 'bg-amber-600' : 'bg-gray-700'}`}
+              className={`w-9 h-5 rounded-full transition-colors relative ${pyq ? 'bg-amber-600' : 'bg-accent'}`}
             >
               <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${pyq ? 'translate-x-4' : 'translate-x-0.5'}`} />
             </button>
           </label>
         )}
         <label className="flex items-center justify-between cursor-pointer">
-          <span className="text-xs text-gray-400">Timed mode</span>
+          <span className="text-xs text-muted-foreground">Timed mode</span>
           <button
             onClick={() => setTimed(v => !v)}
-            className={`w-9 h-5 rounded-full transition-colors relative ${timed ? 'bg-violet-600' : 'bg-gray-700'}`}
+            className={`w-9 h-5 rounded-full transition-colors relative ${timed ? 'bg-violet-600' : 'bg-accent'}`}
           >
             <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${timed ? 'translate-x-4' : 'translate-x-0.5'}`} />
           </button>
@@ -133,8 +133,8 @@ export function QuizConfigForm({ chapterTitle, hasPyq, onGenerate, loading }: Pr
         {timed && (
           <div>
             <div className="flex items-center justify-between mb-1">
-              <p className="text-xs text-gray-500">Seconds per question</p>
-              <span className="text-xs font-semibold text-gray-300">{secPerQ}s</span>
+              <p className="text-xs text-muted-foreground">Seconds per question</p>
+              <span className="text-xs font-semibold text-foreground">{secPerQ}s</span>
             </div>
             <input
               type="range"

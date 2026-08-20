@@ -41,18 +41,18 @@ export function ContentPanel({ chapter, docId, collegeId, onSwitchChapter }: Pro
 
   if (!chapter) {
     return (
-      <main className="flex-1 flex items-center justify-center text-gray-600 text-sm border-r border-gray-800">
+      <main className="flex-1 flex items-center justify-center text-muted-foreground text-sm border-r border-border">
         Select a chapter to begin
       </main>
     );
   }
 
   return (
-    <main className="flex-1 flex flex-col border-r border-gray-800 overflow-hidden">
+    <main className="flex-1 flex flex-col border-r border-border overflow-hidden">
       <ChapterHeader chapter={chapter} />
 
       {/* Tab bar */}
-      <div className="flex gap-0 border-b border-gray-800 shrink-0 px-4">
+      <div className="flex gap-0 border-b border-border shrink-0 px-4">
         {([
           { key: 'chat',    label: 'Chat' },
           { key: 'read',    label: 'Read' },
@@ -64,8 +64,8 @@ export function ContentPanel({ chapter, docId, collegeId, onSwitchChapter }: Pro
             onClick={() => setActiveTab(key)}
             className={`text-xs px-4 py-2.5 border-b-2 transition-colors ${
               activeTab === key
-                ? 'text-teal-400 border-teal-500'
-                : 'text-gray-400 border-transparent hover:text-gray-200'
+                ? 'text-teal-700 dark:text-teal-400 border-teal-500'
+                : 'text-muted-foreground border-transparent hover:text-foreground'
             }`}
           >
             {label}
@@ -86,7 +86,7 @@ export function ContentPanel({ chapter, docId, collegeId, onSwitchChapter }: Pro
 
         <div className={`absolute inset-0 flex flex-col overflow-hidden ${activeTab === 'read' ? '' : 'hidden'}`}>
           {pdfError && (
-            <div className="flex-1 flex items-center justify-center text-red-400 text-sm p-6">{pdfError}</div>
+            <div className="flex-1 flex items-center justify-center text-destructive text-sm p-6">{pdfError}</div>
           )}
           {!pdfError && !pdfUrl && activeTab === 'read' && (
             <div className="flex-1 flex items-center justify-center">

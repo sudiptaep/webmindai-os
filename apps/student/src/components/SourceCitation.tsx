@@ -19,7 +19,7 @@ export function SourceCitation({ source }: { source: Source }) {
     <>
       <span className="text-blue-300">—</span>
       <span>{source.filename || 'Document'}</span>
-      {label && <span className="text-gray-400">[{label}]</span>}
+      {label && <span className="text-muted-foreground">[{label}]</span>}
     </>
   );
 
@@ -27,7 +27,7 @@ export function SourceCitation({ source }: { source: Source }) {
     return (
       <Link
         href={href}
-        className="inline-flex items-center gap-1 bg-gray-700 hover:bg-gray-600 text-xs px-2 py-0.5 rounded-full cursor-pointer underline-offset-2 hover:underline"
+        className="inline-flex items-center gap-1 bg-accent hover:bg-accent text-xs px-2 py-0.5 rounded-full cursor-pointer underline-offset-2 hover:underline"
         title={source.doc_id}
       >
         {content}
@@ -37,7 +37,7 @@ export function SourceCitation({ source }: { source: Source }) {
 
   return (
     <span
-      className="inline-flex items-center gap-1 bg-gray-700 text-xs px-2 py-0.5 rounded-full cursor-default"
+      className="inline-flex items-center gap-1 bg-accent text-xs px-2 py-0.5 rounded-full cursor-default"
       title={source.doc_id}
     >
       {content}

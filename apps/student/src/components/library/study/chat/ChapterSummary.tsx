@@ -96,8 +96,8 @@ export function ChapterSummary({ chapter, docId, collegeId }: Props) {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Mode bar */}
-      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-gray-800 shrink-0 flex-wrap">
-        <span className="text-xs text-gray-500 mr-1">Mode:</span>
+      <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border shrink-0 flex-wrap">
+        <span className="text-xs text-muted-foreground mr-1">Mode:</span>
         {MODES.map(m => (
           <button
             key={m.id}
@@ -105,7 +105,7 @@ export function ChapterSummary({ chapter, docId, collegeId }: Props) {
             className={`text-xs px-3 py-1 rounded-full transition-colors ${
               mode === m.id
                 ? 'bg-teal-700 text-white'
-                : 'bg-gray-800 text-gray-400 hover:text-gray-200'
+                : 'bg-muted text-muted-foreground hover:text-foreground'
             }`}
           >
             {m.label}
@@ -115,7 +115,7 @@ export function ChapterSummary({ chapter, docId, collegeId }: Props) {
         {status === 'streaming' ? (
           <button
             onClick={stop}
-            className="text-xs px-3 py-1 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-full"
+            className="text-xs px-3 py-1 bg-accent hover:bg-accent text-foreground rounded-full"
           >
             Stop
           </button>
@@ -123,7 +123,7 @@ export function ChapterSummary({ chapter, docId, collegeId }: Props) {
           <button
             onClick={handleGenerate}
             disabled={loadingCache}
-            className="text-xs px-3 py-1 bg-teal-700 hover:bg-teal-600 disabled:bg-gray-700 disabled:cursor-not-allowed text-white rounded-full transition-colors"
+            className="text-xs px-3 py-1 bg-teal-700 hover:bg-teal-600 disabled:bg-accent disabled:cursor-not-allowed text-white rounded-full transition-colors"
           >
             {displayContent ? 'Regenerate' : 'Generate'}
           </button>
@@ -131,12 +131,12 @@ export function ChapterSummary({ chapter, docId, collegeId }: Props) {
       </div>
 
       {/* Scope label + saved-date badge */}
-      <div className="px-4 py-1.5 border-b border-gray-800 shrink-0 flex items-center gap-3">
-        <span className="text-xs text-gray-600">
+      <div className="px-4 py-1.5 border-b border-border shrink-0 flex items-center gap-3">
+        <span className="text-xs text-muted-foreground">
           Chapter {chapter.chapter_index}: {chapter.title} · Pages {chapter.start_page}–{chapter.end_page}
         </span>
         {savedDate && status !== 'streaming' && (
-          <span className="text-xs text-gray-600 ml-auto">
+          <span className="text-xs text-muted-foreground ml-auto">
             Saved {formatDate(savedDate)}
           </span>
         )}
@@ -151,18 +151,18 @@ export function ChapterSummary({ chapter, docId, collegeId }: Props) {
         )}
 
         {!loadingCache && status === 'idle' && !displayContent && (
-          <div className="flex flex-col items-center justify-center h-full text-center text-gray-600 gap-3">
+          <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground gap-3">
             <span className="text-3xl">✨</span>
             <p className="text-sm">Select a mode and generate a summary for this chapter.</p>
           </div>
         )}
 
         {error && (
-          <p className="text-sm text-red-400">{error}</p>
+          <p className="text-sm text-destructive">{error}</p>
         )}
 
         {displayContent && !loadingCache && (
-          <div className="prose prose-invert prose-sm max-w-none text-gray-200 leading-relaxed whitespace-pre-wrap">
+          <div className="prose prose-invert prose-sm max-w-none text-foreground leading-relaxed whitespace-pre-wrap">
             {displayContent}
             {status === 'streaming' && (
               <span className="inline-block w-1.5 h-4 bg-teal-400 animate-pulse ml-0.5 align-middle" />

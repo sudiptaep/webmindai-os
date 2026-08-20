@@ -92,13 +92,13 @@ export function SRSReviewSession({ cards }: SRSReviewSessionProps) {
     <div className="space-y-4">
       {/* Progress bar */}
       <div className="flex items-center gap-3">
-        <div className="flex-1 bg-gray-800 rounded-full h-1.5 overflow-hidden">
+        <div className="flex-1 bg-muted rounded-full h-1.5 overflow-hidden">
           <div
             className="h-full bg-teal-600 transition-all duration-300"
             style={{ width: `${progress * 100}%` }}
           />
         </div>
-        <span className="text-xs text-gray-500 shrink-0 tabular-nums">
+        <span className="text-xs text-muted-foreground shrink-0 tabular-nums">
           {currentIdx}/{queue.length}
         </span>
       </div>
@@ -130,24 +130,24 @@ function ReviewDone({ summary, onRestart }: ReviewDoneProps) {
     : 0;
 
   return (
-    <div className="bg-[#151820] border border-gray-800/60 rounded-xl p-10 text-center space-y-4">
+    <div className="bg-card border border-border/60 rounded-xl p-10 text-center space-y-4">
       <div className="text-4xl">{pct >= 80 ? '🏆' : pct >= 60 ? '👍' : '💪'}</div>
-      <h3 className="text-lg font-semibold text-gray-100">Session Complete!</h3>
+      <h3 className="text-lg font-semibold text-foreground">Session Complete!</h3>
       <div className="flex items-center justify-center gap-6 py-2">
         <div className="text-center">
-          <p className="text-2xl font-bold text-teal-400">{summary.correct}</p>
-          <p className="text-xs text-gray-500">Correct</p>
+          <p className="text-2xl font-bold text-teal-700 dark:text-teal-400">{summary.correct}</p>
+          <p className="text-xs text-muted-foreground">Correct</p>
         </div>
         <div className="text-center">
-          <p className="text-2xl font-bold text-gray-300">{summary.total - summary.correct}</p>
-          <p className="text-xs text-gray-500">Again</p>
+          <p className="text-2xl font-bold text-foreground">{summary.total - summary.correct}</p>
+          <p className="text-xs text-muted-foreground">Again</p>
         </div>
         <div className="text-center">
           <p className="text-2xl font-bold text-orange-400">{summary.streak}</p>
-          <p className="text-xs text-gray-500">Day streak</p>
+          <p className="text-xs text-muted-foreground">Day streak</p>
         </div>
       </div>
-      <p className="text-sm text-gray-500">{pct}% retention this session</p>
+      <p className="text-sm text-muted-foreground">{pct}% retention this session</p>
       <button
         onClick={onRestart}
         className="px-6 py-2 rounded-lg bg-teal-600 hover:bg-teal-700 text-white text-sm font-medium transition-colors"

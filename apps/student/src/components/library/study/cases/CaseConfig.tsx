@@ -35,7 +35,7 @@ export function CaseConfig({
     <div className="space-y-3">
       {/* Type selector */}
       <div>
-        <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Case Type</p>
+        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Case Type</p>
         <div className="space-y-1">
           {QUESTION_TYPES.map(t => (
             <button
@@ -43,8 +43,8 @@ export function CaseConfig({
               onClick={() => onTypeChange(t.id)}
               className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors ${
                 questionType === t.id
-                  ? 'bg-teal-900/30 border border-teal-700/50 text-teal-300'
-                  : 'border border-transparent text-gray-500 hover:text-gray-300 hover:bg-gray-800/60'
+                  ? 'bg-teal-100 dark:bg-teal-900/30 border border-teal-700/50 text-teal-700 dark:text-teal-300'
+                  : 'border border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/60'
               }`}
             >
               <span className="font-medium">{t.label}</span>
@@ -56,7 +56,7 @@ export function CaseConfig({
 
       {/* Difficulty */}
       <div>
-        <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Difficulty</p>
+        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Difficulty</p>
         <div className="flex gap-1.5">
           {DIFFICULTIES.map(d => (
             <button
@@ -65,7 +65,7 @@ export function CaseConfig({
               className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                 difficulty === d.id
                   ? 'bg-teal-700 text-white'
-                  : 'bg-gray-800 text-gray-400 hover:text-gray-200'
+                  : 'bg-muted text-muted-foreground hover:text-foreground'
               }`}
             >
               {d.label}
@@ -86,7 +86,7 @@ export function CaseConfig({
         {historyCount > 0 && (
           <button
             onClick={onShowHistory}
-            className="px-3 py-2 rounded-lg border border-gray-700/50 text-gray-500 hover:text-gray-300 text-xs transition-colors"
+            className="px-3 py-2 rounded-lg border border-border/50 text-muted-foreground hover:text-foreground text-xs transition-colors"
           >
             {historyCount}
           </button>

@@ -8,10 +8,10 @@ import { trpc } from '@/lib/trpc';
 type IngestionStatus = 'pending' | 'processing' | 'completed' | 'failed';
 
 const STATUS_COLORS: Record<IngestionStatus, string> = {
-  pending: 'text-yellow-400',
-  processing: 'text-blue-400',
-  completed: 'text-green-400',
-  failed: 'text-red-400',
+  pending: 'text-yellow-700 dark:text-yellow-400',
+  processing: 'text-primary',
+  completed: 'text-green-700 dark:text-green-400',
+  failed: 'text-destructive',
 };
 
 type SubjectItem = { _id: string; name: string; code: string };
@@ -100,7 +100,7 @@ export default function DocumentsPage() {
             <select
               value={selectedDeptId}
               onChange={(e) => setSelectedDeptId(e.target.value)}
-              className="bg-gray-800 border border-gray-600 rounded px-2 py-1.5 text-sm"
+              className="bg-muted border border-border rounded px-2 py-1.5 text-sm"
             >
               <option value="">All Departments</option>
               {(depts ?? []).map((d) => (
@@ -108,17 +108,17 @@ export default function DocumentsPage() {
               ))}
             </select>
           ) : depts?.[0] ? (
-            <span className="text-sm text-gray-400 px-2 py-1.5 bg-gray-800 rounded border border-gray-600">
+            <span className="text-sm text-muted-foreground px-2 py-1.5 bg-muted rounded border border-border">
               {depts[0].name}
             </span>
           ) : null}
         </div>
       </div>
 
-      {isLoading && <p className="text-gray-400 text-sm">Loading…</p>}
+      {isLoading && <p className="text-muted-foreground text-sm">Loading…</p>}
 
       {!isLoading && data?.docs?.length === 0 && (
-        <p className="text-gray-500 text-sm">No documents yet. Upload your first document.</p>
+        <p className="text-muted-foreground text-sm">No documents yet. Upload your first document.</p>
       )}
 
       <div className="space-y-2">
@@ -129,24 +129,24 @@ export default function DocumentsPage() {
           return (
             <div
               key={doc._id}
-              className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-3"
+              className="bg-muted border border-border rounded-lg px-4 py-3"
             >
               <div className="flex items-center gap-4">
                 <div className="flex-1 min-w-0">
                   <Link
                     href={`/dashboard/documents/${doc._id}`}
-                    className="text-sm font-medium truncate hover:text-blue-400 transition-colors block"
+                    className="text-sm font-medium truncate hover:text-primary transition-colors block"
                   >
                     {doc.original_filename}
                   </Link>
-                  <p className="text-xs text-gray-400 mt-0.5">
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     {doc.file_type?.toUpperCase()} ·{' '}
-                    <span className={STATUS_COLORS[doc.ingestion_status] ?? 'text-gray-400'}>
+                    <span className={STATUS_COLORS[doc.ingestion_status] ?? 'text-muted-foreground'}>
                       {doc.ingestion_status}
                     </span>
                     {doc.chunk_count != null && ` · ${doc.chunk_count} chunks`}
                     {currentSubject && (
-                      <span className="text-blue-400"> · {currentSubject.name}</span>
+                      <span className="text-primary"> · {currentSubject.name}</span>
                     )}
                   </p>
                 </div>
@@ -155,32 +155,32 @@ export default function DocumentsPage() {
                   <button
                     onClick={() => libSettingsMut.mutate({ college_id: collegeId, doc_id: doc._id, is_visible_to_students: !(doc.is_visible_to_students !== false) })}
                     title="Toggle student visibility"
-                    className={`text-xs px-2 py-1 border rounded ${doc.is_visible_to_students !== false ? 'text-green-400 border-green-800' : 'text-gray-500 border-gray-700 line-through'}`}
+                    className={`text-xs px-2 py-1 border rounded ${doc.is_visible_to_students !== false ? 'text-green-700 dark:text-green-400 border-green-800' : 'text-muted-foreground border-border line-through'}`}
                   >
                     Visible
                   </button>
                   <button
                     onClick={() => libSettingsMut.mutate({ college_id: collegeId, doc_id: doc._id, download_enabled: !(doc.download_enabled !== false) })}
                     title="Toggle download"
-                    className={`text-xs px-2 py-1 border rounded ${doc.download_enabled !== false ? 'text-blue-400 border-blue-800' : 'text-gray-500 border-gray-700 line-through'}`}
+                    className={`text-xs px-2 py-1 border rounded ${doc.download_enabled !== false ? 'text-primary border-blue-800' : 'text-muted-foreground border-border line-through'}`}
                   >
                     DL
                   </button>
                   <button
                     onClick={() => isEditing ? cancelEditSubject() : startEditSubject(doc)}
-                    className="text-xs text-gray-400 hover:text-gray-100 px-2 py-1 border border-gray-600 rounded"
+                    className="text-xs text-muted-foreground hover:text-foreground px-2 py-1 border border-border rounded"
                   >
                     {isEditing ? 'Cancel' : 'Subject'}
                   </button>
                   <button
                     onClick={() => reingestMut.mutate({ college_id: collegeId, doc_id: doc._id })}
-                    className="text-xs text-gray-400 hover:text-gray-100 px-2 py-1 border border-gray-600 rounded"
+                    className="text-xs text-muted-foreground hover:text-foreground px-2 py-1 border border-border rounded"
                   >
                     Re-ingest
                   </button>
                   <button
                     onClick={() => deleteMut.mutate({ college_id: collegeId, doc_id: doc._id })}
-                    className="text-xs text-red-400 hover:text-red-300 px-2 py-1 border border-red-800 rounded"
+                    className="text-xs text-destructive hover:text-red-700 dark:hover:text-red-300 px-2 py-1 border border-red-300 dark:border-red-800 rounded"
                   >
                     Delete
                   </button>
@@ -188,11 +188,11 @@ export default function DocumentsPage() {
               </div>
 
               {isEditing && (
-                <div className="mt-3 flex items-center gap-2 border-t border-gray-700 pt-3">
+                <div className="mt-3 flex items-center gap-2 border-t border-border pt-3">
                   <select
                     value={editingSubjectVal}
                     onChange={(e) => setEditingSubjectVal(e.target.value)}
-                    className="flex-1 bg-gray-900 border border-gray-600 rounded px-2 py-1.5 text-sm focus:outline-none focus:border-blue-500"
+                    className="flex-1 bg-card border border-border rounded px-2 py-1.5 text-sm focus:outline-none focus:border-primary"
                   >
                     <option value="">No Subject</option>
                     {(subjects ?? []).map((s: SubjectItem) => (
@@ -202,7 +202,7 @@ export default function DocumentsPage() {
                   <button
                     onClick={() => saveSubject(doc._id)}
                     disabled={assignSubjectMut.isPending}
-                    className="text-xs bg-blue-600 hover:bg-blue-700 disabled:opacity-50 px-3 py-1.5 rounded"
+                    className="text-xs bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 px-3 py-1.5 rounded"
                   >
                     {assignSubjectMut.isPending ? 'Saving…' : 'Save'}
                   </button>

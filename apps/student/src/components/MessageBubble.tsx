@@ -27,10 +27,10 @@ export function MessageBubble({ message }: { message: Message }) {
         <div
           className={`rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap ${
             isUser
-              ? 'bg-blue-600 text-white rounded-br-sm'
+              ? 'bg-primary text-primary-foreground rounded-br-sm'
               : hasError
-                ? 'bg-red-950/40 text-red-200 border border-red-900/50 rounded-bl-sm'
-                : 'bg-gray-800 text-gray-100 rounded-bl-sm'
+                ? 'bg-red-100 dark:bg-red-950/40 text-red-800 dark:text-red-200 border border-red-300 dark:border-red-900/50 rounded-bl-sm'
+                : 'bg-muted text-foreground rounded-bl-sm'
           }`}
         >
           {isWaiting ? (
@@ -61,7 +61,7 @@ export function MessageBubble({ message }: { message: Message }) {
           </div>
         )}
         {!isUser && message.answered === false && !message.streaming && (
-          <p className="text-xs text-amber-400 mt-1 px-1">
+          <p className="text-xs text-amber-700 dark:text-amber-400 mt-1 px-1">
             No relevant content found — your question has been flagged for review.
           </p>
         )}

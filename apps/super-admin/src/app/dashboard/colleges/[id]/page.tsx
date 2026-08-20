@@ -45,34 +45,34 @@ export default function CollegeDetailPage({ params }: { params: { id: string } }
     setDeptName(''); setDeptCode(''); setShowDeptForm(false);
   }
 
-  if (isLoading) return <p className="text-gray-400 text-sm">Loading…</p>;
-  if (!college) return <p className="text-gray-400 text-sm">College not found.</p>;
+  if (isLoading) return <p className="text-muted-foreground text-sm">Loading…</p>;
+  if (!college) return <p className="text-muted-foreground text-sm">College not found.</p>;
 
   return (
     <div className="max-w-3xl">
-      <button onClick={() => router.back()} className="text-sm text-gray-400 hover:text-gray-100 mb-4">
+      <button onClick={() => router.back()} className="text-sm text-muted-foreground hover:text-foreground mb-4">
         ← Back
       </button>
 
       <div className="flex items-start justify-between mb-6">
         <div>
           <h1 className="text-xl font-semibold">{college.name}</h1>
-          <p className="text-sm text-gray-400">{college.slug} · {college.type}</p>
+          <p className="text-sm text-muted-foreground">{college.slug} · {college.type}</p>
         </div>
         <div className="flex gap-2">
           <button
             onClick={() => updateMut.mutate({ id: params.id, status: college.status === 'active' ? 'suspended' : 'active' })}
             className={`text-sm px-3 py-1.5 rounded border transition-colors ${
               college.status === 'active'
-                ? 'border-yellow-700 text-yellow-400 hover:bg-yellow-900/20'
-                : 'border-green-700 text-green-400 hover:bg-green-900/20'
+                ? 'border-yellow-300 dark:border-yellow-700 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-900/20'
+                : 'border-green-700 text-green-700 dark:text-green-400 hover:bg-green-100 dark:bg-green-900/20'
             }`}
           >
             {college.status === 'active' ? 'Suspend' : 'Activate'}
           </button>
           <button
             onClick={() => { if (confirm('Delete this college?')) deleteMut.mutate({ id: params.id }); }}
-            className="text-sm px-3 py-1.5 rounded border border-red-700 text-red-400 hover:bg-red-900/20 transition-colors"
+            className="text-sm px-3 py-1.5 rounded border border-red-300 dark:border-red-700 text-destructive hover:bg-red-900/20 transition-colors"
           >
             Delete
           </button>
@@ -91,41 +91,41 @@ export default function CollegeDetailPage({ params }: { params: { id: string } }
       {/* Departments */}
       <section className="mb-6">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-gray-300">Departments</h2>
+          <h2 className="text-sm font-semibold text-foreground">Departments</h2>
           <button
             onClick={() => setShowDeptForm((v) => !v)}
-            className="text-xs bg-gray-700 hover:bg-gray-600 px-2 py-1 rounded"
+            className="text-xs bg-accent hover:bg-accent px-2 py-1 rounded"
           >
             {showDeptForm ? 'Cancel' : '+ Add'}
           </button>
         </div>
 
         {showDeptForm && (
-          <form onSubmit={handleAddDept} className="bg-gray-800 border border-gray-700 rounded p-3 mb-3 flex gap-3">
+          <form onSubmit={handleAddDept} className="bg-muted border border-border rounded p-3 mb-3 flex gap-3">
             <input
               value={deptName}
               onChange={(e) => setDeptName(e.target.value)}
               placeholder="Name"
-              className="flex-1 bg-gray-900 border border-gray-600 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-500"
+              className="flex-1 bg-card border border-border rounded px-2 py-1 text-xs focus:outline-none focus:border-primary"
               required
             />
             <input
               value={deptCode}
               onChange={(e) => setDeptCode(e.target.value)}
               placeholder="Code"
-              className="w-24 bg-gray-900 border border-gray-600 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-500"
+              className="w-24 bg-card border border-border rounded px-2 py-1 text-xs focus:outline-none focus:border-primary"
               required
             />
             <select
               value={deptType}
               onChange={(e) => setDeptType(e.target.value as 'engineering' | 'medical' | 'other')}
-              className="bg-gray-900 border border-gray-600 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-500"
+              className="bg-card border border-border rounded px-2 py-1 text-xs focus:outline-none focus:border-primary"
             >
               <option value="engineering">Engineering</option>
               <option value="medical">Medical</option>
               <option value="other">Other</option>
             </select>
-            <button type="submit" className="text-xs bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded">
+            <button type="submit" className="text-xs bg-primary text-primary-foreground hover:bg-primary/90 px-3 py-1 rounded">
               Add
             </button>
           </form>
@@ -133,18 +133,18 @@ export default function CollegeDetailPage({ params }: { params: { id: string } }
 
         <div className="space-y-1.5">
           {depts?.map((d: { _id: string; name: string; code: string; is_generic?: boolean }) => (
-            <div key={d._id} className="flex items-center gap-3 bg-gray-800 border border-gray-700 rounded px-3 py-2">
+            <div key={d._id} className="flex items-center gap-3 bg-muted border border-border rounded px-3 py-2">
               <div className="flex-1">
                 <span className="text-sm">{d.name}</span>
                 {d.is_generic && (
-                  <span className="ml-2 text-xs bg-gray-700 text-gray-400 px-1.5 py-0.5 rounded">generic</span>
+                  <span className="ml-2 text-xs bg-accent text-muted-foreground px-1.5 py-0.5 rounded">generic</span>
                 )}
               </div>
-              <span className="text-xs text-gray-500">{d.code}</span>
+              <span className="text-xs text-muted-foreground">{d.code}</span>
               {!d.is_generic && (
                 <button
                   onClick={() => deleteDeptMut.mutate({ college_id: params.id, dept_id: d._id })}
-                  className="text-xs text-red-400 hover:text-red-300"
+                  className="text-xs text-destructive hover:text-red-700 dark:hover:text-red-300"
                 >
                   ×
                 </button>
@@ -156,7 +156,7 @@ export default function CollegeDetailPage({ params }: { params: { id: string } }
 
       {/* Add Admin */}
       <section>
-        <h2 className="text-sm font-semibold text-gray-300 mb-3">Add Department Admin</h2>
+        <h2 className="text-sm font-semibold text-foreground mb-3">Add Department Admin</h2>
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -176,13 +176,13 @@ export default function CollegeDetailPage({ params }: { params: { id: string } }
             value={addAdminEmail}
             onChange={(e) => setAddAdminEmail(e.target.value)}
             placeholder="admin@college.edu"
-            className="flex-1 bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+            className="flex-1 bg-muted border border-border rounded px-3 py-2 text-sm focus:outline-none focus:border-primary"
             required
           />
           <button
             type="submit"
             disabled={addAdminMut.isPending}
-            className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 px-4 py-2 rounded text-sm"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 px-4 py-2 rounded text-sm"
           >
             {addAdminMut.isPending ? 'Sending…' : 'Invite'}
           </button>
@@ -194,8 +194,8 @@ export default function CollegeDetailPage({ params }: { params: { id: string } }
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="bg-gray-800 border border-gray-700 rounded p-3">
-      <p className="text-xs text-gray-400">{label}</p>
+    <div className="bg-muted border border-border rounded p-3">
+      <p className="text-xs text-muted-foreground">{label}</p>
       <p className="text-xl font-bold mt-0.5">{value}</p>
     </div>
   );

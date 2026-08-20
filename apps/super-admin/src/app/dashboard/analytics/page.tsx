@@ -35,12 +35,12 @@ export default function PlatformAnalyticsPage() {
         </div>
       )}
 
-      <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-        <h2 className="text-sm font-medium mb-3 text-gray-300">College drill-down</h2>
+      <div className="bg-muted border border-border rounded-lg p-4">
+        <h2 className="text-sm font-medium mb-3 text-foreground">College drill-down</h2>
         <select
           value={selectedCollege}
           onChange={(e) => setSelectedCollege(e.target.value)}
-          className="w-full bg-gray-900 border border-gray-600 rounded px-3 py-2 text-sm mb-4 focus:outline-none focus:border-blue-500"
+          className="w-full bg-card border border-border rounded px-3 py-2 text-sm mb-4 focus:outline-none focus:border-primary"
         >
           <option value="">Select a college…</option>
           {colleges?.colleges?.map((c: { _id: string; name: string }) => (
@@ -62,8 +62,8 @@ export default function PlatformAnalyticsPage() {
 
 function StatCard({ label, value }: { label: string; value: number }) {
   return (
-    <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-      <p className="text-xs text-gray-400">{label}</p>
+    <div className="bg-muted border border-border rounded-lg p-4">
+      <p className="text-xs text-muted-foreground">{label}</p>
       <p className="text-2xl font-bold mt-1">{value}</p>
     </div>
   );
@@ -71,8 +71,8 @@ function StatCard({ label, value }: { label: string; value: number }) {
 
 function SmallStat({ label, value }: { label: string; value: number }) {
   return (
-    <div className="bg-gray-900 border border-gray-700 rounded p-3">
-      <p className="text-xs text-gray-400">{label}</p>
+    <div className="bg-card border border-border rounded p-3">
+      <p className="text-xs text-muted-foreground">{label}</p>
       <p className="text-xl font-bold mt-0.5">{value}</p>
     </div>
   );

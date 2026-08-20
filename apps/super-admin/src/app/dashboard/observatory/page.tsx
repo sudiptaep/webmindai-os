@@ -77,10 +77,10 @@ function HealthDot({ status }: { status: string }) {
 
 function HealthBadge({ status }: { status: string }) {
   const cls =
-    status === 'healthy' ? 'text-green-400 bg-green-950/50 border-green-800' :
-    status === 'warning' ? 'text-yellow-400 bg-yellow-950/50 border-yellow-800' :
-    status === 'critical' ? 'text-red-400 bg-red-950/50 border-red-800' :
-    'text-gray-400 bg-gray-800 border-gray-700';
+    status === 'healthy' ? 'text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-950/50 border-green-800' :
+    status === 'warning' ? 'text-yellow-700 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-950/50 border-yellow-300 dark:border-yellow-800' :
+    status === 'critical' ? 'text-destructive bg-red-100 dark:bg-red-950/50 border-red-300 dark:border-red-800' :
+    'text-muted-foreground bg-muted border-border';
   const label =
     status === 'healthy' ? '● HEALTHY' :
     status === 'warning' ? '⚠ WARNING' :
@@ -97,10 +97,10 @@ function UsageBar({ value, max, pct }: { value?: number; max?: number; pct?: num
   const color = p >= 90 ? 'bg-red-500' : p >= 70 ? 'bg-yellow-500' : 'bg-blue-500';
   return (
     <div className="flex items-center gap-2">
-      <div className="flex-1 h-1.5 bg-gray-800 rounded-full overflow-hidden">
+      <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
         <div className={`h-full ${color} rounded-full`} style={{ width: `${Math.min(p, 100)}%` }} />
       </div>
-      <span className="text-xs text-gray-400 w-10 text-right">{p.toFixed(1)}%</span>
+      <span className="text-xs text-muted-foreground w-10 text-right">{p.toFixed(1)}%</span>
     </div>
   );
 }
@@ -108,8 +108,8 @@ function UsageBar({ value, max, pct }: { value?: number; max?: number; pct?: num
 function MetricRow({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
   return (
     <div className="flex justify-between items-baseline text-xs">
-      <span className="text-gray-500">{label}</span>
-      <span className="text-gray-200 font-mono">{value}{sub ? <span className="text-gray-500 font-sans"> {sub}</span> : ''}</span>
+      <span className="text-muted-foreground">{label}</span>
+      <span className="text-foreground font-mono">{value}{sub ? <span className="text-muted-foreground font-sans"> {sub}</span> : ''}</span>
     </div>
   );
 }
@@ -144,7 +144,7 @@ function AnthropicPanel({ snap }: { snap?: ServiceSnapshot }) {
           <MetricRow label="TPM in/out" value={`${fmtK(m.tpm_input ?? 0)} / ${fmtK(m.tpm_output ?? 0)}`} />
           <MetricRow label="Error rate" value={`${(m.error_rate_pct ?? 0).toFixed(2)}%`} />
           <MetricRow label="P50 latency" value={`${m.latency_p50_ms ?? 0}ms`} />
-          <div className="pt-1 border-t border-gray-800">
+          <div className="pt-1 border-t border-border">
             <MetricRow label="Monthly quota" value={`${fmtK(m.monthly_tokens_used ?? 0)} / ${fmtK(m.monthly_token_limit ?? 0)}`} />
             <UsageBar pct={100 - (m.quota_remaining_pct ?? 100)} />
           </div>
@@ -165,7 +165,7 @@ function OpenAIPanel({ snap }: { snap?: ServiceSnapshot }) {
           <MetricRow label="TPM" value={fmtK(m.tpm ?? 0)} />
           <MetricRow label="Error rate" value={`${(m.error_rate_pct ?? 0).toFixed(2)}%`} />
           <MetricRow label="P50 latency" value={`${m.latency_p50_ms ?? 0}ms`} />
-          <div className="pt-1 border-t border-gray-800">
+          <div className="pt-1 border-t border-border">
             <MetricRow label="Monthly" value={`${fmtK(m.monthly_tokens_used ?? 0)} / ${fmtK(m.monthly_token_limit ?? 0)}`} />
             <UsageBar pct={100 - (m.quota_remaining_pct ?? 100)} />
           </div>
@@ -230,7 +230,7 @@ function RedisPanel({ snap }: { snap?: ServiceSnapshot }) {
 }
 
 function EmptyMetrics() {
-  return <p className="text-gray-600 text-xs italic">No snapshot yet — probe pending</p>;
+  return <p className="text-muted-foreground text-xs italic">No snapshot yet — probe pending</p>;
 }
 
 function PanelShell({
@@ -243,24 +243,24 @@ function PanelShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl p-4 flex flex-col gap-3">
+    <div className="bg-card border border-border rounded-xl p-4 flex flex-col gap-3">
       <div className="flex items-start justify-between gap-2">
         <div>
           <p className="text-sm font-semibold text-white">{icon} {title}</p>
           {snap && (
-            <p className="text-xs text-gray-600 mt-0.5">probe {secAgo(snap.captured_at)}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">probe {secAgo(snap.captured_at)}</p>
           )}
         </div>
         <div className="flex flex-col items-end gap-1 shrink-0">
           <HealthBadge status={snap?.health_status ?? 'unknown'} />
-          <Link href={`/dashboard/observatory/${service}`} className="text-xs text-blue-400 hover:text-blue-300">
+          <Link href={`/dashboard/observatory/${service}`} className="text-xs text-primary hover:text-blue-300">
             Detail →
           </Link>
         </div>
       </div>
 
       {snap?.health_reasons && snap.health_reasons.length > 0 && (
-        <div className="text-xs text-yellow-400/80 bg-yellow-950/20 border border-yellow-900/30 rounded p-2 space-y-0.5">
+        <div className="text-xs text-yellow-700 dark:text-yellow-400/80 bg-yellow-100 dark:bg-yellow-950/20 border border-yellow-300 dark:border-yellow-900/30 rounded p-2 space-y-0.5">
           {snap.health_reasons.map((r, i) => <p key={i}>⚠ {r}</p>)}
         </div>
       )}
@@ -324,7 +324,7 @@ export default function ObservatoryPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64 text-gray-400">
+      <div className="flex items-center justify-center h-64 text-muted-foreground">
         Loading Observatory…
       </div>
     );
@@ -333,8 +333,8 @@ export default function ObservatoryPage() {
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center h-64 gap-3">
-        <p className="text-red-400 text-sm">Failed: {error}</p>
-        <button onClick={fetchData} className="text-xs text-blue-400 hover:text-blue-300">
+        <p className="text-destructive text-sm">Failed: {error}</p>
+        <button onClick={fetchData} className="text-xs text-primary hover:text-blue-300">
           Retry
         </button>
       </div>
@@ -343,9 +343,9 @@ export default function ObservatoryPage() {
 
   const overall = data?.overall_status;
   const overallBg =
-    overall?.color === 'red' ? 'bg-red-950/50 border-red-800 text-red-300' :
-    overall?.color === 'amber' ? 'bg-yellow-950/50 border-yellow-800 text-yellow-300' :
-    'bg-green-950/50 border-green-800 text-green-300';
+    overall?.color === 'red' ? 'bg-red-100 dark:bg-red-950/50 border-red-300 dark:border-red-800 text-red-800 dark:text-red-300' :
+    overall?.color === 'amber' ? 'bg-yellow-100 dark:bg-yellow-950/50 border-yellow-300 dark:border-yellow-800 text-yellow-800 dark:text-yellow-300' :
+    'bg-green-100 dark:bg-green-950/50 border-green-800 text-green-700 dark:text-green-300';
 
   const activeAlerts = data?.active_alerts ?? [];
   const criticalAlerts = activeAlerts.filter((a) => a.severity === 'critical');
@@ -357,25 +357,25 @@ export default function ObservatoryPage() {
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-xl font-bold text-white">Unified Usage Observatory</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <p className="text-sm text-muted-foreground mt-0.5">
             Infrastructure health · real-time telemetry · 6 services
           </p>
         </div>
         <div className="flex items-center gap-3">
           <button
             onClick={() => setAutoRefresh((v) => !v)}
-            className={`text-xs px-3 py-1.5 rounded border transition-colors ${autoRefresh ? 'bg-green-950/50 border-green-800 text-green-400' : 'bg-gray-800 border-gray-700 text-gray-400'}`}
+            className={`text-xs px-3 py-1.5 rounded border transition-colors ${autoRefresh ? 'bg-green-100 dark:bg-green-950/50 border-green-800 text-green-700 dark:text-green-400' : 'bg-muted border-border text-muted-foreground'}`}
           >
             {autoRefresh ? '⟳ Auto-refresh ON' : '⟳ Auto-refresh OFF'}
           </button>
           <button
             onClick={fetchData}
-            className="text-xs px-3 py-1.5 rounded border bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700 transition-colors"
+            className="text-xs px-3 py-1.5 rounded border bg-muted border-border text-foreground hover:bg-accent transition-colors"
           >
             Refresh now
           </button>
           {lastRefresh && (
-            <span className="text-xs text-gray-600">Updated {secAgo(lastRefresh.toISOString())}</span>
+            <span className="text-xs text-muted-foreground">Updated {secAgo(lastRefresh.toISOString())}</span>
           )}
         </div>
       </div>
@@ -387,12 +387,12 @@ export default function ObservatoryPage() {
         </span>
         <span>{overall?.status ?? 'UNKNOWN'}</span>
         {criticalAlerts.length > 0 && (
-          <span className="ml-auto text-xs bg-red-900/50 text-red-300 px-2 py-0.5 rounded border border-red-800">
+          <span className="ml-auto text-xs bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300 px-2 py-0.5 rounded border border-red-300 dark:border-red-800">
             {criticalAlerts.length} critical
           </span>
         )}
         {warningAlerts.length > 0 && (
-          <span className={`${criticalAlerts.length === 0 ? 'ml-auto' : ''} text-xs bg-yellow-900/50 text-yellow-300 px-2 py-0.5 rounded border border-yellow-800`}>
+          <span className={`${criticalAlerts.length === 0 ? 'ml-auto' : ''} text-xs bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-300 px-2 py-0.5 rounded border border-yellow-300 dark:border-yellow-800`}>
             {warningAlerts.length} warning
           </span>
         )}
@@ -410,8 +410,8 @@ export default function ObservatoryPage() {
 
       {/* Active alerts strip */}
       {activeAlerts.length > 0 && (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-          <h2 className="text-sm font-semibold text-gray-300 mb-3">
+        <div className="bg-card border border-border rounded-xl p-5">
+          <h2 className="text-sm font-semibold text-foreground mb-3">
             Active Alerts ({activeAlerts.length})
           </h2>
           <div className="space-y-2">
@@ -420,25 +420,25 @@ export default function ObservatoryPage() {
                 key={alert._id}
                 className={`flex items-start justify-between gap-4 p-3 rounded-lg border text-sm ${
                   alert.severity === 'critical'
-                    ? 'bg-red-950/30 border-red-900/50'
+                    ? 'bg-red-100 dark:bg-red-950/30 border-red-300 dark:border-red-900/50'
                     : alert.severity === 'warning'
-                    ? 'bg-yellow-950/30 border-yellow-900/50'
-                    : 'bg-gray-800/50 border-gray-700'
+                    ? 'bg-yellow-100 dark:bg-yellow-950/30 border-yellow-300 dark:border-yellow-900/50'
+                    : 'bg-muted/50 border-border'
                 }`}
               >
                 <div className="flex items-start gap-2 min-w-0">
                   <span>{alert.severity === 'critical' ? '🔴' : alert.severity === 'warning' ? '⚠️' : 'ℹ️'}</span>
                   <div className="min-w-0">
-                    <p className="text-gray-200 font-medium truncate">{alert.title}</p>
-                    <p className="text-gray-500 text-xs mt-0.5 line-clamp-2">{alert.message}</p>
-                    <p className="text-gray-600 text-xs mt-1">
+                    <p className="text-foreground font-medium truncate">{alert.title}</p>
+                    <p className="text-muted-foreground text-xs mt-0.5 line-clamp-2">{alert.message}</p>
+                    <p className="text-muted-foreground text-xs mt-1">
                       {alert.service} · first fired {secAgo(alert.first_fired_at)}
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={() => acknowledgeAlert(alert._id)}
-                  className="shrink-0 text-xs text-gray-400 hover:text-gray-200 border border-gray-700 rounded px-2 py-1 transition-colors"
+                  className="shrink-0 text-xs text-muted-foreground hover:text-foreground border border-border rounded px-2 py-1 transition-colors"
                 >
                   Ack
                 </button>
@@ -450,34 +450,34 @@ export default function ObservatoryPage() {
 
       {/* College usage matrix */}
       {(data?.college_matrix ?? []).length > 0 && (
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-          <h2 className="text-sm font-semibold text-gray-300 mb-3">
+        <div className="bg-card border border-border rounded-xl p-5">
+          <h2 className="text-sm font-semibold text-foreground mb-3">
             Usage by College — Today
           </h2>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-xs text-gray-500 uppercase border-b border-gray-800">
+                <tr className="text-xs text-muted-foreground uppercase border-b border-border">
                   <th className="pb-2 text-left">College</th>
                   <th className="pb-2 text-right">Claude Req/Today</th>
                   <th className="pb-2 text-right">Embed Tokens/Today</th>
                   <th className="pb-2 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-800/50">
+              <tbody className="divide-y divide-border/50">
                 {(data?.college_matrix ?? []).map((row) => (
-                  <tr key={row.college_id} className="hover:bg-gray-800/40">
+                  <tr key={row.college_id} className="hover:bg-muted/40">
                     <td className="py-2 text-white font-medium">{row.college_name}</td>
-                    <td className="py-2 text-right text-gray-300 font-mono text-xs">
+                    <td className="py-2 text-right text-foreground font-mono text-xs">
                       {fmtK(row.claude_rpm_today)}
                     </td>
-                    <td className="py-2 text-right text-gray-300 font-mono text-xs">
+                    <td className="py-2 text-right text-foreground font-mono text-xs">
                       {fmtK(row.embed_tokens_today)}
                     </td>
                     <td className="py-2 text-right">
                       <Link
                         href={`/dashboard/observatory/college/${row.college_id}`}
-                        className="text-blue-400 hover:text-blue-300 text-xs"
+                        className="text-primary hover:text-blue-300 text-xs"
                       >
                         Drilldown →
                       </Link>
@@ -494,15 +494,15 @@ export default function ObservatoryPage() {
       <RerankScoreMonitor />
 
       {/* Student usage quick-link */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+      <div className="bg-card border border-border rounded-xl p-5">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-sm font-semibold text-gray-300">Individual Student Observatory</h2>
-            <p className="text-xs text-gray-500 mt-1">
+            <h2 className="text-sm font-semibold text-foreground">Individual Student Observatory</h2>
+            <p className="text-xs text-muted-foreground mt-1">
               Per-student token usage, activity heatmap, dept percentile ranking
             </p>
           </div>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-muted-foreground">
             Select a college → Drilldown → Students tab
           </p>
         </div>
@@ -512,7 +512,7 @@ export default function ObservatoryPage() {
               <Link
                 key={row.college_id}
                 href={`/dashboard/observatory/college/${row.college_id}/students`}
-                className="text-xs px-3 py-1.5 rounded border border-gray-700 bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
+                className="text-xs px-3 py-1.5 rounded border border-border bg-muted text-foreground hover:bg-accent hover:text-white transition-colors"
               >
                 {row.college_name} students →
               </Link>
@@ -532,23 +532,23 @@ function RerankScoreMonitor() {
   if (isLoading) return null;
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+    <div className="bg-card border border-border rounded-xl p-5">
       <div className="flex items-center justify-between mb-1">
-        <h2 className="text-sm font-semibold text-gray-300">Rerank Score Monitor — last 7 days</h2>
-        <span className="text-xs text-gray-500">Alert threshold: {data?.alert_threshold}</span>
+        <h2 className="text-sm font-semibold text-foreground">Rerank Score Monitor — last 7 days</h2>
+        <span className="text-xs text-muted-foreground">Alert threshold: {data?.alert_threshold}</span>
       </div>
-      <p className="text-xs text-gray-500 mb-3">
+      <p className="text-xs text-muted-foreground mb-3">
         Rolling average top rerank score per college. A drop usually signals a content gap or a
         newly uploaded document with poor extraction quality dragging down retrieval for that topic.
       </p>
       {(!data || data.colleges.length === 0) && (
-        <p className="text-xs text-gray-500">No rerank data yet.</p>
+        <p className="text-xs text-muted-foreground">No rerank data yet.</p>
       )}
       {data && data.colleges.length > 0 && (
         <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
-              <tr className="text-left text-gray-500 border-b border-gray-800">
+              <tr className="text-left text-muted-foreground border-b border-border">
                 <th className="py-1.5 pr-3">College</th>
                 <th className="py-1.5 pr-3">Avg top score</th>
                 <th className="py-1.5 pr-3">Score spread</th>
@@ -558,15 +558,15 @@ function RerankScoreMonitor() {
             </thead>
             <tbody>
               {data.colleges.map((row) => (
-                <tr key={row.college_id} className="border-b border-gray-800/50">
-                  <td className="py-1.5 pr-3 text-gray-300">{row.college_id}</td>
-                  <td className="py-1.5 pr-3 text-gray-100">{row.avg_top_score.toFixed(3)}</td>
-                  <td className="py-1.5 pr-3 text-gray-400">{row.avg_score_spread.toFixed(3)}</td>
-                  <td className="py-1.5 pr-3 text-gray-400">{row.query_count}</td>
+                <tr key={row.college_id} className="border-b border-border/50">
+                  <td className="py-1.5 pr-3 text-foreground">{row.college_id}</td>
+                  <td className="py-1.5 pr-3 text-foreground">{row.avg_top_score.toFixed(3)}</td>
+                  <td className="py-1.5 pr-3 text-muted-foreground">{row.avg_score_spread.toFixed(3)}</td>
+                  <td className="py-1.5 pr-3 text-muted-foreground">{row.query_count}</td>
                   <td className="py-1.5">
                     {row.below_alert_threshold
-                      ? <span className="text-red-400">⚠ below threshold</span>
-                      : <span className="text-green-400">● ok</span>}
+                      ? <span className="text-destructive">⚠ below threshold</span>
+                      : <span className="text-green-700 dark:text-green-400">● ok</span>}
                   </td>
                 </tr>
               ))}
